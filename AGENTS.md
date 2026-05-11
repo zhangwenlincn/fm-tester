@@ -51,8 +51,10 @@ fm-tester/
 │   │   │   └── mod.rs      # CRUD 命令
 │   │   ├── collection/     # 集合模块
 │   │   │   └── mod.rs      # 集合/接口 CRUD
+│   │   ├── environment/    # 环境变量模块
+│   │   │   └── mod.rs      # 环境 CRUD + 变量替换
 │   │   └── http/           # HTTP 模块
-│   │   │   └── mod.rs      # send_http_request
+│   │   │   └── mod.rs      # send_http_request (支持变量替换)
 │   ├── Cargo.toml
 │   ├── capabilities/       # Tauri 权限配置
 │   └── tauri.conf.json
@@ -62,6 +64,7 @@ fm-tester/
 
 - **工作区配置**: `~/.fm/workspace.yaml` (所有工作区列表)
 - **集合配置**: `{工作区路径}/collections.yaml` (集合和接口数据)
+- **环境配置**: `{工作区路径}/environments.yaml` (环境变量，工作区级别)
 - **字段命名**: YAML 中使用 `type` 字段（Rust 有 `#[serde(rename = "type")]`）
 
 ## 开发命令
@@ -117,16 +120,19 @@ mod models;
 mod workspace;
 mod collection;
 mod http;
+mod environment;
 
 pub use models::*;
 pub use workspace::*;  // 导出所有 workspace 命令
 pub use collection::*;
 pub use http::*;
+pub use environment::*;
 
 // 注册命令
 .invoke_handler(tauri::generate_handler![
     get_workspaces, create_workspace, switch_workspace, ...
     get_collections, create_collection, create_api, ...
+    get_environments, save_environment, delete_environment, switch_environment, ...
     send_http_request
 ])
 ```
@@ -147,7 +153,12 @@ pub use http::*;
 | collection | `update_api` | 更新接口信息 |
 | collection | `update_collection` | 更新集合名称 |
 | collection | `delete_collection_item` | 删除集合或接口 |
-| http | `send_http_request` | 发送 HTTP 请求 |
+| environment | `get_environments` | 获取环境配置 |
+| environment | `save_environment` | 创建/更新环境 |
+| environment | `delete_environment` | 删除环境 |
+| environment | `switch_environment` | 切换激活环境 |
+| environment | `get_active_variables` | 获取当前激活环境的变量 |
+| http | `send_http_request` | 发送 HTTP 请求（自动替换变量） |
 
 ## 前端调用模式
 
@@ -164,12 +175,13 @@ const api = await invoke('create_api', {
   parentId: parent?.id
 })
 
-// HTTP 请求（通过 Rust 后端，绕过 CORS）
+// HTTP 请求（通过 Rust 后端，绕过 CORS，支持环境变量替换）
 const response = await invoke('send_http_request', {
   method: 'GET',
-  url: 'https://www.baidu.com',
-  headers: [{ key: 'Content-Type', value: 'application/json', enabled: true }],
-  body: null
+  url: 'https://www.baidu.com',  // 支持 {{baseUrl}} 变量替换
+  headers: [{ key: 'Authorization', value: 'Bearer {{token}}', enabled: true }],
+  body: null,
+  workspacePath: workspace.path  // 必须传入，用于获取环境变量
 })
 ```
 
@@ -199,7 +211,7 @@ export function useSidebarSetup(props, emit) {
 
 ## 添加新的 Tauri Command
 
-1. 选择合适模块：`workspace/`, `collection/`, `http/`
+1. 选择合适模块：`workspace/`, `collection/`, `http/`, `environment/`
 2. 在模块 `mod.rs` 中添加：
 ```rust
 #[tauri::command]
@@ -232,6 +244,9 @@ pub fn my_command(arg: String) -> Result<String, String> {
 - ✅ **删除同步** - 删除接口时关闭对应标签页，删除集合时关闭所有子接口标签页
 - ✅ **URL 参数同步** - URL 输入和参数面板双向同步（RequestPanel/index.js）
 - ✅ **Content-Type 自动适配** - 选择请求体类型时自动添加/更新 Content-Type 请求头
+- ✅ **环境变量替换** - URL、Headers、Body 支持 `{{变量名}}` 格式，发送时自动替换
+- ✅ **新建环境** - 只需输入名称，编辑时可添加变量
+- ✅ **环境切换** - 点击环境切换，右侧面板显示当前环境变量
 
 **JSON5 特殊处理**:
 - ✅ **编辑支持 JSON5** - Monaco Editor 使用 json5 语言（支持注释、单引号、尾逗号）
@@ -278,5 +293,25 @@ pub struct Workspace {
     pub created_at: String,
     pub last_opened: String,
     pub last_api_id: Option<String>,
+}
+```
+
+### Environment (环境变量)
+```rust
+pub struct Variable {
+    pub key: String,
+    pub value: String,
+    pub enabled: bool,
+}
+
+pub struct Environment {
+    pub id: String,
+    pub name: String,
+    pub variables: Vec<Variable>,
+}
+
+pub struct EnvironmentsConfig {
+    pub environments: Vec<Environment>,
+    pub active_environment_id: Option<String>,
 }
 ```
