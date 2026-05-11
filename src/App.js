@@ -1,4 +1,4 @@
-import { ref, reactive, onMounted, watch } from 'vue'
+import { ref, reactive, onMounted, watch, computed } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import JSON5 from 'json5'
 
@@ -27,6 +27,92 @@ export function useAppSetup() {
   // 响应数据
   const response = ref(null)
   const loading = ref(false)
+
+  // 环境数据
+  const environments = ref([])
+  const activeEnvironmentId = ref(null)
+  const activeEnvironment = ref(null)
+
+  // 当前侧边栏导航项
+  const currentNavKey = ref('collection')
+
+  // 加载环境配置
+  const loadEnvironments = async () => {
+    if (!currentWorkspace.value?.path) return
+    try {
+      const config = await invoke('get_environments', { workspacePath: currentWorkspace.value.path })
+      environments.value = config.environments || []
+      activeEnvironmentId.value = config.active_environment_id || null
+      // 设置当前激活环境
+      if (activeEnvironmentId.value) {
+        activeEnvironment.value = environments.value.find(e => e.id === activeEnvironmentId.value) || null
+      }
+    } catch (e) {
+      console.error('加载环境失败:', e)
+      environments.value = []
+    }
+  }
+
+  // 切换环境
+  const switchEnvironment = async (environmentId) => {
+    if (!currentWorkspace.value?.path) return
+    try {
+      await invoke('switch_environment', {
+        workspacePath: currentWorkspace.value.path,
+        environmentId
+      })
+      activeEnvironmentId.value = environmentId
+      activeEnvironment.value = environments.value.find(e => e.id === environmentId) || null
+    } catch (e) {
+      console.error('切换环境失败:', e)
+    }
+  }
+
+  // 保存环境
+  const saveEnvironment = async (environment) => {
+    if (!currentWorkspace.value?.path) return
+    try {
+      const result = await invoke('save_environment', {
+        workspacePath: currentWorkspace.value.path,
+        environment
+      })
+      // 更新本地列表
+      const existingIndex = environments.value.findIndex(e => e.id === result.id)
+      if (existingIndex >= 0) {
+        environments.value[existingIndex] = result
+      } else {
+        environments.value.push(result)
+      }
+      return result
+    } catch (e) {
+      console.error('保存环境失败:', e)
+      throw e
+    }
+  }
+
+  // 删除环境
+  const deleteEnvironment = async (environmentId) => {
+    if (!currentWorkspace.value?.path) return
+    try {
+      await invoke('delete_environment', {
+        workspacePath: currentWorkspace.value.path,
+        environmentId
+      })
+      environments.value = environments.value.filter(e => e.id !== environmentId)
+      // 如果删除的是当前激活环境，切换到第一个
+      if (activeEnvironmentId.value === environmentId) {
+        const firstEnv = environments.value[0]
+        if (firstEnv) {
+          await switchEnvironment(firstEnv.id)
+        } else {
+          activeEnvironmentId.value = null
+          activeEnvironment.value = null
+        }
+      }
+    } catch (e) {
+      console.error('删除环境失败:', e)
+    }
+  }
 
   // 禁用右键菜单
   onMounted(() => {
@@ -89,11 +175,43 @@ export function useAppSetup() {
     // 清空当前标签页
     tabs.value = []
     activeTab.value = 0
+    // 加载该工作区的环境配置
+    await loadEnvironments()
     // 加载该工作区的最后接口
     if (workspace?.id) {
       await loadLastApi(workspace.id)
     }
   }
+
+  // 导航切换（来自 Sidebar）
+  const onNavChange = async (navKey) => {
+    currentNavKey.value = navKey
+    // 切换到环境面板时加载环境数据
+    if (navKey === 'environment') {
+      await loadEnvironments()
+    }
+  }
+
+  // 环境切换（来自 Sidebar）
+  const onSwitchEnvironment = (env) => {
+    activeEnvironment.value = env
+    activeEnvironmentId.value = env?.id || null
+  }
+
+  // 是否显示请求/响应面板
+  const showRequestResponse = computed(() => {
+    return currentNavKey.value === 'collection' && tabs.value.length > 0
+  })
+
+  // 是否显示工作区信息面板
+  const showWorkspaceInfo = computed(() => {
+    return currentNavKey.value === 'workspace' && currentWorkspace.value
+  })
+
+  // 是否显示环境信息面板
+  const showEnvironmentInfo = computed(() => {
+    return currentNavKey.value === 'environment' && currentWorkspace.value
+  })
 
   // 关闭对话框
   const closeWorkspaceDialog = () => {
@@ -235,12 +353,13 @@ export function useAppSetup() {
         }
       }
       
-      // 使用 Rust 后端发送请求（绕过 CORS）
+      // 使用 Rust 后端发送请求（绕过 CORS，支持环境变量替换）
       const result = await invoke('send_http_request', {
         method: request.method,
         url: request.url,
         headers: headersToSend,
-        body: request.method !== 'GET' ? bodyToSend : null
+        body: request.method !== 'GET' ? bodyToSend : null,
+        workspacePath: currentWorkspace.value?.path || ''
       })
       
       response.value = {
@@ -329,6 +448,21 @@ export function useAppSetup() {
     currentRequest,
     response,
     loading,
+    // 环境相关
+    environments,
+    activeEnvironmentId,
+    activeEnvironment,
+    loadEnvironments,
+    switchEnvironment,
+    saveEnvironment,
+    deleteEnvironment,
+    // 导航相关
+    currentNavKey,
+    onNavChange,
+    onSwitchEnvironment,
+    showRequestResponse,
+    showWorkspaceInfo,
+    showEnvironmentInfo,
     openCreateWorkspace,
     onWorkspaceCreated,
     onSwitchWorkspace,

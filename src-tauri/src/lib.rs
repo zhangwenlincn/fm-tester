@@ -2,11 +2,13 @@ mod models;
 mod workspace;
 mod collection;
 mod http;
+mod environment;
 
 pub use models::*;
 pub use workspace::*;
 pub use collection::*;
 pub use http::*;
+pub use environment::*;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -31,6 +33,12 @@ pub fn run() {
             update_api,
             delete_collection_item,
             update_collection,
+            // 环境
+            get_environments,
+            save_environment,
+            delete_environment,
+            switch_environment,
+            get_active_variables,
             // HTTP
             send_http_request
         ])

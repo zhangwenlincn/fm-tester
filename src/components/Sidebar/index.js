@@ -45,6 +45,23 @@ export function useSidebarSetup(props, emit) {
   const currentWorkspace = ref(null)
   const activeNav = ref(0)
   
+  // 环境数据
+  const environments = ref([])
+  const activeEnvironmentId = ref(null)
+  const showEnvDialog = ref(false)
+  const editingEnv = ref(null)
+  const editingEnvName = ref('')
+  const editingEnvVariables = ref([])
+  
+  // 环境右键菜单
+  const envContextMenu = ref({
+    visible: false,
+    x: 0,
+    y: 0,
+    env: null,
+    type: '' // 'root' 或 'env'
+  })
+  
   // 获取当前导航项
   const currentNavItem = () => navItems[activeNav.value]
   
@@ -56,7 +73,151 @@ export function useSidebarSetup(props, emit) {
       await loadWorkspaces()
     } else if (navItems[index].key === 'collection') {
       await loadCollections()
+    } else if (navItems[index].key === 'environment') {
+      await loadEnvironments()
     }
+  }
+  
+  // 加载环境列表
+  const loadEnvironments = async () => {
+    if (!props.workspace?.path) return
+    try {
+      const config = await invoke('get_environments', { workspacePath: props.workspace.path })
+      environments.value = config.environments || []
+      activeEnvironmentId.value = config.active_environment_id || null
+    } catch (e) {
+      console.error('加载环境失败:', e)
+      environments.value = []
+    }
+  }
+  
+  // 切换环境
+  const switchEnvironment = async (envId) => {
+    if (!props.workspace?.path) return
+    try {
+      await invoke('switch_environment', {
+        workspacePath: props.workspace.path,
+        environmentId: envId
+      })
+      activeEnvironmentId.value = envId
+      // 通知父组件更新 activeEnvironment
+      const env = environments.value.find(e => e.id === envId)
+      emit('switchEnvironment', env)
+    } catch (e) {
+      console.error('切换环境失败:', e)
+    }
+  }
+  
+  // 打开新建环境对话框
+  const openCreateEnvDialog = () => {
+    editingEnv.value = null
+    editingEnvName.value = ''
+    editingEnvVariables.value = [{ key: '', value: '', enabled: true }]
+    showEnvDialog.value = true
+  }
+  
+  // 打开编辑环境对话框
+  const openEditEnvDialog = (env) => {
+    editingEnv.value = env
+    editingEnvName.value = env.name
+    editingEnvVariables.value = env.variables.length > 0 
+      ? [...env.variables] 
+      : [{ key: '', value: '', enabled: true }]
+    showEnvDialog.value = true
+  }
+  
+  // 添加变量行
+  const addEnvVariable = () => {
+    editingEnvVariables.value.push({ key: '', value: '', enabled: true })
+  }
+  
+  // 删除变量行
+  const removeEnvVariable = (index) => {
+    if (editingEnvVariables.value.length > 1) {
+      editingEnvVariables.value.splice(index, 1)
+    }
+  }
+  
+  // 保存环境
+  const handleSaveEnv = async () => {
+    if (!props.workspace?.path) return
+    if (!editingEnvName.value.trim()) return
+    
+    // 编辑时保留原有变量，新建时变量为空
+    let variables = []
+    if (editingEnv.value) {
+      variables = editingEnv.value.variables || []
+    }
+    
+    const envId = editingEnv.value?.id || `env_${Date.now()}`
+    const environment = {
+      id: envId,
+      name: editingEnvName.value.trim(),
+      variables
+    }
+    
+    try {
+      await invoke('save_environment', {
+        workspacePath: props.workspace.path,
+        environment
+      })
+      await loadEnvironments()
+      showEnvDialog.value = false
+    } catch (e) {
+      console.error('保存环境失败:', e)
+    }
+  }
+  
+  // 删除环境
+  const deleteEnvironment = async (envId) => {
+    if (!props.workspace?.path) return
+    try {
+      await invoke('delete_environment', {
+        workspacePath: props.workspace.path,
+        environmentId: envId
+      })
+      await loadEnvironments()
+    } catch (e) {
+      console.error('删除环境失败:', e)
+    }
+  }
+  
+  // 打开环境右键菜单
+  const openEnvContextMenu = (event, env, type) => {
+    event.preventDefault()
+    event.stopPropagation()
+    
+    envContextMenu.value = {
+      visible: true,
+      x: event.clientX,
+      y: event.clientY,
+      env: env,
+      type: type
+    }
+  }
+  
+  // 关闭环境右键菜单
+  const closeEnvContextMenu = () => {
+    envContextMenu.value.visible = false
+  }
+  
+  // 环境右键菜单操作
+  const handleEnvContextAction = async (action) => {
+    const { env, type } = envContextMenu.value
+    
+    if (action === 'new-env') {
+      openCreateEnvDialog()
+    } else if (action === 'edit-env') {
+      if (env) {
+        openEditEnvDialog(env)
+      }
+    } else if (action === 'delete-env') {
+      if (env) {
+        await deleteEnvironment(env.id)
+      }
+    }
+    
+    closeEnvContextMenu()
   }
   
   // 加载集合列表
@@ -328,9 +489,15 @@ export function useSidebarSetup(props, emit) {
     }
   }, { immediate: true })
   
+  // 监听导航切换，通知父组件
+  watch(activeNav, (index) => {
+    emit('navChange', navItems[index].key)
+  }, { immediate: true })
+  
   // 全局点击关闭右键菜单
   const handleGlobalClick = () => {
     closeContextMenu()
+    closeEnvContextMenu()
   }
   
   onMounted(async () => {
@@ -360,6 +527,26 @@ export function useSidebarSetup(props, emit) {
     workspaces,
     currentWorkspace,
     activeNav,
+    // 环境相关
+    environments,
+    activeEnvironmentId,
+    showEnvDialog,
+    editingEnv,
+    editingEnvName,
+    editingEnvVariables,
+    loadEnvironments,
+    switchEnvironment,
+    openCreateEnvDialog,
+    openEditEnvDialog,
+    addEnvVariable,
+    removeEnvVariable,
+    handleSaveEnv,
+    deleteEnvironment,
+    // 环境右键菜单
+    envContextMenu,
+    openEnvContextMenu,
+    closeEnvContextMenu,
+    handleEnvContextAction,
     currentNavItem,
     selectNav,
     loadCollections,

@@ -6,7 +6,7 @@ const props = defineProps({
   workspace: Object
 })
 
-const emit = defineEmits(['selectApi', 'switchWorkspace', 'createWorkspace', 'renameApi', 'deleteApis'])
+const emit = defineEmits(['selectApi', 'switchWorkspace', 'createWorkspace', 'renameApi', 'deleteApis', 'navChange', 'switchEnvironment'])
 
 // 使用 composable
 const {
@@ -26,6 +26,26 @@ const {
   workspaces,
   currentWorkspace,
   activeNav,
+  // 环境相关
+  environments,
+  activeEnvironmentId,
+  showEnvDialog,
+  editingEnv,
+  editingEnvName,
+  editingEnvVariables,
+  loadEnvironments,
+  switchEnvironment,
+  openCreateEnvDialog,
+  openEditEnvDialog,
+  addEnvVariable,
+  removeEnvVariable,
+  handleSaveEnv,
+  deleteEnvironment,
+  // 环境右键菜单
+  envContextMenu,
+  openEnvContextMenu,
+  closeEnvContextMenu,
+  handleEnvContextAction,
   currentNavItem,
   selectNav,
   loadCollections,
@@ -52,7 +72,8 @@ const {
 // 暴露方法给父组件
 defineExpose({
   loadWorkspaces,
-  loadCollections
+  loadCollections,
+  loadEnvironments
 })
 </script>
 
@@ -138,6 +159,52 @@ defineExpose({
         </div>
       </template>
       
+      <!-- 环境面板 -->
+      <template v-if="currentNavItem().key === 'environment'">
+        <div class="panel-header">
+          <span class="panel-title">环境</span>
+          <div class="panel-actions">
+            <span class="action-btn" title="新建环境" @click="openCreateEnvDialog">+</span>
+          </div>
+        </div>
+        
+        <!-- 提示：需要先选择工作区 -->
+        <div v-if="!props.workspace" class="empty-panel">
+          请先选择或创建工作区
+        </div>
+        
+        <!-- 环境列表 -->
+        <div 
+          v-else 
+          class="env-list" 
+          @contextmenu="(e) => openEnvContextMenu(e, null, 'root')"
+        >
+          <div 
+            v-for="env in environments" 
+            :key="env.id"
+            class="env-item"
+            :class="{ active: activeEnvironmentId === env.id }"
+            @contextmenu.prevent="(e) => openEnvContextMenu(e, env, 'env')"
+          >
+            <div class="env-header" @click="switchEnvironment(env.id)">
+              <span class="env-icon"><Icon name="environment" /></span>
+              <span class="env-name">{{ env.name }}</span>
+            </div>
+            <!-- 变量列表 -->
+            <div class="env-variables" v-if="env.variables.length > 0">
+              <div v-for="v in env.variables" :key="v.key" class="env-var-item">
+                <span class="env-var-key">{{ v.key }}</span>
+                <span class="env-var-value">{{ v.value }}</span>
+              </div>
+            </div>
+          </div>
+          
+          <div v-if="environments.length === 0" class="empty-panel">
+            暂无环境，右键创建
+          </div>
+        </div>
+      </template>
+      
       <!-- 工作区面板 -->
       <template v-if="currentNavItem().key === 'workspace'">
         <div class="panel-header">
@@ -183,8 +250,8 @@ defineExpose({
         </div>
       </template>
       
-      <!-- 其他面板 -->
-      <template v-if="currentNavItem().key !== 'collection' && currentNavItem().key !== 'workspace'">
+      <!-- 其他面板（功能、性能、工具箱、历史） -->
+      <template v-if="currentNavItem().key !== 'collection' && currentNavItem().key !== 'workspace' && currentNavItem().key !== 'environment'">
         <div class="panel-header">
           <span class="panel-title">{{ currentNavItem().name }}</span>
         </div>
@@ -243,6 +310,28 @@ defineExpose({
       </div>
     </div>
     
+    <!-- 环境编辑对话框 -->
+    <div v-if="showEnvDialog" class="create-dialog-overlay" @click.self="showEnvDialog = false">
+      <div class="create-dialog env-dialog">
+        <div class="dialog-header">
+          <span>{{ editingEnv ? '编辑环境' : '新建环境' }}</span>
+          <span class="dialog-close" @click="showEnvDialog = false">×</span>
+        </div>
+        
+        <div class="dialog-body">
+          <div class="dialog-row">
+            <label>环境名称</label>
+            <input v-model="editingEnvName" type="text" placeholder="如：开发环境、测试环境" />
+          </div>
+        </div>
+        
+        <div class="dialog-footer">
+          <button class="btn-cancel" @click="showEnvDialog = false">取消</button>
+          <button class="btn-confirm" @click="handleSaveEnv">保存</button>
+        </div>
+      </div>
+    </div>
+    
     <!-- 右键菜单 -->
     <div 
       v-if="contextMenu.visible" 
@@ -293,6 +382,33 @@ defineExpose({
         <div class="menu-divider"></div>
         <div class="menu-item delete" @click="handleContextAction('delete')">
           <span>删除</span>
+        </div>
+      </template>
+    </div>
+    
+    <!-- 环境右键菜单 -->
+    <div 
+      v-if="envContextMenu.visible" 
+      class="context-menu"
+      :style="{ left: envContextMenu.x + 'px', top: envContextMenu.y + 'px' }"
+      @click.stop
+    >
+      <!-- 根级别菜单 -->
+      <template v-if="envContextMenu.type === 'root'">
+        <div class="menu-item" @click="handleEnvContextAction('new-env')">
+          <span class="menu-icon"><Icon name="environment" :size="14" /></span>
+          <span>新建环境</span>
+        </div>
+      </template>
+      
+      <!-- 环境菜单 -->
+      <template v-if="envContextMenu.type === 'env'">
+        <div class="menu-item" @click="handleEnvContextAction('edit-env')">
+          <span>编辑环境</span>
+        </div>
+        <div class="menu-divider"></div>
+        <div class="menu-item delete" @click="handleEnvContextAction('delete-env')">
+          <span>删除环境</span>
         </div>
       </template>
     </div>

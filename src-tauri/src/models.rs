@@ -64,6 +64,29 @@ pub struct CollectionsConfig {
     pub collections: Vec<Collection>,
 }
 
+/// 环境变量
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Variable {
+    pub key: String,
+    pub value: String,
+    pub enabled: bool,
+}
+
+/// 环境配置
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Environment {
+    pub id: String,
+    pub name: String,
+    pub variables: Vec<Variable>,
+}
+
+/// 环境配置文件结构（工作区级别）
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct EnvironmentsConfig {
+    pub environments: Vec<Environment>,
+    pub active_environment_id: Option<String>,
+}
+
 /// HTTP 响应结果
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct HttpResponse {

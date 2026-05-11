@@ -19,9 +19,23 @@ const {
   currentRequest,
   response,
   loading,
+  // 环境相关
+  environments,
+  activeEnvironmentId,
+  activeEnvironment,
+  loadEnvironments,
+  switchEnvironment,
+  saveEnvironment,
+  deleteEnvironment,
+  // 导航相关
+  showRequestResponse,
+  showWorkspaceInfo,
+  showEnvironmentInfo,
+  onSwitchEnvironment,
   openCreateWorkspace,
   onWorkspaceCreated,
   onSwitchWorkspace,
+  onNavChange,
   closeWorkspaceDialog,
   closeTab,
   selectApi,
@@ -57,10 +71,12 @@ const {
         @create-workspace="openCreateWorkspace"
         @rename-api="onRenameApi"
         @delete-apis="onDeleteApis"
+        @nav-change="onNavChange"
+        @switch-environment="onSwitchEnvironment"
       />
       
       <!-- 中间内容区 -->
-      <div class="content-area">
+      <div class="content-area" v-if="showRequestResponse">
         <!-- 请求区 -->
         <div class="request-area">
           <RequestPanel 
@@ -78,6 +94,38 @@ const {
             :response="response"
             :loading="loading"
           />
+        </div>
+      </div>
+      
+      <!-- 工作区信息面板 -->
+      <div class="content-area workspace-info-panel" v-else-if="showWorkspaceInfo">
+      </div>
+      
+      <!-- 环境信息面板 -->
+      <div class="content-area workspace-info-panel" v-else-if="showEnvironmentInfo">
+        <!-- 有选中环境时显示变量 -->
+        <div class="env-detail" v-if="activeEnvironment">
+          <div class="env-detail-header">
+            <h2>{{ activeEnvironment.name }}</h2>
+          </div>
+          
+          <div class="env-variables-list" v-if="activeEnvironment.variables.length > 0">
+            <div class="var-item" v-for="v in activeEnvironment.variables" :key="v.key">
+              <span class="var-key">{{ v.key }}</span>
+              <span class="var-value">{{ v.value }}</span>
+            </div>
+          </div>
+          
+          <div class="empty-vars" v-else>
+            暂无变量
+          </div>
+        </div>
+      </div>
+      
+      <!-- 空状态提示 -->
+      <div class="empty-content" v-else>
+        <div class="empty-message">
+          {{ currentWorkspace ? '请选择或创建接口' : '请先选择或创建工作区' }}
         </div>
       </div>
     </div>
