@@ -1,8 +1,9 @@
 /**
  * 语法高亮工具函数
- * 支持 JSON、XML、HTML 格式
- * 纯 JS 实现，无第三方依赖
+ * 支持 JSON、JSON5、XML、HTML 格式
  */
+
+import JSON5 from 'json5'
 
 /**
  * 转义 HTML 特殊字符
@@ -250,10 +251,18 @@ export function formatJson(json, indent = 2) {
     return ''
   }
   try {
-    const parsed = JSON.parse(json)
+    // 使用 JSON5.parse 支持 JSON5 语法输入
+    const parsed = JSON5.parse(json)
+    // 使用 JSON.stringify 输出标准 JSON（key 必须有双引号）
     return JSON.stringify(parsed, null, indent)
   } catch {
-    return json
+    // 如果 JSON5 解析失败，回退到标准 JSON
+    try {
+      const parsed = JSON.parse(json)
+      return JSON.stringify(parsed, null, indent)
+    } catch {
+      return json
+    }
   }
 }
 

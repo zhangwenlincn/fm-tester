@@ -2,6 +2,68 @@ import { ref, computed, watch, onUnmounted, nextTick } from 'vue'
 import * as monaco from 'monaco-editor'
 import { formatJson, formatXml, formatHtml } from '../../utils/syntax-highlight.js'
 
+// 注册 JSON5 语言
+monaco.languages.register({ id: 'json5', extensions: ['.json5'], aliases: ['JSON5', 'json5'] })
+
+// 定义 JSON5 Monarch tokenizer (语法高亮)
+monaco.languages.setMonarchTokensProvider('json5', {
+  tokenizer: {
+    root: [
+      // 单行注释
+      [/\/\/.*$/, 'comment'],
+      // 多行注释
+      [/\/\*/, 'comment', '@comment'],
+      // 单引号字符串
+      [/'/, 'string', '@singleQuoteString'],
+      // 双引号字符串
+      [/"/, 'string', '@doubleQuoteString'],
+      // 数字 (包括十六进制、小数)
+      [/0[xX][0-9a-fA-F]+/, 'number.hex'],
+      [/\d*\.\d+([eE][\-+]?\d+)?/, 'number.float'],
+      [/\d+/, 'number'],
+      // 标识符 (无引号的键名)
+      [/[a-zA-Z_$][\w$]*/, 'identifier'],
+      // 括号和分隔符
+      [/[{}()\[\]]/, '@brackets'],
+      [/:/, 'delimiter'],
+      [/,/, 'delimiter'],
+    ],
+    comment: [
+      [/\*\//, 'comment', '@pop'],
+      [/[^*]+/, 'comment'],
+      [/\*/, 'comment']
+    ],
+    singleQuoteString: [
+      [/[^\\']+/,'string'],
+      [/\\./, 'string.escape'],
+      [/'/, 'string', '@pop']
+    ],
+    doubleQuoteString: [
+      [/[^\\"]+/,'string'],
+      [/\\./, 'string.escape'],
+      [/"/, 'string', '@pop']
+    ]
+  }
+})
+
+// 设置 JSON5 语言配置
+monaco.languages.setLanguageConfiguration('json5', {
+  comments: {
+    lineComment: '//',
+    blockComment: ['/*', '*/']
+  },
+  brackets: [
+    ['{', '}'],
+    ['[', ']']
+  ],
+  autoClosingPairs: [
+    { open: '{', close: '}', notIn: ['string', 'comment'] },
+    { open: '[', close: ']', notIn: ['string', 'comment'] },
+    { open: '"', close: '"', notIn: ['string', 'comment'] },
+    { open: "'", close: "'", notIn: ['string', 'comment'] }
+  ]
+})
+
 const methods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS']
 
 const tabs = [
@@ -26,7 +88,7 @@ const rawTypes = ['JSON', 'Text', 'JavaScript', 'HTML', 'XML']
 
 // 语言映射
 const languageMap = {
-  'JSON': 'json',
+  'JSON': 'json5',  // 使用 json5 语言支持 JSON5 语法
   'Text': 'plaintext',
   'JavaScript': 'javascript',
   'HTML': 'html',

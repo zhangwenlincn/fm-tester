@@ -1,5 +1,6 @@
 import { ref, reactive, onMounted, watch } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
+import JSON5 from 'json5'
 
 // 导出 composable 函数
 export function useAppSetup() {
@@ -204,18 +205,42 @@ export function useAppSetup() {
     }
   }
 
-  // 发送请求
+// 发送请求
   const sendRequest = async (request) => {
     loading.value = true
     response.value = null
     
     try {
+      // 处理请求体
+      let bodyToSend = request.body
+      const headersToSend = request.headers || []
+      
+      // 检查 Content-Type 并处理 JSON
+      const contentTypeHeader = headersToSend.find(
+        h => h.key.toLowerCase() === 'content-type'
+      )
+      
+      // 如果是 JSON 类型，用 JSON5 解析并转换为标准 JSON
+      if (contentTypeHeader?.value?.includes('json') && request.body) {
+        try {
+          const parsed = JSON5.parse(request.body)
+          bodyToSend = JSON.stringify(parsed)
+        } catch {
+          try {
+            const parsed = JSON.parse(request.body)
+            bodyToSend = JSON.stringify(parsed)
+          } catch {
+            // 解析失败，保持原样发送
+          }
+        }
+      }
+      
       // 使用 Rust 后端发送请求（绕过 CORS）
       const result = await invoke('send_http_request', {
         method: request.method,
         url: request.url,
-        headers: request.headers || [],
-        body: request.method !== 'GET' ? request.body : null
+        headers: headersToSend,
+        body: request.method !== 'GET' ? bodyToSend : null
       })
       
       response.value = {

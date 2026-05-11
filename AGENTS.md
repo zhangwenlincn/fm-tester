@@ -4,8 +4,21 @@
 
 - **前端**: Vue 3 (script setup + composables) + Vite 6
 - **后端**: Tauri 2 + Rust (模块化结构)
-- **纯原生实现**: 无 UI 框架，所有样式手写 CSS
+- **纯原生实现**: **禁止使用任何 UI 框架**（Ant Design, Element 等），所有样式手写 CSS
 - **HTTP 客户端**: reqwest (Rust 后端发送请求，绕过 CORS)
+- **代码编辑**: Monaco Editor (请求体和响应体编辑器)
+- **语法支持**: JSON5 (编辑时支持注释/单引号/尾逗号，发送时转换为标准 JSON)
+
+## 用户明确约束
+
+**必须遵守**：
+- ❌ **禁止使用 UI 框架** - 使用纯原生 Vue 3 + CSS
+- ✅ **使用 cargo 命令** - 开发命令为 `cargo tauri dev`，不是 `npm run dev`
+- ❌ **禁止主动 git push** - 只有用户明确要求时才推送
+- ✅ **集合最多三层** - `MAX_DEPTH = 2` (depth 0, 1, 2)
+- ✅ **新建接口无需输入名称** - 直接在 request 页面让用户填写
+- ✅ **重命名自动保存** - 修改名称后立即保存到后端
+- ✅ **组件文件夹结构** - 每个组件必须有 `index.vue + index.js + style.css` 三文件
 
 ## 目录结构
 
@@ -206,9 +219,64 @@ pub fn my_command(arg: String) -> Result<String, String> {
 
 ## 注意事项
 
-- **禁止使用 UI 框架** (Ant Design, Element 等)
-- **禁止使用 pip** - Python 依赖用 uv 管理
-- **禁止主动 Git push** - 只在用户明确请求时推送
-- **集合最多三层嵌套** - MAX_DEPTH = 2
-- **新建接口** - 直接打开请求面板，不需要对话框输入信息
-- **重命名自动保存** - 调用后端 update_api/update_collection
+**开发约束**:
+- ❌ **禁止使用 UI 框架** (Ant Design, Element 等)
+- ❌ **禁止使用 pip** - Python 依赖用 uv 管理
+- ❌ **禁止主动 Git push** - 只在用户明确请求时推送
+- ✅ **使用 cargo 命令** - 开发用 `cargo tauri dev`，不用 `npm run dev`
+- ✅ **集合最多三层嵌套** - MAX_DEPTH = 2 (Sidebar/index.js 第 15 行)
+
+**交互逻辑**:
+- ✅ **新建接口** - 直接打开请求面板，不需要对话框输入信息
+- ✅ **重命名自动保存** - 调用后端 update_api/update_collection
+- ✅ **删除同步** - 删除接口时关闭对应标签页，删除集合时关闭所有子接口标签页
+- ✅ **URL 参数同步** - URL 输入和参数面板双向同步（RequestPanel/index.js）
+- ✅ **Content-Type 自动适配** - 选择请求体类型时自动添加/更新 Content-Type 请求头
+
+**JSON5 特殊处理**:
+- ✅ **编辑支持 JSON5** - Monaco Editor 使用 json5 语言（支持注释、单引号、尾逗号）
+- ✅ **格式化输出标准 JSON** - formatJson 函数输出标准格式（所有 key 必须有双引号）
+- ✅ **发送时转换** - sendRequest 函数自动将 JSON5 转换为标准 JSON 发送
+- 位置: App.js 第 222-237 行, syntax-highlight.js 第 248-262 行
+
+**组件结构要求**:
+- ✅ 每个组件必须有三个文件: `index.vue + index.js + style.css`
+- ✅ Composable 模式: index.js 导出 setup 函数，index.vue 导入并使用
+
+## 窗口配置
+
+- 默认尺寸: 1280 × 800
+- 最小尺寸: 800 × 600
+- 配置位置: src-tauri/tauri.conf.json
+
+## 数据模型
+
+### Collection (集合/接口)
+```rust
+pub struct Collection {
+    pub id: String,
+    pub name: String,
+    pub description: String,
+    #[serde(rename = "type")]
+    pub type: String,  // "collection" 或 "api"
+    pub children: Vec<Collection>,
+    pub method: String,
+    pub url: String,
+    pub headers: Vec<Header>,
+    pub body: String,
+    pub body_type: String,
+}
+```
+
+### Workspace (工作区)
+```rust
+pub struct Workspace {
+    pub id: String,
+    pub name: String,
+    pub description: String,
+    pub path: String,
+    pub created_at: String,
+    pub last_opened: String,
+    pub last_api_id: Option<String>,
+}
+```
