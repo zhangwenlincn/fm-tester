@@ -1,11 +1,19 @@
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
+import { invoke } from '@tauri-apps/api/core'
 import MenuBar from './components/MenuBar.vue'
 import TabsBar from './components/TabsBar.vue'
 import Sidebar from './components/Sidebar.vue'
 import RequestPanel from './components/RequestPanel.vue'
 import ResponsePanel from './components/ResponsePanel.vue'
 import StatusBar from './components/StatusBar.vue'
+import WorkspaceDialog from './components/WorkspaceDialog.vue'
+
+// 工作区数据
+const currentWorkspace = ref(null)
+const showWorkspaceDialog = ref(false)
+const workspaceDialogMode = ref('create')
+const sidebarRef = ref(null)
 
 // 标签页数据
 const tabs = ref([
@@ -28,6 +36,52 @@ const currentRequest = reactive({
 // 响应数据
 const response = ref(null)
 const loading = ref(false)
+
+// 禁用右键菜单
+onMounted(() => {
+  document.addEventListener('contextmenu', (e) => {
+    e.preventDefault()
+  })
+  
+  // 加载最近打开的工作区
+  loadLastWorkspace()
+})
+
+// 加载最近工作区
+const loadLastWorkspace = async () => {
+  try {
+    const workspace = await invoke('get_last_workspace')
+    if (workspace) {
+      currentWorkspace.value = workspace
+    }
+  } catch (e) {
+    console.error('加载工作区失败:', e)
+  }
+}
+
+// 创建工作区
+const openCreateWorkspace = () => {
+  workspaceDialogMode.value = 'create'
+  showWorkspaceDialog.value = true
+}
+
+// 工作区创建完成
+const onWorkspaceCreated = (workspace) => {
+  currentWorkspace.value = workspace
+  showWorkspaceDialog.value = false
+  // 刷新侧边栏工作区列表
+  sidebarRef.value?.loadWorkspaces()
+}
+
+// 工作区切换（来自 Sidebar）
+const onSwitchWorkspace = (workspace) => {
+  currentWorkspace.value = workspace
+}
+
+// 关闭对话框
+const closeWorkspaceDialog = () => {
+  showWorkspaceDialog.value = false
+}
 
 // 添加标签页
 const addTab = () => {
@@ -146,6 +200,7 @@ const saveRequest = (request) => {
       <TabsBar 
         :tabs="tabs"
         :active-tab="activeTab"
+        :workspace="currentWorkspace"
         @update:active-tab="activeTab = $event"
         @add-tab="addTab"
         @close-tab="closeTab"
@@ -155,7 +210,13 @@ const saveRequest = (request) => {
     <!-- 主内容区 -->
     <div class="main-area">
       <!-- 左侧导航 -->
-      <Sidebar @select-api="selectApi" />
+      <Sidebar 
+        ref="sidebarRef"
+        :workspace="currentWorkspace"
+        @select-api="selectApi"
+        @switch-workspace="onSwitchWorkspace"
+        @create-workspace="openCreateWorkspace"
+      />
       
       <!-- 中间内容区 -->
       <div class="content-area">
@@ -181,6 +242,14 @@ const saveRequest = (request) => {
     
     <!-- 底部状态栏 -->
     <StatusBar />
+    
+    <!-- 工作区对话框 -->
+    <WorkspaceDialog 
+      :visible="showWorkspaceDialog"
+      :mode="workspaceDialogMode"
+      @close="closeWorkspaceDialog"
+      @created="onWorkspaceCreated"
+    />
   </div>
 </template>
 

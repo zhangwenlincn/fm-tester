@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed } from 'vue'
+import Icon from './Icon.vue'
 
 const props = defineProps({
   response: {
@@ -142,7 +143,7 @@ const formatTime = (ms) => {
       
       <!-- 其他标签页 -->
       <div v-else class="placeholder-content">
-        <span class="placeholder-icon">📊</span>
+        <span class="placeholder-icon"><Icon name="performance" :size="32" /></span>
         <p>{{ tabs.find(t => t.key === activeTab)?.name }}</p>
         <p class="placeholder-hint">此功能正在开发中...</p>
       </div>
