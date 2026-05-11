@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, watch } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import MenuBar from './components/MenuBar.vue'
 import TabsBar from './components/TabsBar.vue'
@@ -16,20 +16,16 @@ const workspaceDialogMode = ref('create')
 const sidebarRef = ref(null)
 
 // 标签页数据
-const tabs = ref([
-  { name: '用户登录', method: 'POST', url: 'https://api.example.com/users/login' }
-])
+const tabs = ref([])
 const activeTab = ref(0)
 
 // 当前请求
 const currentRequest = reactive({
-  method: 'POST',
-  url: 'https://api.example.com/users/login',
+  method: 'GET',
+  url: '',
   params: [],
-  headers: [
-    { key: 'Content-Type', value: 'application/json', enabled: true }
-  ],
-  body: '{\n  "username": "admin",\n  "password": "123456"\n}',
+  headers: [],
+  body: '',
   bodyType: 'raw'
 })
 
@@ -69,8 +65,9 @@ const openCreateWorkspace = () => {
 const onWorkspaceCreated = (workspace) => {
   currentWorkspace.value = workspace
   showWorkspaceDialog.value = false
-  // 刷新侧边栏工作区列表
+  // 刷新侧边栏工作区列表和集合列表
   sidebarRef.value?.loadWorkspaces()
+  sidebarRef.value?.loadCollections()
 }
 
 // 工作区切换（来自 Sidebar）
@@ -83,37 +80,76 @@ const closeWorkspaceDialog = () => {
   showWorkspaceDialog.value = false
 }
 
-// 添加标签页
-const addTab = () => {
-  const newTab = {
-    name: '新请求',
-    method: 'GET',
-    url: ''
-  }
-  tabs.value.push(newTab)
-  activeTab.value = tabs.value.length - 1
-}
-
 // 关闭标签页
 const closeTab = (index) => {
-  if (tabs.value.length > 1) {
-    tabs.value.splice(index, 1)
-    if (activeTab.value >= tabs.value.length) {
-      activeTab.value = tabs.value.length - 1
-    }
+  tabs.value.splice(index, 1)
+  if (tabs.value.length === 0) {
+    activeTab.value = 0
+    // 清空当前请求
+    currentRequest.method = 'GET'
+    currentRequest.url = ''
+    currentRequest.headers = []
+    currentRequest.body = ''
+    currentRequest.bodyType = 'raw'
+  } else if (activeTab.value >= tabs.value.length) {
+    activeTab.value = tabs.value.length - 1
   }
 }
 
-// 选择 API
+// 选择 API - 添加新标签页（如果不存在）
 const selectApi = (api) => {
-  // 更新当前请求
-  currentRequest.method = api.method
-  currentRequest.url = `https://api.example.com/${api.name.toLowerCase().replace(/\s+/g, '/')}`
+  // 查找是否已存在该接口的标签
+  const existingIndex = tabs.value.findIndex(t => t.id === api.id)
   
-  // 更新标签页
-  tabs.value[activeTab.value].name = api.name
-  tabs.value[activeTab.value].method = api.method
-  tabs.value[activeTab.value].url = currentRequest.url
+  if (existingIndex >= 0) {
+    // 已存在，切换到该标签
+    activeTab.value = existingIndex
+  } else {
+    // 不存在，添加新标签
+    tabs.value.push({
+      id: api.id,
+      name: api.name,
+      method: api.method || 'GET',
+      url: api.url || '',
+      headers: api.headers || [],
+      body: api.body || '',
+      bodyType: api.body_type || 'raw'
+    })
+    activeTab.value = tabs.value.length - 1
+  }
+  
+  // 更新当前请求
+  updateCurrentRequest()
+}
+
+// 监听标签切换，更新请求内容
+watch(activeTab, () => {
+  updateCurrentRequest()
+  // 切换标签时清空响应
+  response.value = null
+})
+
+// 更新当前请求
+const updateCurrentRequest = () => {
+  if (tabs.value.length === 0) {
+    currentRequest.method = 'GET'
+    currentRequest.url = ''
+    currentRequest.headers = []
+    currentRequest.body = ''
+    currentRequest.bodyType = 'raw'
+    return
+  }
+  
+  const currentTab = tabs.value[activeTab.value]
+  if (currentTab) {
+    currentRequest.method = currentTab.method
+    currentRequest.url = currentTab.url
+    currentRequest.headers = currentTab.headers && currentTab.headers.length > 0 
+      ? currentTab.headers 
+      : [{ key: 'Content-Type', value: 'application/json', enabled: true }]
+    currentRequest.body = currentTab.body || ''
+    currentRequest.bodyType = currentTab.bodyType || 'raw'
+  }
 }
 
 // 发送请求
@@ -186,9 +222,57 @@ const sendRequest = async (request) => {
 }
 
 // 保存请求
-const saveRequest = (request) => {
-  console.log('保存请求:', request)
-  // TODO: 实现保存功能
+const saveRequest = async (request) => {
+  if (!currentWorkspace.value?.path) {
+    console.error('未选择工作区')
+    return
+  }
+  
+  if (tabs.value.length === 0) {
+    console.error('没有打开的接口')
+    return
+  }
+  
+  const currentTab = tabs.value[activeTab.value]
+  if (!currentTab?.id) {
+    console.error('当前标签没有接口 ID')
+    return
+  }
+  
+  try {
+    await invoke('update_api', {
+      workspacePath: currentWorkspace.value.path,
+      id: currentTab.id,
+      name: currentTab.name,
+      method: request.method,
+      url: request.url,
+      headers: request.headers,
+      body: request.body,
+      bodyType: request.bodyType
+    })
+    
+    // 更新 tabs 中的信息
+    currentTab.method = request.method
+    currentTab.url = request.url
+    currentTab.headers = request.headers
+    currentTab.body = request.body
+    currentTab.bodyType = request.bodyType
+    
+    // 刷新集合列表
+    sidebarRef.value?.loadCollections()
+    
+    console.log('保存成功')
+  } catch (e) {
+    console.error('保存失败:', e)
+  }
+}
+
+// 重命名接口后更新 tabs
+const onRenameApi = ({ id, name }) => {
+  const tab = tabs.value.find(t => t.id === id)
+  if (tab) {
+    tab.name = name
+  }
 }
 </script>
 
@@ -202,7 +286,6 @@ const saveRequest = (request) => {
         :active-tab="activeTab"
         :workspace="currentWorkspace"
         @update:active-tab="activeTab = $event"
-        @add-tab="addTab"
         @close-tab="closeTab"
       />
     </div>
@@ -216,6 +299,7 @@ const saveRequest = (request) => {
         @select-api="selectApi"
         @switch-workspace="onSwitchWorkspace"
         @create-workspace="openCreateWorkspace"
+        @rename-api="onRenameApi"
       />
       
       <!-- 中间内容区 -->
@@ -224,6 +308,7 @@ const saveRequest = (request) => {
         <div class="request-area">
           <RequestPanel 
             :request="currentRequest"
+            :has-active-tab="tabs.length > 0"
             @update:request="Object.assign(currentRequest, $event)"
             @send="sendRequest"
             @save="saveRequest"

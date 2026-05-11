@@ -1,5 +1,4 @@
 <script setup>
-import { ref } from 'vue'
 import Icon from './Icon.vue'
 
 const props = defineProps({
@@ -17,14 +16,10 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['update:activeTab', 'addTab', 'closeTab'])
+const emit = defineEmits(['update:activeTab', 'closeTab'])
 
 const selectTab = (index) => {
   emit('update:activeTab', index)
-}
-
-const addTab = () => {
-  emit('addTab')
 }
 
 const closeTab = (index, event) => {
@@ -52,7 +47,7 @@ const closeTab = (index, event) => {
       <div class="tabs-container">
         <div 
           v-for="(tab, index) in tabs" 
-          :key="index"
+          :key="tab.id || index"
           class="tab"
           :class="{ active: activeTab === index }"
           @click="selectTab(index)"
@@ -61,17 +56,6 @@ const closeTab = (index, event) => {
           <span class="tab-name">{{ tab.name }}</span>
           <span class="tab-close" @click="closeTab(index, $event)">×</span>
         </div>
-        <div class="tab-add" @click="addTab">
-          <span>+</span>
-        </div>
-      </div>
-      <div class="env-selector">
-        <select class="env-select">
-          <option value="api/master">api/master</option>
-          <option value="dev">开发环境</option>
-          <option value="test">测试环境</option>
-          <option value="prod">生产环境</option>
-        </select>
       </div>
     </div>
   </div>
@@ -192,45 +176,5 @@ const closeTab = (index, event) => {
 
 .tab-close:hover {
   color: #f5222d;
-}
-
-.tab-add {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  background: #ffffff;
-  border: 1px solid #e8e8e8;
-  border-radius: 4px;
-  cursor: pointer;
-  margin-left: 4px;
-}
-
-.tab-add:hover {
-  background: #f5f5f5;
-}
-
-.tab-add span {
-  font-size: 16px;
-  color: #8c8c8c;
-}
-
-.env-selector {
-  margin-left: 12px;
-}
-
-.env-select {
-  padding: 4px 8px;
-  font-size: 12px;
-  border: 1px solid #d9d9d9;
-  border-radius: 4px;
-  background: #fff;
-  cursor: pointer;
-  outline: none;
-}
-
-.env-select:focus {
-  border-color: #1890ff;
 }
 </style>
