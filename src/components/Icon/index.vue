@@ -75,15 +75,4 @@ const props = defineProps({
   </span>
 </template>
 
-<style scoped>
-.icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: currentColor;
-}
-
-.icon svg {
-  display: block;
-}
-</style>
+<style scoped src="./style.css"></style>
