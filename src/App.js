@@ -115,6 +115,27 @@ export function useAppSetup() {
     }
   }
 
+  // 删除接口时关闭对应标签页
+  const onDeleteApis = (apiIds) => {
+    for (const apiId of apiIds) {
+      const index = tabs.value.findIndex(t => t.id === apiId)
+      if (index >= 0) {
+        tabs.value.splice(index, 1)
+      }
+    }
+    // 如果全部关闭，清空当前请求
+    if (tabs.value.length === 0) {
+      activeTab.value = 0
+      currentRequest.method = 'GET'
+      currentRequest.url = ''
+      currentRequest.headers = []
+      currentRequest.body = ''
+      currentRequest.bodyType = 'raw'
+    } else if (activeTab.value >= tabs.value.length) {
+      activeTab.value = tabs.value.length - 1
+    }
+  }
+
   // 选择 API - 添加新标签页（如果不存在）
   const selectApi = async (api) => {
     // 查找是否已存在该接口的标签
@@ -291,6 +312,7 @@ export function useAppSetup() {
     selectApi,
     sendRequest,
     saveRequest,
-    onRenameApi
+    onRenameApi,
+    onDeleteApis
   }
 }

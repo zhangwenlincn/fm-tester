@@ -138,36 +138,20 @@
   height: 100%;
 }
 
-.code-editor {
-  display: flex;
+/* Monaco Editor 容器样式 */
+.monaco-editor-container {
+  width: 100%;
   height: 100%;
-}
-
-.line-numbers {
-  width: 40px;
-  padding: 12px 8px;
-  background: #fafafa;
-  border-right: 1px solid #e8e8e8;
-  font-family: 'Consolas', 'Monaco', monospace;
-  font-size: 13px;
-  line-height: 1.5;
-  color: #8c8c8c;
-  text-align: right;
-  user-select: none;
   overflow: hidden;
 }
 
-.code-area {
-  flex: 1;
-  margin: 0;
-  padding: 12px;
-  font-family: 'Consolas', 'Monaco', monospace;
-  font-size: 13px;
-  line-height: 1.5;
-  background: #ffffff;
-  overflow: auto;
-  white-space: pre-wrap;
-  word-break: break-all;
+/* 确保 glyph margin 有足够宽度显示折叠图标 */
+.monaco-editor-container .monaco-editor .glyph-margin {
+  width: 24px !important;
+}
+
+.monaco-editor-container .monaco-editor .margin {
+  background: #fafafa;
 }
 
 .headers-content {

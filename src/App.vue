@@ -27,7 +27,8 @@ const {
   selectApi,
   sendRequest,
   saveRequest,
-  onRenameApi
+  onRenameApi,
+  onDeleteApis
 } = useAppSetup()
 </script>
 
@@ -55,6 +56,7 @@ const {
         @switch-workspace="onSwitchWorkspace"
         @create-workspace="openCreateWorkspace"
         @rename-api="onRenameApi"
+        @delete-apis="onDeleteApis"
       />
       
       <!-- 中间内容区 -->

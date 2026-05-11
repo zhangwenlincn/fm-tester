@@ -256,15 +256,36 @@ export function useSidebarSetup(props, emit) {
     }
   }
   
+  // 递归收集集合下的所有接口 ID
+  const collectApiIds = (item) => {
+    const ids = []
+    if (item.type === 'api') {
+      ids.push(item.id)
+    } else if (item.type === 'collection' && item.children) {
+      for (const child of item.children) {
+        ids.push(...collectApiIds(child))
+      }
+    }
+    return ids
+  }
+
   // 删除集合或接口
   const deleteItem = async (item) => {
     if (!props.workspace?.path) return
     try {
+      // 先收集要删除的接口 ID
+      const apiIds = collectApiIds(item)
+      
       await invoke('delete_collection_item', {
         workspacePath: props.workspace.path,
         id: item.id
       })
       await loadCollections()
+      
+      // 通知 App 关闭所有相关标签页
+      if (apiIds.length > 0) {
+        emit('deleteApis', apiIds)
+      }
     } catch (e) {
       console.error('删除失败:', e)
     }

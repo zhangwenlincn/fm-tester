@@ -6,7 +6,7 @@ const props = defineProps({
   workspace: Object
 })
 
-const emit = defineEmits(['selectApi', 'switchWorkspace', 'createWorkspace', 'renameApi'])
+const emit = defineEmits(['selectApi', 'switchWorkspace', 'createWorkspace', 'renameApi', 'deleteApis'])
 
 // 使用 composable
 const {

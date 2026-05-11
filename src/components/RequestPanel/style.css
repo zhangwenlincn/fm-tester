@@ -148,6 +148,8 @@
 .tab-content {
   flex: 1;
   overflow: auto;
+  position: relative;
+  min-height: 0;
 }
 
 .params-panel,
@@ -276,14 +278,16 @@
 .body-toolbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 16px;
   padding: 12px 16px;
   border-bottom: 1px solid #e8e8e8;
+  min-height: 44px;
 }
 
 .body-type-selector {
   display: flex;
-  gap: 16px;
+  gap: 12px;
+  flex-shrink: 0;
 }
 
 .radio-label {
@@ -293,6 +297,7 @@
   font-size: 13px;
   color: #262626;
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .radio-label input {
@@ -303,6 +308,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
 }
 
 .raw-type-selector select {
@@ -325,6 +331,21 @@
 
 .format-btn:hover {
   background: #bae7ff;
+}
+
+.body-empty,
+.body-binary {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #8c8c8c;
+  background: #fafafa;
+}
+
+.body-empty .empty-text,
+.body-binary .empty-text {
+  font-size: 14px;
 }
 
 .code-editor {
@@ -356,6 +377,33 @@
   border: none;
   outline: none;
   resize: none;
+  background: #ffffff;
+}
+
+/* Monaco Editor 容器样式 */
+.monaco-editor-container {
+  flex: 1;
+  height: 100%;
+  overflow: hidden;
+  border: 1px solid #e8e8e8;
+  border-radius: 4px;
+}
+
+/* 确保 glyph margin 有足够宽度显示折叠图标 */
+.monaco-editor-container .monaco-editor .glyph-margin {
+  width: 24px !important;
+}
+
+/* Monaco Editor 内部样式适配 */
+.monaco-editor-container .monaco-editor {
+  padding: 0;
+}
+
+.monaco-editor-container .monaco-editor .margin {
+  background: #fafafa;
+}
+
+.monaco-editor-container .monaco-editor .monaco-editor-background {
   background: #ffffff;
 }
 

@@ -24,17 +24,16 @@ const {
   localRequest,
   selectedRawType,
   methodClass,
+  editorContainer,
   updateMethod,
   updateUrl,
-  updateBody,
   sendRequest,
   saveRequest,
   addParam,
   removeParam,
   addHeader,
   removeHeader,
-  formatJson,
-  getLineNumbers
+  handleFormat
 } = useRequestPanelSetup(props, emit)
 </script>
 
@@ -83,7 +82,7 @@ const {
     <!-- 标签页内容 -->
     <div class="tab-content">
       <!-- 参数 -->
-      <div v-if="activeTab === 'params'" class="params-panel">
+      <div v-show="activeTab === 'params'" class="params-panel">
         <div class="params-toolbar">
           <button class="add-btn" @click="addParam">+ 添加参数</button>
         </div>
@@ -123,7 +122,7 @@ const {
       </div>
       
       <!-- 请求头 -->
-      <div v-else-if="activeTab === 'headers'" class="headers-panel">
+      <div v-show="activeTab === 'headers'" class="headers-panel">
         <div class="params-toolbar">
           <button class="add-btn" @click="addHeader">+ 添加请求头</button>
         </div>
@@ -160,7 +159,7 @@ const {
       </div>
       
       <!-- 请求体 -->
-      <div v-else-if="activeTab === 'body'" class="body-panel">
+      <div v-show="activeTab === 'body'" class="body-panel">
         <div class="body-toolbar">
           <div class="body-type-selector">
             <label v-for="type in bodyTypes" :key="type.key" class="radio-label">
@@ -176,23 +175,23 @@ const {
             <select v-model="selectedRawType">
               <option v-for="t in rawTypes" :key="t" :value="t">{{ t }}</option>
             </select>
-            <button class="format-btn" @click="formatJson">格式化</button>
+            <button class="format-btn" @click="handleFormat">格式化</button>
           </div>
         </div>
-        <div class="code-editor">
-          <div class="line-numbers">{{ getLineNumbers }}</div>
-          <textarea 
-            v-model="localRequest.body"
-            @input="updateBody"
-            class="code-area"
-            placeholder="输入请求体内容..."
-            spellcheck="false"
-          ></textarea>
+        <!-- none 类型时不显示编辑器 -->
+        <div v-if="localRequest.bodyType === 'none'" class="body-empty">
+          <span class="empty-text">此请求不需要请求体</span>
         </div>
+        <!-- binary 类型显示文件选择 -->
+        <div v-else-if="localRequest.bodyType === 'binary'" class="body-binary">
+          <span class="empty-text">二进制文件上传功能开发中...</span>
+        </div>
+        <!-- raw/form-data/x-www-form-urlencoded 显示编辑器 -->
+        <div v-else class="monaco-editor-container" ref="editorContainer"></div>
       </div>
       
       <!-- 其他标签页 -->
-      <div v-else class="placeholder-panel">
+      <div v-show="activeTab !== 'params' && activeTab !== 'headers' && activeTab !== 'body'" class="placeholder-panel">
         <div class="placeholder-content">
           <span class="placeholder-icon">📝</span>
           <p>{{ tabs.find(t => t.key === activeTab)?.name }}配置</p>

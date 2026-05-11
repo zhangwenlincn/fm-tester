@@ -18,9 +18,10 @@ const {
   activeTab,
   statusClass,
   formattedBody,
-  getLineNumbers,
+  detectedLanguage,
   formatSize,
-  formatTime
+  formatTime,
+  editorContainer
 } = useResponsePanelSetup(props)
 </script>
 
@@ -76,16 +77,13 @@ const {
         <p>正在发送请求...</p>
       </div>
       
-      <!-- 响应体 -->
-      <div v-else-if="activeTab === 'body'" class="body-content">
-        <div class="code-editor">
-          <div class="line-numbers">{{ getLineNumbers }}</div>
-          <pre class="code-area">{{ formattedBody }}</pre>
-        </div>
+      <!-- 响应体 - Monaco Editor (用 v-show 确保容器始终存在) -->
+      <div v-show="response && !loading && activeTab === 'body'" class="body-content">
+        <div ref="editorContainer" class="monaco-editor-container"></div>
       </div>
       
       <!-- 响应头 -->
-      <div v-else-if="activeTab === 'headers'" class="headers-content">
+      <div v-show="response && !loading && activeTab === 'headers'" class="headers-content">
         <div class="headers-list">
           <div 
             v-for="(value, key) in response?.headers" 
@@ -99,7 +97,7 @@ const {
       </div>
       
       <!-- 其他标签页 -->
-      <div v-else class="placeholder-content">
+      <div v-show="response && !loading && activeTab !== 'body' && activeTab !== 'headers'" class="placeholder-content">
         <span class="placeholder-icon"><Icon name="performance" :size="32" /></span>
         <p>{{ tabs.find(t => t.key === activeTab)?.name }}</p>
         <p class="placeholder-hint">此功能正在开发中...</p>
