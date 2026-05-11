@@ -2,9 +2,10 @@
 
 ## 技术栈
 
-- **前端**: Vue 3 (script setup) + Vite 6
-- **后端**: Tauri 2 + Rust
+- **前端**: Vue 3 (script setup + composables) + Vite 6
+- **后端**: Tauri 2 + Rust (模块化结构)
 - **纯原生实现**: 无 UI 框架，所有样式手写 CSS
+- **HTTP 客户端**: reqwest (Rust 后端发送请求，绕过 CORS)
 
 ## 目录结构
 
@@ -12,24 +13,43 @@
 fm-tester/
 ├── src/                    # Vue 前端
 │   ├── App.vue             # 主布局入口
+│   ├── App.js              # App composable (状态管理)
 │   ├── main.js             # Vue 应用入口
-│   └── components/         # UI 组件
-│       ├── MenuBar.vue     # 顶部菜单栏
-│       ├── TabsBar.vue     # 标签页系统
-│       ├── Sidebar.vue     # 左侧导航 + 树形列表
-│       ├── RequestPanel.vue # 请求区（URL/请求体）
-│       ├── ResponsePanel.vue # 响应区
-│       └── StatusBar.vue   # 底部状态栏
-├── src-tauri/              # Rust 后端
+│   └── components/         # UI 组件 (每个组件独立文件夹)
+│       ├── Icon/
+│       │   ├── index.vue   # 组件模板
+│       │   └── style.css   # 组件样式
+│       ├── Sidebar/
+│       │   ├── index.vue
+│       │   ├── index.js    # composable
+│       │   └── style.css
+│       ├── RequestPanel/
+│       ├── ResponsePanel/
+│       ├── TabsBar/
+│       ├── MenuBar/
+│       ├── StatusBar/
+│       └── WorkspaceDialog/
+├── src-tauri/              # Rust 后端 (模块化)
 │   ├── src/
+│   │   ├── lib.rs          # 入口：注册所有命令
 │   │   ├── main.rs         # 二进制入口
-│   │   └── lib.rs          # Tauri 应用定义 + commands
-│   ├── Cargo.toml          # Rust 依赖
-│   └── tauri.conf.json     # Tauri 配置
-├── package.json            # npm 依赖
-├── vite.config.js          # Vite 配置
-└── index.html              # HTML 入口
+│   │   ├── models.rs       # 数据结构定义
+│   │   ├── workspace/      # 工作区模块
+│   │   │   └── mod.rs      # CRUD 命令
+│   │   ├── collection/     # 集合模块
+│   │   │   └── mod.rs      # 集合/接口 CRUD
+│   │   └── http/           # HTTP 模块
+│   │   │   └── mod.rs      # send_http_request
+│   ├── Cargo.toml
+│   ├── capabilities/       # Tauri 权限配置
+│   └── tauri.conf.json
 ```
+
+## 数据存储
+
+- **工作区配置**: `~/.fm/workspace.yaml` (所有工作区列表)
+- **集合配置**: `{工作区路径}/collections.yaml` (集合和接口数据)
+- **字段命名**: YAML 中使用 `type` 字段（Rust 有 `#[serde(rename = "type")]`）
 
 ## 开发命令
 
@@ -37,90 +57,158 @@ fm-tester/
 # 启动 Tauri 开发模式（前端 + 后端）
 cargo tauri dev
 
-# 仅启动 Vite 前端开发服务器
+# 仅启动 Vite 前端
 npm run dev
+
+# 验证 Rust 编译
+cd src-tauri && cargo check
 
 # 构建生产版本
 cargo tauri build
-
-# 构建 Vue 前端（单独）
-npm run build
 ```
 
 ## 关键配置
 
 ### Vite (vite.config.js)
 
-- **端口**: 1420 (strictPort, 不可更改)
-- **热重载**: 端口 1421 (仅 TAURI_DEV_HOST 环境下)
+- **端口**: 1420 (strictPort, 固定不可改)
 - **忽略监听**: src-tauri 目录
-
-### Tauri (tauri.conf.json)
-
-- **开发服务器**: http://localhost:1420
-- **构建前命令**: `npm run build`
-- **前端产物**: `../dist`
-- **窗口默认**: 800x600
-- **identifier**: `com.administrator.fm-tester`
 
 ### Cargo.toml 注意事项
 
 Windows 上 lib crate 使用 `_lib` suffix 防止命名冲突：
 ```toml
 [lib]
-name = "fm_tester_lib"  # 注意 _lib suffix
+name = "fm_tester_lib"  # 必须 _lib suffix
 crate-type = ["staticlib", "cdylib", "rlib"]
 ```
 
-## 组件架构
+### 权限 (capabilities/default.json)
 
+```json
+"permissions": [
+  "core:default",
+  "opener:default",
+  "fs:default",
+  "fs:allow-home-read",
+  "fs:allow-home-write-recursive",
+  "dialog:default"
+]
 ```
-App.vue
-├── MenuBar.vue      (顶部菜单)
-├── TabsBar.vue      (标签页 + 环境选择)
-├── Sidebar.vue      (左侧导航 + 集合树)
-│   └── emit('selectApi') → App.vue
-├── RequestPanel.vue (请求配置)
-│   └── emit('sendRequest') → App.vue
-├── ResponsePanel.vue(响应显示)
-└── StatusBar.vue    (状态栏)
-```
 
-**数据流**:
-- `App.vue` 管理全局状态：tabs, currentRequest, response
-- 子组件通过 emit 与父组件通信
-- HTTP 请求在 App.vue 的 `sendRequest()` 中执行
+## Rust 模块结构
 
-## 添加 Tauri Command
-
-1. 在 `src-tauri/src/lib.rs` 添加：
 ```rust
-#[tauri::command]
-fn my_command(arg: &str) -> String {
-    // 实现
+// lib.rs 入口
+mod models;
+mod workspace;
+mod collection;
+mod http;
+
+pub use models::*;
+pub use workspace::*;  // 导出所有 workspace 命令
+pub use collection::*;
+pub use http::*;
+
+// 注册命令
+.invoke_handler(tauri::generate_handler![
+    get_workspaces, create_workspace, switch_workspace, ...
+    get_collections, create_collection, create_api, ...
+    send_http_request
+])
+```
+
+## Tauri Commands
+
+| 模块 | 命令 | 说明 |
+|------|------|------|
+| workspace | `get_workspaces` | 获取所有工作区 |
+| workspace | `get_last_workspace` | 获取最近打开的工作区 |
+| workspace | `create_workspace` | 创建工作区 |
+| workspace | `switch_workspace` | 切换工作区 |
+| workspace | `set_last_api` | 设置最后打开的接口 |
+| workspace | `get_last_api` | 获取最后打开的接口 |
+| collection | `get_collections` | 获取集合列表 |
+| collection | `create_collection` | 创建集合 |
+| collection | `create_api` | 创建接口 |
+| collection | `update_api` | 更新接口信息 |
+| collection | `update_collection` | 更新集合名称 |
+| collection | `delete_collection_item` | 删除集合或接口 |
+| http | `send_http_request` | 发送 HTTP 请求 |
+
+## 前端调用模式
+
+```js
+import { invoke } from '@tauri-apps/api/core'
+
+// 调用 Tauri 命令
+const result = await invoke('get_workspaces')
+const api = await invoke('create_api', {
+  workspacePath: workspace.path,
+  name: '接口名称',
+  method: 'GET',
+  url: '',
+  parentId: parent?.id
+})
+
+// HTTP 请求（通过 Rust 后端，绕过 CORS）
+const response = await invoke('send_http_request', {
+  method: 'GET',
+  url: 'https://www.baidu.com',
+  headers: [{ key: 'Content-Type', value: 'application/json', enabled: true }],
+  body: null
+})
+```
+
+## Vue 组件模式
+
+每个组件使用文件夹结构 + composable：
+
+```js
+// components/Sidebar/index.vue
+import { useSidebarSetup } from './index.js'
+
+const { loadWorkspaces, loadCollections } = useSidebarSetup(props, emit)
+```
+
+```js
+// components/Sidebar/index.js - composable
+export function useSidebarSetup(props, emit) {
+  const collections = ref([])
+  
+  const loadCollections = async () => {
+    collections.value = await invoke('get_collections', { workspacePath: props.workspace.path })
+  }
+  
+  return { collections, loadCollections }
 }
 ```
 
-2. 注册到 `invoke_handler`:
+## 添加新的 Tauri Command
+
+1. 选择合适模块：`workspace/`, `collection/`, `http/`
+2. 在模块 `mod.rs` 中添加：
 ```rust
-.invoke_handler(tauri::generate_handler![greet, my_command])
+#[tauri::command]
+pub fn my_command(arg: String) -> Result<String, String> {
+    Ok(format!("result: {}", arg))
+}
 ```
-
-3. 前端调用：
-```js
-import { invoke } from '@tauri-apps/api/core'
-const result = await invoke('my_command', { arg: 'value' })
-```
-
-## 推荐 IDE
-
-- VS Code + Vue.volar + tauri-apps.tauri-vscode + rust-lang.rust-analyzer
+3. 在 `lib.rs` 注册到 `invoke_handler`
 
 ## HTTP 颜色方案
 
 - POST: `#FA8C16` (橙色)
 - GET: `#52C416` (绿色)
 - PUT: `#1890FF` (蓝色)
-- DELETE: `#F5222D` (红色)
-- 强调色: `#1890FF`
-- 选中高亮: `#E6F7FF`
+- DELETE: `#FF4D4F` (红色)
+- PATCH: `#722ED1` (紫色)
+
+## 注意事项
+
+- **禁止使用 UI 框架** (Ant Design, Element 等)
+- **禁止使用 pip** - Python 依赖用 uv 管理
+- **禁止主动 Git push** - 只在用户明确请求时推送
+- **集合最多三层嵌套** - MAX_DEPTH = 2
+- **新建接口** - 直接打开请求面板，不需要对话框输入信息
+- **重命名自动保存** - 调用后端 update_api/update_collection
