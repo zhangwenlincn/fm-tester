@@ -218,6 +218,19 @@ export function useRequestPanelSetup(props, emit) {
     }
   })
 
+  // 监听 bodyType 变化，当切换到需要编辑器的类型时初始化
+  watch(() => localRequest.value.bodyType, (newType) => {
+    if (activeTab.value === 'body' && newType !== 'none' && newType !== 'binary') {
+      setTimeout(() => {
+        if (editorContainer.value && !monacoEditor) {
+          initMonacoEditor()
+        } else if (monacoEditor) {
+          monacoEditor.layout()
+        }
+      }, 50)
+    }
+  })
+
   // 组件卸载时销毁编辑器
   onUnmounted(() => {
     if (monacoEditor) {

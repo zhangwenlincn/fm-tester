@@ -171,23 +171,26 @@ const {
               {{ type.name }}
             </label>
           </div>
-          <div v-if="localRequest.bodyType === 'raw'" class="raw-type-selector">
-            <select v-model="selectedRawType">
+        </div>
+        <!-- none 类型时不显示编辑器 -->
+        <div v-show="localRequest.bodyType === 'none'" class="body-empty">
+          <span class="empty-text">此请求不需要请求体</span>
+        </div>
+        <!-- binary 类型显示文件选择 -->
+        <div v-show="localRequest.bodyType === 'binary'" class="body-binary">
+          <span class="empty-text">二进制文件上传功能开发中...</span>
+        </div>
+        <!-- raw/form-data/x-www-form-urlencoded 显示编辑器 -->
+        <div v-show="localRequest.bodyType !== 'none' && localRequest.bodyType !== 'binary'" class="editor-wrapper">
+          <!-- raw 类型时显示格式选择器和格式化按钮 -->
+          <div v-if="localRequest.bodyType === 'raw'" class="editor-toolbar">
+            <select v-model="selectedRawType" class="raw-select">
               <option v-for="t in rawTypes" :key="t" :value="t">{{ t }}</option>
             </select>
             <button class="format-btn" @click="handleFormat">格式化</button>
           </div>
+          <div class="monaco-editor-container" ref="editorContainer"></div>
         </div>
-        <!-- none 类型时不显示编辑器 -->
-        <div v-if="localRequest.bodyType === 'none'" class="body-empty">
-          <span class="empty-text">此请求不需要请求体</span>
-        </div>
-        <!-- binary 类型显示文件选择 -->
-        <div v-else-if="localRequest.bodyType === 'binary'" class="body-binary">
-          <span class="empty-text">二进制文件上传功能开发中...</span>
-        </div>
-        <!-- raw/form-data/x-www-form-urlencoded 显示编辑器 -->
-        <div v-else class="monaco-editor-container" ref="editorContainer"></div>
       </div>
       
       <!-- 其他标签页 -->
