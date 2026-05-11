@@ -1,10 +1,15 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
+import Icon from './Icon.vue'
 
 const props = defineProps({
   request: {
     type: Object,
     default: () => ({})
+  },
+  hasActiveTab: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -14,15 +19,27 @@ const methods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS']
 const activeTab = ref('params')
 
 const localRequest = ref({
-  method: props.request?.method || 'POST',
-  url: props.request?.url || 'https://api.example.com/users/login',
-  params: props.request?.params || [],
-  headers: props.request?.headers || [
-    { key: 'Content-Type', value: 'application/json', enabled: true }
-  ],
-  body: props.request?.body || '{\n  "username": "admin",\n  "password": "123456"\n}',
+  method: 'GET',
+  url: '',
+  params: [],
+  headers: [],
+  body: '',
   bodyType: 'raw'
 })
+
+// 监听 props.request 变化，同步到 localRequest
+watch(() => props.request, (newVal) => {
+  if (newVal) {
+    localRequest.value = {
+      method: newVal.method || 'GET',
+      url: newVal.url || '',
+      params: newVal.params || [],
+      headers: newVal.headers || [],
+      body: newVal.body || '',
+      bodyType: newVal.bodyType || 'raw'
+    }
+  }
+}, { immediate: true, deep: true })
 
 const tabs = [
   { key: 'docs', name: '文档' },
@@ -104,23 +121,32 @@ const getLineNumbers = computed(() => {
 
 <template>
   <div class="request-panel">
-    <!-- URL 输入行 -->
-    <div class="url-bar">
-      <div class="method-selector">
-        <select :value="localRequest.method" @change="updateMethod($event.target.value)" class="method-select" :class="methodClass">
-          <option v-for="m in methods" :key="m" :value="m">{{ m }}</option>
-        </select>
-      </div>
-      <input 
-        type="text" 
-        :value="localRequest.url"
-        @input="updateUrl"
-        class="url-input"
-        placeholder="输入请求 URL"
-      />
-      <button class="send-btn" @click="sendRequest">发送</button>
-      <button class="save-btn" @click="saveRequest">保存</button>
+    <!-- 空状态 -->
+    <div v-if="!hasActiveTab" class="empty-state">
+      <span class="empty-icon"><Icon name="api" :size="48" /></span>
+      <p class="empty-text">请选择一个接口</p>
+      <p class="empty-hint">从左侧集合中选择接口开始测试</p>
     </div>
+    
+    <!-- 有内容时显示 -->
+    <template v-else>
+      <!-- URL 输入行 -->
+      <div class="url-bar">
+        <div class="method-selector">
+          <select :value="localRequest.method" @change="updateMethod($event.target.value)" class="method-select" :class="methodClass">
+            <option v-for="m in methods" :key="m" :value="m">{{ m }}</option>
+          </select>
+        </div>
+        <input 
+          type="text" 
+          :value="localRequest.url"
+          @input="updateUrl"
+          class="url-input"
+          placeholder="输入请求 URL"
+        />
+        <button class="send-btn" @click="sendRequest">发送</button>
+        <button class="save-btn" @click="saveRequest">保存</button>
+      </div>
     
     <!-- 请求配置标签页 -->
     <div class="request-tabs">
@@ -255,6 +281,7 @@ const getLineNumbers = computed(() => {
         </div>
       </div>
     </div>
+    </template>
   </div>
 </template>
 
@@ -264,6 +291,30 @@ const getLineNumbers = computed(() => {
   flex-direction: column;
   height: 100%;
   background: #ffffff;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #8c8c8c;
+}
+
+.empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.empty-text {
+  font-size: 16px;
+  margin-bottom: 8px;
+}
+
+.empty-hint {
+  font-size: 13px;
+  color: #bfbfbf;
 }
 
 .url-bar {

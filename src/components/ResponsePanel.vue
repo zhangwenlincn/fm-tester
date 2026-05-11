@@ -108,7 +108,7 @@ const formatTime = (ms) => {
     <div class="response-content">
       <!-- 空状态 -->
       <div v-if="!response && !loading" class="empty-state">
-        <div class="empty-icon">📤</div>
+        <span class="empty-icon"><Icon name="send" :size="48" /></span>
         <p class="empty-text">发送请求以查看响应</p>
         <p class="empty-hint">在上方输入 URL 并点击"发送"按钮</p>
       </div>
