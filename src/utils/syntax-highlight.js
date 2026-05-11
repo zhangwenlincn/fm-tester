@@ -241,22 +241,59 @@ export function highlightAuto(content, contentType = '') {
 }
 
 /**
- * 格式化 JSON 字符串
- * @param {string} json - JSON 字符串
+ * 格式化 JSON5 字符串，保留行末单行注释
+ * @param {string} json - JSON 字符串（支持 JSON5）
  * @param {number} indent - 缩进空格数
- * @returns {string} 格式化后的 JSON
+ * @returns {string} 格式化后的 JSON（保留注释）
  */
 export function formatJson(json, indent = 2) {
   if (!json || typeof json !== 'string') {
     return ''
   }
+
+  // 1. 提取行末单行注释映射（key -> comment）
+  const lineEndComments = new Map()
+  const lines = json.split('\n')
+
+  for (const line of lines) {
+    // 匹配行末单行注释：内容 + 空白 + //注释
+    const match = line.match(/^(.*?)\s*\/\/(.*)$/)
+    if (match) {
+      const beforeComment = match[1].trim()
+      const comment = match[2].trim()
+      if (beforeComment) {
+        // 提取 key（如果有冒号）
+        const keyMatch = beforeComment.match(/"([^"]+)"\s*:/)
+        if (keyMatch) {
+          lineEndComments.set(keyMatch[1], comment)
+        }
+      }
+    }
+  }
+
   try {
-    // 使用 JSON5.parse 支持 JSON5 语法输入
+    // 2. 解析 JSON5
     const parsed = JSON5.parse(json)
-    // 使用 JSON.stringify 输出标准 JSON（key 必须有双引号）
-    return JSON.stringify(parsed, null, indent)
+
+    // 3. 格式化并插入注释
+    const formatted = JSON.stringify(parsed, null, indent)
+    const formattedLines = formatted.split('\n')
+
+    const result = formattedLines.map(line => {
+      // 检查是否包含某个 key，如果有对应的注释则添加
+      const keyMatch = line.match(/^(\s*)"([^"]+)"\s*:/)
+      if (keyMatch && lineEndComments.has(keyMatch[2])) {
+        // 只在非嵌套行添加注释（避免在对象开始行添加）
+        if (!line.includes('{') && !line.includes('[')) {
+          return line + '  //' + lineEndComments.get(keyMatch[2])
+        }
+      }
+      return line
+    })
+
+    return result.join('\n')
   } catch {
-    // 如果 JSON5 解析失败，回退到标准 JSON
+    // 回退到标准 JSON
     try {
       const parsed = JSON.parse(json)
       return JSON.stringify(parsed, null, indent)
