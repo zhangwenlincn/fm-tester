@@ -43,7 +43,9 @@ export function useRequestPanelSetup(props, emit) {
     params: [],
     headers: [],
     body: '',
-    bodyType: 'raw'
+    bodyType: 'raw',
+    formData: [],
+    formUrlEncoded: []
   })
 
   // Monaco Editor 相关
@@ -62,7 +64,9 @@ export function useRequestPanelSetup(props, emit) {
         params: newVal.params || [],
         headers: newVal.headers || [],
         body: newVal.body || '',
-        bodyType: newVal.bodyType || 'raw'
+        bodyType: newVal.bodyType || 'raw',
+        formData: newVal.formData || [],
+        formUrlEncoded: newVal.formUrlEncoded || []
       }
       // 同步到 Monaco Editor（如果已初始化）
       if (monacoEditor) {
@@ -243,8 +247,84 @@ export function useRequestPanelSetup(props, emit) {
     emit('update:request', localRequest.value)
   }
 
+  // URL 和参数同步的标记，防止循环更新
+  let isUpdatingFromUrl = false
+  let isUpdatingFromParams = false
+
+  // 从 URL 解析查询参数
+  const parseUrlParams = (url) => {
+    if (!url) return []
+    
+    try {
+      const urlObj = new URL(url)
+      const params = []
+      urlObj.searchParams.forEach((value, key) => {
+        params.push({ key, value, enabled: true })
+      })
+      return params
+    } catch {
+      // URL 不完整时尝试手动解析
+      const queryIndex = url.indexOf('?')
+      if (queryIndex < 0) return []
+      
+      const queryStr = url.slice(queryIndex + 1)
+      if (!queryStr) return []
+      
+      const params = []
+      queryStr.split('&').forEach(pair => {
+        const [key, value = ''] = pair.split('=')
+        if (key) {
+          params.push({ key: decodeURIComponent(key), value: decodeURIComponent(value), enabled: true })
+        }
+      })
+      return params
+    }
+  }
+
+  // 从 params 构建带参数的 URL
+  const buildUrlWithParams = (baseUrl, params) => {
+    if (!baseUrl) return ''
+    
+    const enabledParams = params.filter(p => p.enabled && p.key)
+    if (enabledParams.length === 0) {
+      // 移除 URL 中的查询参数
+      const queryIndex = baseUrl.indexOf('?')
+      return queryIndex < 0 ? baseUrl : baseUrl.slice(0, queryIndex)
+    }
+    
+    const queryStr = enabledParams
+      .map(p => `${encodeURIComponent(p.key)}=${encodeURIComponent(p.value || '')}`)
+      .join('&')
+    
+    // 移除原有查询参数
+    const queryIndex = baseUrl.indexOf('?')
+    const cleanUrl = queryIndex < 0 ? baseUrl : baseUrl.slice(0, queryIndex)
+    
+    return `${cleanUrl}?${queryStr}`
+  }
+
+  // 更新 URL（从输入框）
   const updateUrl = (event) => {
-    localRequest.value.url = event.target.value
+    const newUrl = event.target.value
+    localRequest.value.url = newUrl
+    
+    // 从 URL 解析参数到 params
+    if (!isUpdatingFromParams) {
+      isUpdatingFromUrl = true
+      localRequest.value.params = parseUrlParams(newUrl)
+      isUpdatingFromUrl = false
+    }
+    
+    emit('update:request', localRequest.value)
+  }
+
+  // 更新参数（从 params 列表）
+  const updateParams = () => {
+    if (!isUpdatingFromUrl) {
+      isUpdatingFromParams = true
+      localRequest.value.url = buildUrlWithParams(localRequest.value.url, localRequest.value.params)
+      isUpdatingFromParams = false
+    }
     emit('update:request', localRequest.value)
   }
 
@@ -258,11 +338,20 @@ export function useRequestPanelSetup(props, emit) {
 
   const addParam = () => {
     localRequest.value.params.push({ key: '', value: '', enabled: true })
+    updateParams()
   }
 
   const removeParam = (index) => {
     localRequest.value.params.splice(index, 1)
+    updateParams()
   }
+
+  // 监听 params 变化同步到 URL
+  watch(() => localRequest.value.params, () => {
+    if (!isUpdatingFromUrl) {
+      updateParams()
+    }
+  }, { deep: true })
 
   const addHeader = () => {
     localRequest.value.headers.push({ key: '', value: '', enabled: true })
@@ -270,6 +359,28 @@ export function useRequestPanelSetup(props, emit) {
 
   const removeHeader = (index) => {
     localRequest.value.headers.splice(index, 1)
+  }
+
+  // form-data 相关
+  const addFormField = () => {
+    localRequest.value.formData.push({ key: '', value: '', type: 'text', enabled: true })
+    emit('update:request', localRequest.value)
+  }
+
+  const removeFormField = (index) => {
+    localRequest.value.formData.splice(index, 1)
+    emit('update:request', localRequest.value)
+  }
+
+  // x-www-form-urlencoded 相关
+  const addFormUrlField = () => {
+    localRequest.value.formUrlEncoded.push({ key: '', value: '', enabled: true })
+    emit('update:request', localRequest.value)
+  }
+
+  const removeFormUrlField = (index) => {
+    localRequest.value.formUrlEncoded.splice(index, 1)
+    emit('update:request', localRequest.value)
   }
 
   // 格式化按钮功能
@@ -318,6 +429,10 @@ export function useRequestPanelSetup(props, emit) {
     removeParam,
     addHeader,
     removeHeader,
-    handleFormat
+    handleFormat,
+    addFormField,
+    removeFormField,
+    addFormUrlField,
+    removeFormUrlField
   }
 }

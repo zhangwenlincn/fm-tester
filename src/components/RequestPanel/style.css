@@ -333,6 +333,102 @@
   font-size: 14px;
 }
 
+/* form-data 和 x-www-form-urlencoded 表格样式 */
+.form-data-panel,
+.form-urlencoded-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 16px;
+  overflow: auto;
+}
+
+.form-toolbar {
+  margin-bottom: 12px;
+}
+
+.form-list {
+  border: 1px solid #e8e8e8;
+  border-radius: 4px;
+  background: #fff;
+}
+
+.form-header {
+  display: flex;
+  padding: 8px 12px;
+  background: #fafafa;
+  border-bottom: 1px solid #e8e8e8;
+  font-size: 12px;
+  color: #8c8c8c;
+}
+
+.form-row {
+  display: flex;
+  padding: 8px 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.form-row:last-child {
+  border-bottom: none;
+}
+
+.form-row:hover {
+  background: #fafafa;
+}
+
+.form-row .col-check {
+  width: 24px;
+  display: flex;
+  align-items: center;
+}
+
+.form-row .col-key,
+.form-row .col-value {
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.form-row .col-type {
+  width: 80px;
+  display: flex;
+  align-items: center;
+}
+
+.form-row .col-action {
+  width: 32px;
+  display: flex;
+  align-items: center;
+}
+
+.form-row input[type="text"],
+.form-row select {
+  width: 100%;
+  padding: 4px 8px;
+  font-size: 13px;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  outline: none;
+}
+
+.form-row input[type="text"]:focus,
+.form-row select:focus {
+  border-color: #1890ff;
+}
+
+.form-row .remove-btn {
+  padding: 2px 8px;
+  font-size: 14px;
+  color: #ff4d4f;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.form-row .remove-btn:hover {
+  background: #fff1f0;
+}
+
 /* 编辑器包装器 */
 .editor-wrapper {
   flex: 1;

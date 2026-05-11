@@ -33,7 +33,11 @@ const {
   removeParam,
   addHeader,
   removeHeader,
-  handleFormat
+  handleFormat,
+  addFormField,
+  removeFormField,
+  addFormUrlField,
+  removeFormUrlField
 } = useRequestPanelSetup(props, emit)
 </script>
 
@@ -180,10 +184,86 @@ const {
         <div v-show="localRequest.bodyType === 'binary'" class="body-binary">
           <span class="empty-text">二进制文件上传功能开发中...</span>
         </div>
-        <!-- raw/form-data/x-www-form-urlencoded 显示编辑器 -->
-        <div v-show="localRequest.bodyType !== 'none' && localRequest.bodyType !== 'binary'" class="editor-wrapper">
-          <!-- raw 类型时显示格式选择器和格式化按钮 -->
-          <div v-if="localRequest.bodyType === 'raw'" class="editor-toolbar">
+        <!-- form-data 类型显示键值对表格 -->
+        <div v-show="localRequest.bodyType === 'form-data'" class="form-data-panel">
+          <div class="form-toolbar">
+            <button class="add-btn" @click="addFormField">+ 添加字段</button>
+          </div>
+          <div class="form-list">
+            <div class="form-header">
+              <span class="col-check"></span>
+              <span class="col-key">字段名</span>
+              <span class="col-value">值</span>
+              <span class="col-type">类型</span>
+              <span class="col-action"></span>
+            </div>
+            <div v-if="localRequest.formData?.length === 0" class="empty-params">
+              暂无字段，点击上方按钮添加
+            </div>
+            <div 
+              v-for="(field, index) in localRequest.formData" 
+              :key="index"
+              class="form-row"
+            >
+              <span class="col-check">
+                <input type="checkbox" v-model="field.enabled" />
+              </span>
+              <span class="col-key">
+                <input type="text" v-model="field.key" placeholder="字段名" />
+              </span>
+              <span class="col-value">
+                <input type="text" v-model="field.value" placeholder="值" />
+              </span>
+              <span class="col-type">
+                <select v-model="field.type">
+                  <option value="text">文本</option>
+                  <option value="file">文件</option>
+                </select>
+              </span>
+              <span class="col-action">
+                <button class="remove-btn" @click="removeFormField(index)">×</button>
+              </span>
+            </div>
+          </div>
+        </div>
+        <!-- x-www-form-urlencoded 类型显示键值对表格 -->
+        <div v-show="localRequest.bodyType === 'x-www-form-urlencoded'" class="form-urlencoded-panel">
+          <div class="form-toolbar">
+            <button class="add-btn" @click="addFormUrlField">+ 添加字段</button>
+          </div>
+          <div class="form-list">
+            <div class="form-header">
+              <span class="col-check"></span>
+              <span class="col-key">字段名</span>
+              <span class="col-value">值</span>
+              <span class="col-action"></span>
+            </div>
+            <div v-if="localRequest.formUrlEncoded?.length === 0" class="empty-params">
+              暂无字段，点击上方按钮添加
+            </div>
+            <div 
+              v-for="(field, index) in localRequest.formUrlEncoded" 
+              :key="index"
+              class="form-row"
+            >
+              <span class="col-check">
+                <input type="checkbox" v-model="field.enabled" />
+              </span>
+              <span class="col-key">
+                <input type="text" v-model="field.key" placeholder="字段名" />
+              </span>
+              <span class="col-value">
+                <input type="text" v-model="field.value" placeholder="值" />
+              </span>
+              <span class="col-action">
+                <button class="remove-btn" @click="removeFormUrlField(index)">×</button>
+              </span>
+            </div>
+          </div>
+        </div>
+        <!-- raw 类型显示 Monaco Editor -->
+        <div v-show="localRequest.bodyType === 'raw'" class="editor-wrapper">
+          <div class="editor-toolbar">
             <select v-model="selectedRawType" class="raw-select">
               <option v-for="t in rawTypes" :key="t" :value="t">{{ t }}</option>
             </select>
