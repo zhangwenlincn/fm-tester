@@ -1,12 +1,14 @@
 mod collection;
 mod environment;
 mod http;
+mod memory;
 mod models;
 mod workspace;
 
 pub use collection::*;
 pub use environment::*;
 pub use http::*;
+pub use memory::*;
 pub use models::*;
 pub use workspace::*;
 
@@ -41,6 +43,9 @@ pub fn run() {
             delete_environment,
             switch_environment,
             get_active_variables,
+            // 记忆
+            get_expanded_collections,
+            save_expanded_collections,
             // HTTP
             send_http_request
         ])

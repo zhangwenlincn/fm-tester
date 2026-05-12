@@ -42,15 +42,37 @@ export function useCollectionPanelSetup(props, emit) {
       const data = await invoke('get_collections', { workspacePath: props.workspace.path })
       collections.value = data || []
       console.log('加载集合数据:', data)
+      
+      // 恢复展开状态
+      const expandedIds = await invoke('get_expanded_collections', { workspacePath: props.workspace.path })
+      expandedItems.value = {}
+      for (const id of expandedIds || []) {
+        expandedItems.value[id] = true
+      }
     } catch (e) {
       console.error('加载集合失败:', e)
       collections.value = []
     }
   }
   
+  // 保存展开状态
+  const saveExpandState = async () => {
+    if (!props.workspace?.path) return
+    const expandedIds = Object.keys(expandedItems.value).filter(id => expandedItems.value[id])
+    try {
+      await invoke('save_expanded_collections', {
+        workspacePath: props.workspace.path,
+        expandedIds
+      })
+    } catch (e) {
+      console.error('保存展开状态失败:', e)
+    }
+  }
+  
   // 展开/折叠
-  const toggleExpand = (id) => {
+  const toggleExpand = async (id) => {
     expandedItems.value[id] = !expandedItems.value[id]
+    await saveExpandState()
   }
   
   const isExpanded = (id) => expandedItems.value[id]

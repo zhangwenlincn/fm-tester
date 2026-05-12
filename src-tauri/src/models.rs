@@ -120,3 +120,9 @@ pub struct HttpResponse {
     pub time: u64,
     pub size: u64,
 }
+
+/// 工作区记忆配置（集合展开状态）
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct MemoryConfig {
+    pub expanded_ids: Vec<String>,
+}
