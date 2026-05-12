@@ -22,13 +22,13 @@ pub fn read_config() -> WorkspaceConfig {
 /// 写入工作区配置
 pub fn write_config(config: &WorkspaceConfig) -> Result<(), String> {
     let path = get_config_path();
-    
+
     if let Some(parent) = path.parent() {
         if !parent.exists() {
             fs::create_dir_all(parent).map_err(|e| e.to_string())?;
         }
     }
-    
+
     let content = serde_yaml::to_string(config).map_err(|e| e.to_string())?;
     fs::write(&path, content).map_err(|e| e.to_string())?;
     Ok(())
@@ -53,17 +53,21 @@ pub fn get_last_workspace() -> Option<Workspace> {
 
 /// 创建新工作区
 #[tauri::command]
-pub fn create_workspace(name: String, description: String, path: String) -> Result<Workspace, String> {
+pub fn create_workspace(
+    name: String,
+    description: String,
+    path: String,
+) -> Result<Workspace, String> {
     let mut config = read_config();
-    
+
     let workspace_path = PathBuf::from(&path);
     if !workspace_path.exists() {
         fs::create_dir_all(&workspace_path).map_err(|e| format!("无法创建目录: {}", e))?;
     }
-    
+
     let id = format!("ws_{}", chrono::Local::now().timestamp());
     let now = chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
-    
+
     let workspace = Workspace {
         id: id.clone(),
         name,
@@ -73,10 +77,10 @@ pub fn create_workspace(name: String, description: String, path: String) -> Resu
         last_opened: now,
         last_api_id: None,
     };
-    
+
     config.workspaces.push(workspace.clone());
     config.last_workspace_id = Some(id);
-    
+
     write_config(&config)?;
     Ok(workspace)
 }
@@ -85,14 +89,14 @@ pub fn create_workspace(name: String, description: String, path: String) -> Resu
 #[tauri::command]
 pub fn switch_workspace(id: String) -> Result<Workspace, String> {
     let mut config = read_config();
-    
+
     let workspace = config
         .workspaces
         .iter()
         .find(|w| w.id == id)
         .cloned()
         .ok_or_else(|| "工作区不存在".to_string())?;
-    
+
     let now = chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
     for w in &mut config.workspaces {
         if w.id == id {
@@ -100,10 +104,10 @@ pub fn switch_workspace(id: String) -> Result<Workspace, String> {
             break;
         }
     }
-    
+
     config.last_workspace_id = Some(id);
     write_config(&config)?;
-    
+
     Ok(workspace)
 }
 
@@ -111,13 +115,13 @@ pub fn switch_workspace(id: String) -> Result<Workspace, String> {
 #[tauri::command]
 pub fn delete_workspace(id: String) -> Result<(), String> {
     let mut config = read_config();
-    
+
     config.workspaces.retain(|w| w.id != id);
-    
+
     if config.last_workspace_id == Some(id) {
         config.last_workspace_id = config.workspaces.first().map(|w| w.id.clone());
     }
-    
+
     write_config(&config)?;
     Ok(())
 }
@@ -126,7 +130,7 @@ pub fn delete_workspace(id: String) -> Result<(), String> {
 #[tauri::command]
 pub fn update_workspace(id: String, name: String, description: String) -> Result<(), String> {
     let mut config = read_config();
-    
+
     for w in &mut config.workspaces {
         if w.id == id {
             w.name = name;
@@ -134,7 +138,7 @@ pub fn update_workspace(id: String, name: String, description: String) -> Result
             break;
         }
     }
-    
+
     write_config(&config)?;
     Ok(())
 }
@@ -143,14 +147,14 @@ pub fn update_workspace(id: String, name: String, description: String) -> Result
 #[tauri::command]
 pub fn set_last_api(workspace_id: String, api_id: String) -> Result<(), String> {
     let mut config = read_config();
-    
+
     for w in &mut config.workspaces {
         if w.id == workspace_id {
             w.last_api_id = Some(api_id);
             break;
         }
     }
-    
+
     write_config(&config)?;
     Ok(())
 }
@@ -159,20 +163,22 @@ pub fn set_last_api(workspace_id: String, api_id: String) -> Result<(), String> 
 #[tauri::command]
 pub fn get_last_api(workspace_id: String) -> Result<Option<crate::models::Collection>, String> {
     let config = read_config();
-    
+
     let workspace = config
         .workspaces
         .iter()
         .find(|w| w.id == workspace_id)
         .ok_or_else(|| "工作区不存在".to_string())?;
-    
+
     if let Some(api_id) = &workspace.last_api_id {
         let collections = crate::collection::read_collections(&workspace.path);
-        if let Some(api) = crate::collection::find_api_in_collections(&collections.collections, api_id) {
+        if let Some(api) =
+            crate::collection::find_api_in_collections(&collections.collections, api_id)
+        {
             return Ok(Some(api.clone()));
         }
     }
-    
+
     Ok(None)
 }
 
@@ -180,12 +186,12 @@ pub fn get_last_api(workspace_id: String) -> Result<Option<crate::models::Collec
 #[tauri::command]
 pub fn set_last_workspace(workspace_id: String) -> Result<(), String> {
     let mut config = read_config();
-    
+
     // 验证工作区是否存在
     if !config.workspaces.iter().any(|w| w.id == workspace_id) {
         return Err("工作区不存在".to_string());
     }
-    
+
     // 更新最后打开时间
     let now = chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
     for w in &mut config.workspaces {
@@ -194,7 +200,7 @@ pub fn set_last_workspace(workspace_id: String) -> Result<(), String> {
             break;
         }
     }
-    
+
     config.last_workspace_id = Some(workspace_id);
     write_config(&config)?;
     Ok(())

@@ -43,10 +43,10 @@ pub struct FormField {
     pub key: String,
     pub value: String,
     #[serde(rename = "type")]
-    pub field_type: String,  // "text" 或 "file"
+    pub field_type: String, // "text" 或 "file"
     pub enabled: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub files: Option<Vec<FileInfo>>,  // 文件类型时存储文件信息
+    pub files: Option<Vec<FileInfo>>, // 文件类型时存储文件信息
 }
 
 /// 文件信息（仅保存路径）
@@ -63,7 +63,7 @@ pub struct Collection {
     pub name: String,
     pub description: Option<String>,
     #[serde(rename = "type")]
-    pub item_type: String,  // "collection" 或 "api"
+    pub item_type: String, // "collection" 或 "api"
     pub children: Vec<Collection>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub method: Option<String>,
@@ -76,9 +76,9 @@ pub struct Collection {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub body_type: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub form_fields: Option<Vec<FormField>>,  // form-data 字段
+    pub form_fields: Option<Vec<FormField>>, // form-data 字段
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub binary_file_path: Option<String>,  // binary 文件路径
+    pub binary_file_path: Option<String>, // binary 文件路径
 }
 
 /// 集合配置文件结构
