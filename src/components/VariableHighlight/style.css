@@ -3,13 +3,11 @@
   display: inline;
 }
 
-/* 变量引用高亮样式 */
+/* 变量引用高亮样式 - 无 padding/font-weight 避免错位 */
 .var-ref {
   color: #1890ff;
   background: rgba(24, 144, 255, 0.1);
   border-radius: 3px;
-  padding: 0 2px;
-  font-weight: 500;
 }
 
 /* 占位符样式 */
@@ -86,13 +84,11 @@
   color: transparent;
 }
 
-/* 覆盖层中的变量高亮 */
+/* 覆盖层中的变量高亮 - 无 padding/font-weight 避免错位 */
 .var-highlight-overlay .var-ref {
   color: #1890ff;
   background: rgba(24, 144, 255, 0.1);
   border-radius: 3px;
-  padding: 0 2px;
-  font-weight: 500;
 }
 
 /* 变量自动补全下拉菜单 */
