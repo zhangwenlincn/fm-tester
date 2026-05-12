@@ -7,6 +7,7 @@ import RequestPanel from './components/RequestPanel/index.vue'
 import ResponsePanel from './components/ResponsePanel/index.vue'
 import StatusBar from './components/StatusBar/index.vue'
 import WorkspaceDialog from './components/WorkspaceDialog/index.vue'
+import EnvironmentPanel from './components/EnvironmentPanel/index.vue'
 
 // 使用 composable
 const {
@@ -24,10 +25,12 @@ const {
   environments,
   activeEnvironmentId,
   activeEnvironment,
+  editingEnvVariables,
   loadEnvironments,
   switchEnvironment,
   saveEnvironment,
   deleteEnvironment,
+  saveEnvVariables,
   // 导航相关
   showRequestResponse,
   showWorkspaceInfo,
@@ -112,24 +115,12 @@ const {
       </div>
       
       <!-- 环境信息面板 -->
-      <div class="content-area workspace-info-panel" v-else-if="showEnvironmentInfo">
-        <!-- 有选中环境时显示变量 -->
-        <div class="env-detail" v-if="activeEnvironment">
-          <div class="env-detail-header">
-            <h2>{{ activeEnvironment.name }}</h2>
-          </div>
-          
-          <div class="env-variables-list" v-if="activeEnvironment.variables.length > 0">
-            <div class="var-item" v-for="v in activeEnvironment.variables" :key="v.key">
-              <span class="var-key">{{ v.key }}</span>
-              <span class="var-value">{{ v.value }}</span>
-            </div>
-          </div>
-          
-          <div class="empty-vars" v-else>
-            暂无变量
-          </div>
-        </div>
+      <div class="content-area" v-else-if="showEnvironmentInfo">
+        <EnvironmentPanel 
+          :active-environment="activeEnvironment"
+          :editing-env-variables="editingEnvVariables"
+          @save-variables="saveEnvVariables"
+        />
       </div>
       
       <!-- 空状态提示 -->

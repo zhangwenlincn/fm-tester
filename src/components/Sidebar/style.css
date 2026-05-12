@@ -461,6 +461,11 @@
   background: #f5f5f5;
 }
 
+.env-item.active {
+  background: #e6f7ff;
+  border-color: #1890ff;
+}
+
 .env-header {
   display: flex;
   align-items: center;

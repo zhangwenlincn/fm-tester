@@ -183,18 +183,13 @@ defineExpose({
             v-for="env in environments" 
             :key="env.id"
             class="env-item"
+            :class="{ active: activeEnvironmentId === env.id }"
+            @click="switchEnvironment(env.id)"
             @contextmenu.prevent="(e) => openEnvContextMenu(e, env, 'env')"
           >
             <div class="env-header">
               <span class="env-icon"><Icon name="environment" /></span>
               <span class="env-name">{{ env.name }}</span>
-            </div>
-            <!-- 变量列表 -->
-            <div class="env-variables" v-if="env.variables.length > 0">
-              <div v-for="v in env.variables" :key="v.key" class="env-var-item">
-                <span class="env-var-key">{{ v.key }}</span>
-                <span class="env-var-value">{{ v.value }}</span>
-              </div>
             </div>
           </div>
           

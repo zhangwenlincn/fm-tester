@@ -33,6 +33,7 @@ export function useAppSetup() {
   const environments = ref([])
   const activeEnvironmentId = ref(null)
   const activeEnvironment = ref(null)
+  const editingEnvVariables = ref([])  // 编辑中的变量列表
 
   // 当前侧边栏导航项
   const currentNavKey = ref('collection')
@@ -44,6 +45,7 @@ export function useAppSetup() {
       environments.value = []
       activeEnvironmentId.value = null
       activeEnvironment.value = null
+      editingEnvVariables.value = []
       return
     }
     try {
@@ -53,14 +55,20 @@ export function useAppSetup() {
       // 设置当前激活环境
       if (activeEnvironmentId.value) {
         activeEnvironment.value = environments.value.find(e => e.id === activeEnvironmentId.value) || null
+        // 初始化编辑变量列表，如果没有变量则添加一个空行
+        editingEnvVariables.value = activeEnvironment.value?.variables?.length > 0 
+          ? [...activeEnvironment.value.variables] 
+          : [{ key: '', value: '', enabled: true }]
       } else {
         activeEnvironment.value = null
+        editingEnvVariables.value = []
       }
     } catch (e) {
       console.error('加载环境失败:', e)
       environments.value = []
       activeEnvironmentId.value = null
       activeEnvironment.value = null
+      editingEnvVariables.value = []
     }
   }
 
@@ -74,6 +82,10 @@ export function useAppSetup() {
       })
       activeEnvironmentId.value = environmentId
       activeEnvironment.value = environments.value.find(e => e.id === environmentId) || null
+      // 同步编辑变量列表，如果没有变量则添加一个空行
+      editingEnvVariables.value = activeEnvironment.value?.variables?.length > 0 
+        ? [...activeEnvironment.value.variables] 
+        : [{ key: '', value: '', enabled: true }]
     } catch (e) {
       console.error('切换环境失败:', e)
     }
@@ -122,6 +134,25 @@ export function useAppSetup() {
       }
     } catch (e) {
       console.error('删除环境失败:', e)
+    }
+  }
+
+  // 保存环境变量
+  const saveEnvVariables = async () => {
+    if (!currentWorkspace.value?.path || !activeEnvironment.value) return
+    // 过滤非空变量
+    const nonEmptyVars = editingEnvVariables.value.filter(v => v.key.trim())
+    const environment = {
+      ...activeEnvironment.value,
+      variables: nonEmptyVars
+    }
+    try {
+      const result = await saveEnvironment(environment)
+      // 更新本地状态，保留一个空行用于添加新变量
+      activeEnvironment.value = result
+      editingEnvVariables.value = [...result.variables, { key: '', value: '', enabled: true }]
+    } catch (e) {
+      console.error('保存环境变量失败:', e)
     }
   }
 
@@ -216,6 +247,7 @@ export function useAppSetup() {
     }
     // 刷新侧边栏
     sidebarRef.value?.loadCollections()
+    sidebarRef.value?.loadEnvironments()
   }
 
   // 导航切换（来自 Sidebar）
@@ -487,10 +519,12 @@ export function useAppSetup() {
     environments,
     activeEnvironmentId,
     activeEnvironment,
+    editingEnvVariables,
     loadEnvironments,
     switchEnvironment,
     saveEnvironment,
     deleteEnvironment,
+    saveEnvVariables,
     // 导航相关
     currentNavKey,
     onNavChange,

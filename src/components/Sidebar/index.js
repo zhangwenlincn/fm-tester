@@ -100,9 +100,8 @@ export function useSidebarSetup(props, emit) {
         environmentId: envId
       })
       activeEnvironmentId.value = envId
-      // 通知父组件更新 activeEnvironment
-      const env = environments.value.find(e => e.id === envId)
-      emit('switchEnvironment', env)
+      // 通知父组件更新 activeEnvironment（传递环境 ID）
+      emit('switchEnvironment', envId)
     } catch (e) {
       console.error('切换环境失败:', e)
     }

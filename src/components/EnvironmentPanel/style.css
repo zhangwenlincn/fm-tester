@@ -1,0 +1,75 @@
+/* 环境变量表格面板 */
+.env-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #ffffff;
+}
+
+.env-table {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border: 1px solid #e8e8e8;
+}
+
+/* 表头 */
+.env-table-header {
+  display: flex;
+  background: #fafafa;
+  border-bottom: 1px solid #e8e8e8;
+  font-size: 12px;
+  font-weight: 500;
+  color: #262626;
+}
+
+.env-table-header span {
+  padding: 8px 12px;
+  flex: 1;
+}
+
+/* 表格内容 */
+.env-table-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.env-row {
+  display: flex;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.env-row:hover {
+  background: #fafafa;
+}
+
+.env-input-key,
+.env-input-value {
+  flex: 1;
+  padding: 8px 12px;
+  font-size: 13px;
+  border: none;
+  outline: none;
+  background: transparent;
+}
+
+.env-input-key {
+  border-right: 1px solid #e8e8e8;
+}
+
+.env-input-key:focus,
+.env-input-value:focus {
+  background: #e6f7ff;
+}
+
+/* 未选中环境 */
+.no-env-selected {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #8c8c8c;
+  font-size: 14px;
+}
