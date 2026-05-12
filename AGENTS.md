@@ -33,15 +33,21 @@ fm-tester/
 │       │   ├── index.vue   # 组件模板
 │       │   └── style.css   # 组件样式
 │       ├── Sidebar/
-│       │   ├── index.vue
-│       │   ├── index.js    # composable
-│       │   └── style.css
+│       │   ├── index.vue       # 主入口，组合子组件
+│       │   ├── index.js        # composable (导航切换逻辑)
+│       │   ├── style.css
+│       │   ├── IconNav/        # 左侧图标导航栏
+│       │   ├── CollectionPanel/ # 集合面板（树形结构）
+│       │   ├── WorkspacePanel/  # 工作区面板
+│       │   ├── EnvironmentPanel/ # 环境面板
+│       │   └── ContextMenu/     # 右键菜单组件
 │       ├── RequestPanel/
 │       ├── ResponsePanel/
 │       ├── TabsBar/
 │       ├── MenuBar/
 │       ├── StatusBar/
-│       └── WorkspaceDialog/
+│       ├── WorkspaceDialog/
+│       └── VariableHighlight/   # 环境变量高亮与自动补全
 ├── src-tauri/              # Rust 后端 (模块化)
 │   ├── src/
 │   │   ├── lib.rs          # 入口：注册所有命令
@@ -236,7 +242,7 @@ pub fn my_command(arg: String) -> Result<String, String> {
 - ❌ **禁止使用 pip** - Python 依赖用 uv 管理
 - ❌ **禁止主动 Git push** - 只在用户明确请求时推送
 - ✅ **使用 cargo 命令** - 开发用 `cargo tauri dev`，不用 `npm run dev`
-- ✅ **集合最多三层嵌套** - MAX_DEPTH = 2 (Sidebar/index.js 第 15 行)
+- ✅ **集合最多三层嵌套** - MAX_DEPTH = 2 (CollectionPanel/index.js)
 
 **交互逻辑**:
 - ✅ **新建接口** - 直接打开请求面板，不需要对话框输入信息
@@ -247,6 +253,8 @@ pub fn my_command(arg: String) -> Result<String, String> {
 - ✅ **环境变量替换** - URL、Headers、Body 支持 `{{变量名}}` 格式，发送时自动替换
 - ✅ **新建环境** - 只需输入名称，编辑时可添加变量
 - ✅ **环境切换** - 点击环境切换，右侧面板显示当前环境变量
+- ✅ **变量高亮** - `{{变量名}}` 显示淡蓝色高亮（VariableHighlight 组件）
+- ✅ **变量自动补全** - 输入 `{{` 弹出下拉菜单选择环境变量
 
 **JSON5 特殊处理**:
 - ✅ **编辑支持 JSON5** - Monaco Editor 使用 json5 语言（支持注释、单引号、尾逗号）

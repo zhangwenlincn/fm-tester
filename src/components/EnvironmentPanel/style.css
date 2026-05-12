@@ -64,6 +64,24 @@
   background: #e6f7ff;
 }
 
+/* 环境变量值输入框高亮 wrapper */
+.env-value-input {
+  flex: 1;
+  min-height: 34px;
+}
+
+.env-value-input .var-highlight-overlay,
+.env-value-input .var-highlight-input {
+  padding: 8px 12px;
+  font-size: 13px;
+  border: none;
+  background: transparent;
+}
+
+.env-value-input .var-highlight-input:focus {
+  background: #e6f7ff;
+}
+
 /* 未选中环境 */
 .no-env-selected {
   display: flex;

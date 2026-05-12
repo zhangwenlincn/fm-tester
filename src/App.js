@@ -35,6 +35,7 @@ export function useAppSetup() {
   const activeEnvironment = ref(null)    // 后端激活环境对象（MenuBar 显示）
   const selectedEnvironment = ref(null)  // Sidebar 选中的环境（EnvironmentPanel 显示）
   const selectedEnvVariables = ref([])   // Sidebar 选中环境的变量列表
+  const activeVariables = ref([])        // 当前激活环境的变量列表（用于自动补全）
 
   // 当前侧边栏导航项
   const currentNavKey = ref('collection')
@@ -48,6 +49,7 @@ export function useAppSetup() {
       activeEnvironment.value = null
       selectedEnvironment.value = null
       selectedEnvVariables.value = []
+      activeVariables.value = []
       return
     }
     try {
@@ -63,6 +65,8 @@ export function useAppSetup() {
       // Sidebar 选中环境清空
       selectedEnvironment.value = null
       selectedEnvVariables.value = []
+      // 加载激活环境变量（用于自动补全）
+      await loadActiveVariables()
     } catch (e) {
       console.error('加载环境失败:', e)
       environments.value = []
@@ -70,6 +74,23 @@ export function useAppSetup() {
       activeEnvironment.value = null
       selectedEnvironment.value = null
       selectedEnvVariables.value = []
+      activeVariables.value = []
+    }
+  }
+
+  // 加载当前激活环境的变量（用于自动补全）
+  const loadActiveVariables = async () => {
+    if (!currentWorkspace.value?.path) {
+      activeVariables.value = []
+      return
+    }
+    try {
+      const variablesMap = await invoke('get_active_variables', { workspacePath: currentWorkspace.value.path })
+      // 转换为数组格式 [{ key, value }]
+      activeVariables.value = Object.entries(variablesMap).map(([key, value]) => ({ key, value }))
+    } catch (e) {
+      console.error('加载激活变量失败:', e)
+      activeVariables.value = []
     }
   }
 
@@ -551,7 +572,9 @@ export function useAppSetup() {
     activeEnvironment,
     selectedEnvironment,
     selectedEnvVariables,
+    activeVariables,
     loadEnvironments,
+    loadActiveVariables,
     switchEnvironment,
     selectEnvironment,
     saveEnvironment,

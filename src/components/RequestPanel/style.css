@@ -89,6 +89,12 @@
   border-color: #1890ff;
 }
 
+/* URL 输入框高亮 wrapper */
+.url-input-wrapper {
+  flex: 1;
+  min-height: 34px;
+}
+
 .send-btn {
   padding: 8px 24px;
   font-size: 13px;
@@ -241,6 +247,18 @@
 .col-value input:focus,
 .col-desc input:focus {
   border-color: #1890ff;
+}
+
+/* Headers 值输入框高亮 wrapper */
+.header-value-input {
+  width: 100%;
+  min-height: 30px;
+}
+
+.header-value-input .var-highlight-overlay,
+.header-value-input .var-highlight-input {
+  padding: 4px 8px;
+  font-size: 13px;
 }
 
 .remove-btn {

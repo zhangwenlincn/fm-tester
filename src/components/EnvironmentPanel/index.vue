@@ -1,5 +1,6 @@
 <script setup>
 import { useEnvPanelSetup } from './index.js'
+import VariableHighlight from '../VariableHighlight/index.vue'
 
 const props = defineProps({
   activeEnvironment: Object,
@@ -25,7 +26,12 @@ const { handleInputChange } = useEnvPanelSetup(props, emit)
       <div class="env-table-body">
         <div class="env-row" v-for="(v, index) in props.editingEnvVariables" :key="index">
           <input class="env-input-key" v-model="v.key" @input="handleInputChange" />
-          <input class="env-input-value" v-model="v.value" @input="handleInputChange" />
+          <VariableHighlight
+            mode="input"
+            v-model="v.value"
+            @input="handleInputChange"
+            class="env-value-input"
+          />
         </div>
       </div>
     </div>

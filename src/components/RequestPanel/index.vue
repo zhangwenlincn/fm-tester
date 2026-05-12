@@ -1,6 +1,7 @@
 <script setup>
 import { useRequestPanelSetup } from './index.js'
 import Icon from '../Icon/index.vue'
+import VariableHighlight from '../VariableHighlight/index.vue'
 
 const props = defineProps({
   request: {
@@ -10,6 +11,10 @@ const props = defineProps({
   hasActiveTab: {
     type: Boolean,
     default: false
+  },
+  variables: {
+    type: Array,
+    default: () => []
   }
 })
 
@@ -59,11 +64,12 @@ const {
             <option v-for="m in methods" :key="m" :value="m">{{ m }}</option>
           </select>
         </div>
-        <input 
-          type="text" 
-          :value="localRequest.url"
+        <VariableHighlight
+          mode="input"
+          :text="localRequest.url"
+          :variables="variables"
           @input="updateUrl"
-          class="url-input"
+          class="url-input-wrapper"
           placeholder="输入请求 URL"
         />
         <button class="send-btn" @click="sendRequest">发送</button>
@@ -149,9 +155,15 @@ const {
             <span class="col-key">
               <input type="text" v-model="header.key" placeholder="Header 名" />
             </span>
-            <span class="col-value">
-              <input type="text" v-model="header.value" placeholder="Header 值" />
-            </span>
+<span class="col-value">
+                <VariableHighlight
+                  mode="input"
+                  v-model="header.value"
+                  :variables="variables"
+                  placeholder="Header 值"
+                  class="header-value-input"
+                />
+              </span>
             <span class="col-desc">
               <input type="text" v-model="header.description" placeholder="描述" />
             </span>

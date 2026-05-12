@@ -27,7 +27,9 @@ const {
   activeEnvironment,
   selectedEnvironment,
   selectedEnvVariables,
+  activeVariables,
   loadEnvironments,
+  loadActiveVariables,
   switchEnvironment,
   selectEnvironment,
   saveEnvironment,
@@ -101,6 +103,7 @@ const {
           <RequestPanel 
             :request="currentRequest"
             :has-active-tab="tabs.length > 0"
+            :variables="activeVariables"
             @update:request="Object.assign(currentRequest, $event)"
             @send="sendRequest"
             @save="saveRequest"

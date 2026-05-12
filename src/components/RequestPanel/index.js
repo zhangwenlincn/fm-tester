@@ -366,8 +366,11 @@ export function useRequestPanelSetup(props, emit) {
   }
 
   // 更新 URL（从输入框）
-  const updateUrl = (event) => {
-    const newUrl = event.target.value
+  const updateUrl = (eventOrValue) => {
+    // 支持两种输入：event 对象或直接值
+    const newUrl = typeof eventOrValue === 'string' 
+      ? eventOrValue 
+      : eventOrValue.target.value
     localRequest.value.url = newUrl
     
     // 从 URL 解析参数到 params
