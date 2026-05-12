@@ -1,5 +1,6 @@
 import { ref, computed, watch, onUnmounted, nextTick } from 'vue'
 import * as monaco from 'monaco-editor'
+import { open } from '@tauri-apps/plugin-dialog'
 import { formatJson, formatXml, formatHtml } from '../../utils/syntax-highlight.js'
 
 // 注册 JSON5 语言
@@ -107,7 +108,8 @@ export function useRequestPanelSetup(props, emit) {
     body: '',
     bodyType: 'raw',
     formData: [],
-    formUrlEncoded: []
+    formUrlEncoded: [],
+    binaryFile: null  // binary 文件信息 { path, name }
   })
 
   // Monaco Editor 相关
@@ -120,7 +122,8 @@ export function useRequestPanelSetup(props, emit) {
   // 监听 props.request 变化，同步到 localRequest
   watch(() => props.request, (newVal) => {
     if (newVal) {
-      localRequest.value = {
+      // 使用 Object.assign 更新，保持响应式追踪
+      Object.assign(localRequest.value, {
         method: newVal.method || 'GET',
         url: newVal.url || '',
         params: newVal.params || [],
@@ -128,8 +131,14 @@ export function useRequestPanelSetup(props, emit) {
         body: newVal.body || '',
         bodyType: newVal.bodyType || 'raw',
         formData: newVal.formData || [],
-        formUrlEncoded: newVal.formUrlEncoded || []
-      }
+        formUrlEncoded: newVal.formUrlEncoded || [],
+        binaryFile: newVal.binaryFile || null
+      })
+      // 确保 formData 字段有 files 属性
+      localRequest.value.formData = localRequest.value.formData.map(field => ({
+        ...field,
+        files: field.files || []
+      }))
       // 同步到 Monaco Editor（如果已初始化）
       if (monacoEditor) {
         const newBody = newVal.body || ''
@@ -428,7 +437,7 @@ export function useRequestPanelSetup(props, emit) {
 
   // form-data 相关
   const addFormField = () => {
-    localRequest.value.formData.push({ key: '', value: '', type: 'text', enabled: true })
+    localRequest.value.formData.push({ key: '', value: '', type: 'text', enabled: true, files: [] })
     emit('update:request', localRequest.value)
   }
 
@@ -446,6 +455,60 @@ export function useRequestPanelSetup(props, emit) {
   const removeFormUrlField = (index) => {
     localRequest.value.formUrlEncoded.splice(index, 1)
     emit('update:request', localRequest.value)
+  }
+
+  // 文件选择相关
+  const selectBinaryFile = async () => {
+    try {
+      const selected = await open({
+        multiple: false,
+        title: '选择二进制文件'
+      })
+      if (selected) {
+        // selected 是文件路径字符串
+        const path = selected
+        const name = path.split(/[/\\]/).pop() || path
+        localRequest.value.binaryFile = { path, name }
+        emit('update:request', localRequest.value)
+      }
+    } catch (e) {
+      console.error('选择文件失败:', e)
+    }
+  }
+
+  const selectFormFieldFiles = async (fieldIndex) => {
+    try {
+      const selected = await open({
+        multiple: true,  // 支持多文件
+        title: '选择文件'
+      })
+      if (selected) {
+        // selected 可能是字符串或数组
+        const paths = Array.isArray(selected) ? selected : [selected]
+        const files = paths.map(path => ({
+          path,
+          name: path.split(/[/\\]/).pop() || path
+        }))
+        
+        // 确保 formData[fieldIndex] 有 files 属性
+        if (!localRequest.value.formData[fieldIndex].files) {
+          localRequest.value.formData[fieldIndex].files = []
+        }
+        
+        // 添加文件（保留原有文件）
+        localRequest.value.formData[fieldIndex].files.push(...files)
+        emit('update:request', localRequest.value)
+      }
+    } catch (e) {
+      console.error('选择文件失败:', e)
+    }
+  }
+
+  const removeFormFieldFile = (fieldIndex, fileIndex) => {
+    if (localRequest.value.formData[fieldIndex]?.files) {
+      localRequest.value.formData[fieldIndex].files.splice(fileIndex, 1)
+      emit('update:request', localRequest.value)
+    }
   }
 
   // 格式化按钮功能
@@ -498,6 +561,9 @@ export function useRequestPanelSetup(props, emit) {
     addFormField,
     removeFormField,
     addFormUrlField,
-    removeFormUrlField
+    removeFormUrlField,
+    selectBinaryFile,
+    selectFormFieldFiles,
+    removeFormFieldFile
   }
 }

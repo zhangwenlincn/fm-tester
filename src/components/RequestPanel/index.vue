@@ -42,7 +42,10 @@ const {
   addFormField,
   removeFormField,
   addFormUrlField,
-  removeFormUrlField
+  removeFormUrlField,
+  selectBinaryFile,
+  selectFormFieldFiles,
+  removeFormFieldFile
 } = useRequestPanelSetup(props, emit)
 </script>
 
@@ -194,7 +197,17 @@ const {
         </div>
         <!-- binary 类型显示文件选择 -->
         <div v-show="localRequest.bodyType === 'binary'" class="body-binary">
-          <span class="empty-text">二进制文件上传功能开发中...</span>
+          <div class="binary-file-selector">
+            <button class="select-file-btn" @click="selectBinaryFile">
+              <Icon name="file" :size="16" />
+              选择文件
+            </button>
+            <div v-if="localRequest.binaryFile" class="selected-file">
+              <span class="file-name">{{ localRequest.binaryFile.name }}</span>
+              <button class="remove-file-btn" @click="localRequest.binaryFile = null">×</button>
+            </div>
+            <div v-else class="no-file-hint">请选择要上传的二进制文件</div>
+          </div>
         </div>
         <!-- form-data 类型显示键值对表格 -->
         <div v-show="localRequest.bodyType === 'form-data'" class="form-data-panel">
@@ -224,7 +237,25 @@ const {
                 <input type="text" v-model="field.key" placeholder="字段名" />
               </span>
               <span class="col-value">
-                <input type="text" v-model="field.value" placeholder="值" />
+                <!-- 文本类型显示输入框 -->
+                <template v-if="field.type === 'text'">
+                  <input type="text" v-model="field.value" placeholder="值" />
+                </template>
+                <!-- 文件类型显示文件选择按钮和已选文件列表 -->
+                <template v-else>
+                  <div class="file-value-cell">
+                    <button v-if="!field.files || field.files.length === 0" class="select-file-btn small" @click="selectFormFieldFiles(index)">
+                      <Icon name="file" :size="14" />
+                      选择
+                    </button>
+                    <div v-else class="selected-files-list">
+                      <div v-for="(file, fIndex) in field.files" :key="fIndex" class="selected-file-item">
+                        <span class="file-name">{{ file.name }}</span>
+                        <button class="remove-file-btn small" @click="removeFormFieldFile(index, fIndex)">×</button>
+                      </div>
+                    </div>
+                  </div>
+                </template>
               </span>
               <span class="col-type">
                 <select v-model="field.type">

@@ -22,7 +22,9 @@ export function useAppSetup() {
     params: [],
     headers: [],
     body: '',
-    bodyType: 'raw'
+    bodyType: 'raw',
+    formData: [],
+    binaryFile: null
   })
 
   // 响应数据
@@ -389,7 +391,9 @@ export function useAppSetup() {
         url: api.url || '',
         headers: api.headers || [],
         body: api.body || '',
-        bodyType: api.body_type || 'raw'
+        bodyType: api.body_type || 'raw',
+        formData: api.form_fields || [],
+        binaryFile: api.binary_file_path ? { path: api.binary_file_path, name: api.binary_file_path.split(/[/\\]/).pop() } : null
       })
       activeTab.value = tabs.value.length - 1
     }
@@ -425,6 +429,8 @@ export function useAppSetup() {
       currentRequest.headers = []
       currentRequest.body = ''
       currentRequest.bodyType = 'raw'
+      currentRequest.formData = []
+      currentRequest.binaryFile = null
       return
     }
     
@@ -437,7 +443,22 @@ export function useAppSetup() {
         : [{ key: 'Content-Type', value: 'application/json', enabled: true }]
       currentRequest.body = currentTab.body || ''
       currentRequest.bodyType = currentTab.bodyType || 'raw'
+      currentRequest.formData = currentTab.formData || []
+      currentRequest.binaryFile = currentTab.binaryFile || null
     }
+  }
+
+// 更新请求（来自 RequestPanel）
+  const updateRequest = (newRequest) => {
+    // 逐个属性更新，确保 Vue 响应式系统正确追踪
+    currentRequest.method = newRequest.method
+    currentRequest.url = newRequest.url
+    currentRequest.params = newRequest.params
+    currentRequest.headers = newRequest.headers
+    currentRequest.body = newRequest.body
+    currentRequest.bodyType = newRequest.bodyType
+    currentRequest.formData = newRequest.formData
+    currentRequest.binaryFile = newRequest.binaryFile
   }
 
 // 发送请求
@@ -470,12 +491,27 @@ export function useAppSetup() {
         }
       }
       
+      // 准备 form_fields 数据（转换字段名以匹配后端）
+      const formFields = request.formData?.map(field => ({
+        key: field.key,
+        value: field.value,
+        type: field.type,
+        enabled: field.enabled,
+        files: field.files
+      })) || null
+      
+      // 准备 binary 文件路径
+      const binaryFilePath = request.binaryFile?.path || null
+      
       // 使用 Rust 后端发送请求（绕过 CORS，支持环境变量替换）
       const result = await invoke('send_http_request', {
         method: request.method,
         url: request.url,
         headers: headersToSend,
         body: request.method !== 'GET' ? bodyToSend : null,
+        bodyType: request.bodyType,
+        formFields: formFields,
+        binaryFilePath: binaryFilePath,
         workspacePath: currentWorkspace.value?.path || ''
       })
       
@@ -519,6 +555,18 @@ export function useAppSetup() {
       return
     }
     
+    // 准备 form_fields 数据（转换字段名以匹配后端）
+    const formFields = request.formData?.map(field => ({
+      key: field.key,
+      value: field.value,
+      type: field.type,
+      enabled: field.enabled,
+      files: field.files
+    })) || null
+    
+    // 准备 binary 文件路径
+    const binaryFilePath = request.binaryFile?.path || null
+    
     try {
       await invoke('update_api', {
         workspacePath: currentWorkspace.value.path,
@@ -528,7 +576,9 @@ export function useAppSetup() {
         url: request.url,
         headers: request.headers,
         body: request.body,
-        bodyType: request.bodyType
+        bodyType: request.bodyType,
+        formFields: formFields,
+        binaryFilePath: binaryFilePath
       })
       
       // 更新 tabs 中的信息
@@ -598,6 +648,7 @@ export function useAppSetup() {
     selectApi,
     sendRequest,
     saveRequest,
+    updateRequest,
     onRenameApi,
     onDeleteApis
   }

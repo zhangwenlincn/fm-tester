@@ -37,6 +37,25 @@ pub struct Header {
     pub enabled: bool,
 }
 
+/// Form 表单字段（支持文本和文件）
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FormField {
+    pub key: String,
+    pub value: String,
+    #[serde(rename = "type")]
+    pub field_type: String,  // "text" 或 "file"
+    pub enabled: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub files: Option<Vec<FileInfo>>,  // 文件类型时存储文件信息
+}
+
+/// 文件信息（仅保存路径）
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FileInfo {
+    pub path: String,
+    pub name: String,
+}
+
 /// 集合（可包含子集合和接口）
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Collection {
@@ -56,6 +75,10 @@ pub struct Collection {
     pub body: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub body_type: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub form_fields: Option<Vec<FormField>>,  // form-data 字段
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub binary_file_path: Option<String>,  // binary 文件路径
 }
 
 /// 集合配置文件结构

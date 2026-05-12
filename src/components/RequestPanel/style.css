@@ -582,3 +582,119 @@
   font-size: 12px;
   margin-top: 8px;
 }
+
+/* 文件选择相关样式 */
+.binary-file-selector {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 24px;
+  background: #fafafa;
+}
+
+.select-file-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  font-size: 13px;
+  color: #1890ff;
+  background: #e6f7ff;
+  border: 1px solid #91d5ff;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.select-file-btn:hover {
+  background: #bae7ff;
+}
+
+.select-file-btn.small {
+  padding: 4px 16px;
+  font-size: 12px;
+  min-width: 60px;
+}
+
+.selected-file {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #fff;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+}
+
+.selected-file .file-name {
+  font-size: 13px;
+  color: #262626;
+}
+
+.remove-file-btn {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  color: #ff4d4f;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.remove-file-btn:hover {
+  background: #fff1f0;
+}
+
+.remove-file-btn.small {
+  width: 16px;
+  height: 16px;
+  font-size: 12px;
+}
+
+.no-file-hint {
+  font-size: 13px;
+  color: #8c8c8c;
+}
+
+/* form-data 文件字段样式 */
+.file-value-cell {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  flex-wrap: wrap;
+}
+
+.selected-files-list {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.selected-file-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  background: #f5f5f5;
+  border-radius: 4px;
+}
+
+.selected-file-item .file-name {
+  font-size: 12px;
+  color: #262626;
+}
+
+.selected-file-item .file-size {
+  font-size: 11px;
+  color: #8c8c8c;
+  margin-left: 4px;
+}

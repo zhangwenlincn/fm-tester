@@ -1,4 +1,4 @@
-use crate::models::{Collection, CollectionsConfig, Header};
+use crate::models::{Collection, CollectionsConfig, Header, FormField};
 use std::fs;
 use std::path::PathBuf;
 
@@ -104,6 +104,8 @@ pub fn create_collection(workspace_path: String, name: String, description: Opti
         headers: None,
         body: None,
         body_type: None,
+        form_fields: None,
+        binary_file_path: None,
     };
     
     if let Some(pid) = parent_id {
@@ -140,6 +142,8 @@ pub fn create_api(workspace_path: String, name: String, method: String, url: Str
         ]),
         body: Some(String::new()),
         body_type: Some("raw".to_string()),
+        form_fields: None,
+        binary_file_path: None,
     };
     
     if let Some(pid) = parent_id {
@@ -166,7 +170,9 @@ pub fn update_api(
     url: Option<String>,
     headers: Option<Vec<Header>>,
     body: Option<String>,
-    body_type: Option<String>
+    body_type: Option<String>,
+    form_fields: Option<Vec<FormField>>,
+    binary_file_path: Option<String>
 ) -> Result<(), String> {
     let mut config = read_collections(&workspace_path);
     
@@ -180,6 +186,8 @@ pub fn update_api(
         if let Some(h) = headers { api.headers = Some(h); }
         if let Some(b) = body { api.body = Some(b); }
         if let Some(bt) = body_type { api.body_type = Some(bt); }
+        if let Some(ff) = form_fields { api.form_fields = Some(ff); }
+        if let Some(bfp) = binary_file_path { api.binary_file_path = Some(bfp); }
     } else {
         return Err("API 不存在".to_string());
     }

@@ -52,6 +52,7 @@ const {
   selectApi,
   sendRequest,
   saveRequest,
+  updateRequest,
   onRenameApi,
   onDeleteApis
 } = useAppSetup()
@@ -104,7 +105,7 @@ const {
             :request="currentRequest"
             :has-active-tab="tabs.length > 0"
             :variables="activeVariables"
-            @update:request="Object.assign(currentRequest, $event)"
+            @update:request="updateRequest($event)"
             @send="sendRequest"
             @save="saveRequest"
           />

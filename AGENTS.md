@@ -15,6 +15,7 @@
 - ❌ **禁止使用 UI 框架** - 使用纯原生 Vue 3 + CSS
 - ✅ **使用 cargo 命令** - 开发命令为 `cargo tauri dev`，不是 `npm run dev`
 - ❌ **禁止主动 git push** - 只有用户明确要求时才推送
+- ❌ **禁止 AI 启动程序** - 不运行 `cargo tauri dev`、`npm run dev` 等启动命令，仅进行代码编辑等静态操作
 - ✅ **集合最多三层** - `MAX_DEPTH = 2` (depth 0, 1, 2)
 - ✅ **新建接口无需输入名称** - 直接在 request 页面让用户填写
 - ✅ **重命名自动保存** - 修改名称后立即保存到后端
