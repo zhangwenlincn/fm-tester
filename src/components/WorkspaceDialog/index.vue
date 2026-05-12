@@ -18,6 +18,7 @@ const {
   selectedWorkspaceId,
   selectPath,
   createWorkspace,
+  handleSelectWorkspaceItem,
   selectWorkspace,
   close
 } = useWorkspaceDialogSetup(props, emit)
@@ -78,7 +79,7 @@ const {
             :key="ws.id"
             class="workspace-item"
             :class="{ selected: selectedWorkspaceId === ws.id }"
-            @click="selectedWorkspaceId = ws.id"
+            @click="handleSelectWorkspaceItem(ws.id)"
           >
             <div class="ws-name">{{ ws.name }}</div>
             <div class="ws-path">{{ ws.path }}</div>

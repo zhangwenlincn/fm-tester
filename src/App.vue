@@ -25,9 +25,11 @@ const {
   environments,
   activeEnvironmentId,
   activeEnvironment,
-  editingEnvVariables,
+  selectedEnvironment,
+  selectedEnvVariables,
   loadEnvironments,
   switchEnvironment,
+  selectEnvironment,
   saveEnvironment,
   deleteEnvironment,
   saveEnvVariables,
@@ -36,8 +38,10 @@ const {
   showWorkspaceInfo,
   showEnvironmentInfo,
   onSwitchEnvironment,
+  onSelectEnvironment,
   openCreateWorkspace,
   onWorkspaceCreated,
+  onWorkspaceDeleted,
   onSwitchWorkspace,
   loadWorkspaces,
   onNavChange,
@@ -56,6 +60,7 @@ const {
     <!-- 顶部区域 -->
     <div class="top-area">
       <MenuBar
+        ref="menuBarRef"
         :workspaces="workspaces"
         :current-workspace="currentWorkspace"
         :environments="environments"
@@ -84,8 +89,9 @@ const {
         @rename-api="onRenameApi"
         @delete-apis="onDeleteApis"
         @nav-change="onNavChange"
-        @switch-environment="onSwitchEnvironment"
+        @select-environment="onSelectEnvironment"
         @environment-updated="loadEnvironments"
+        @workspace-deleted="onWorkspaceDeleted"
       />
       
       <!-- 中间内容区 -->
@@ -117,8 +123,8 @@ const {
       <!-- 环境信息面板 -->
       <div class="content-area" v-else-if="showEnvironmentInfo">
         <EnvironmentPanel 
-          :active-environment="activeEnvironment"
-          :editing-env-variables="editingEnvVariables"
+          :active-environment="selectedEnvironment"
+          :editing-env-variables="selectedEnvVariables"
           @save-variables="saveEnvVariables"
         />
       </div>

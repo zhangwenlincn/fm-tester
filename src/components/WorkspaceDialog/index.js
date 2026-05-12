@@ -69,7 +69,12 @@ export function useWorkspaceDialogSetup(props, emit) {
     }
   }
 
-  // 选择工作区
+  // 选中工作区项
+  const handleSelectWorkspaceItem = (id) => {
+    selectedWorkspaceId.value = id
+  }
+
+  // 选择工作区（确认按钮）
   const selectWorkspace = async () => {
     if (!selectedWorkspaceId.value) {
       error.value = '请选择一个工作区'
@@ -121,6 +126,7 @@ export function useWorkspaceDialogSetup(props, emit) {
     loadWorkspaces,
     selectPath,
     createWorkspace,
+    handleSelectWorkspaceItem,
     selectWorkspace,
     resetForm,
     close

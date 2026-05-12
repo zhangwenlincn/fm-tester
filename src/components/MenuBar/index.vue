@@ -38,6 +38,11 @@ const showEnvironmentDropdown = ref(false)
 const workspaceWrapperRef = ref(null)
 const environmentWrapperRef = ref(null)
 
+// 获取当前工作区显示名称
+const currentWorkspaceName = () => {
+  return props.currentWorkspace?.name || '未选择'
+}
+
 const toggleMenu = (index) => {
   activeMenu.value = activeMenu.value === index ? null : index
   showWorkspaceDropdown.value = false
@@ -67,7 +72,7 @@ const closeDropdowns = () => {
   showEnvironmentDropdown.value = false
 }
 
-const handleSwitchWorkspace = (workspace) => {
+const handleSwitchWorkspace = async (workspace) => {
   emit('switchWorkspace', workspace)
   showWorkspaceDropdown.value = false
 }
@@ -131,7 +136,7 @@ onUnmounted(() => {
           @click="toggleWorkspaceDropdown"
         >
           <span class="selector-label">工作区:</span>
-          <span class="selector-value">{{ currentWorkspace?.name || '未选择' }}</span>
+          <span class="selector-value">{{ currentWorkspaceName() }}</span>
           <span class="selector-arrow">▼</span>
         </div>
         <div v-show="showWorkspaceDropdown" class="selector-dropdown">
@@ -139,6 +144,7 @@ onUnmounted(() => {
             v-for="ws in workspaces"
             :key="ws.id"
             class="dropdown-item"
+            :class="{ active: props.currentWorkspace?.id === ws.id }"
             @click.stop="handleSwitchWorkspace(ws)"
           >
             {{ ws.name }}
@@ -154,7 +160,7 @@ onUnmounted(() => {
         <div
           class="selector"
           :class="{ active: showEnvironmentDropdown }"
-          @click="toggleEnvironmentDropdown"
+          @click="toggleEnvironmentDropdown($event)"
         >
           <span class="selector-label">环境:</span>
           <span class="selector-value">{{ activeEnvironment?.name || '未选择' }}</span>

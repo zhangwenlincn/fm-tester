@@ -6,7 +6,7 @@ const props = defineProps({
   workspace: Object
 })
 
-const emit = defineEmits(['selectApi', 'switchWorkspace', 'createWorkspace', 'renameApi', 'deleteApis', 'navChange', 'switchEnvironment', 'environmentUpdated'])
+const emit = defineEmits(['selectApi', 'selectEnvironment', 'createWorkspace', 'renameApi', 'deleteApis', 'navChange', 'environmentUpdated', 'workspaceDeleted'])
 
 // 使用 composable
 const {
@@ -34,7 +34,7 @@ const {
   editingEnvName,
   editingEnvVariables,
   loadEnvironments,
-  switchEnvironment,
+  selectEnvironment,
   openCreateEnvDialog,
   openEditEnvDialog,
   addEnvVariable,
@@ -46,11 +46,16 @@ const {
   openEnvContextMenu,
   closeEnvContextMenu,
   handleEnvContextAction,
+  // 工作区右键菜单
+  wsContextMenu,
+  openWsContextMenu,
+  closeWsContextMenu,
+  handleWsContextAction,
   currentNavItem,
   selectNav,
   loadCollections,
   loadWorkspaces,
-  switchWorkspace,
+  selectWorkspace,
   createWorkspace,
   deleteWorkspace,
   toggleExpand,
@@ -184,7 +189,7 @@ defineExpose({
             :key="env.id"
             class="env-item"
             :class="{ active: activeEnvironmentId === env.id }"
-            @click="switchEnvironment(env.id)"
+            @click="selectEnvironment(env.id)"
             @contextmenu.prevent="(e) => openEnvContextMenu(e, env, 'env')"
           >
             <div class="env-header">
@@ -209,23 +214,22 @@ defineExpose({
         </div>
         
         <!-- 工作区列表 -->
-        <div class="workspace-list">
-          <div class="ws-list-header">所有工作区</div>
+        <div class="env-list">
           <div 
             v-for="ws in workspaces" 
             :key="ws.id"
-            class="ws-item"
-            :title="ws.path"
+            class="env-item"
+            :class="{ active: currentWorkspace?.id === ws.id }"
+            @click="selectWorkspace(ws)"
+            @contextmenu.prevent="(e) => openWsContextMenu(e, ws)"
           >
-            <span class="ws-icon"><Icon name="ws" /></span>
-            <div class="ws-info">
-              <span class="ws-name">{{ ws.name }}</span>
-              <span class="ws-desc">{{ ws.description || '无描述' }}</span>
+            <div class="env-header">
+              <span class="env-icon"><Icon name="ws" /></span>
+              <span class="env-name">{{ ws.name }}</span>
             </div>
-            <span class="ws-delete" @click.stop="deleteWorkspace(ws)" title="删除工作区">×</span>
           </div>
           
-          <div v-if="workspaces.length === 0" class="ws-empty">
+          <div v-if="workspaces.length === 0" class="empty-panel">
             暂无工作区，点击上方 + 创建
           </div>
         </div>
@@ -392,6 +396,18 @@ defineExpose({
           <span>删除环境</span>
         </div>
       </template>
+    </div>
+    
+    <!-- 工作区右键菜单 -->
+    <div 
+      v-if="wsContextMenu.visible" 
+      class="context-menu"
+      :style="{ left: wsContextMenu.x + 'px', top: wsContextMenu.y + 'px' }"
+      @click.stop
+    >
+      <div class="menu-item delete" @click="handleWsContextAction('delete-ws')">
+        <span>删除工作区</span>
+      </div>
     </div>
   </div>
 </template>

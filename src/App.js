@@ -31,9 +31,10 @@ export function useAppSetup() {
 
   // 环境数据
   const environments = ref([])
-  const activeEnvironmentId = ref(null)
-  const activeEnvironment = ref(null)
-  const editingEnvVariables = ref([])  // 编辑中的变量列表
+  const activeEnvironmentId = ref(null)  // 后端激活环境 ID（MenuBar 显示）
+  const activeEnvironment = ref(null)    // 后端激活环境对象（MenuBar 显示）
+  const selectedEnvironment = ref(null)  // Sidebar 选中的环境（EnvironmentPanel 显示）
+  const selectedEnvVariables = ref([])   // Sidebar 选中环境的变量列表
 
   // 当前侧边栏导航项
   const currentNavKey = ref('collection')
@@ -45,34 +46,34 @@ export function useAppSetup() {
       environments.value = []
       activeEnvironmentId.value = null
       activeEnvironment.value = null
-      editingEnvVariables.value = []
+      selectedEnvironment.value = null
+      selectedEnvVariables.value = []
       return
     }
     try {
       const config = await invoke('get_environments', { workspacePath: currentWorkspace.value.path })
       environments.value = config.environments || []
       activeEnvironmentId.value = config.active_environment_id || null
-      // 设置当前激活环境
+      // 设置 MenuBar 显示的激活环境
       if (activeEnvironmentId.value) {
         activeEnvironment.value = environments.value.find(e => e.id === activeEnvironmentId.value) || null
-        // 初始化编辑变量列表，如果没有变量则添加一个空行
-        editingEnvVariables.value = activeEnvironment.value?.variables?.length > 0 
-          ? [...activeEnvironment.value.variables] 
-          : [{ key: '', value: '', enabled: true }]
       } else {
         activeEnvironment.value = null
-        editingEnvVariables.value = []
       }
+      // Sidebar 选中环境清空
+      selectedEnvironment.value = null
+      selectedEnvVariables.value = []
     } catch (e) {
       console.error('加载环境失败:', e)
       environments.value = []
       activeEnvironmentId.value = null
       activeEnvironment.value = null
-      editingEnvVariables.value = []
+      selectedEnvironment.value = null
+      selectedEnvVariables.value = []
     }
   }
 
-  // 切换环境
+  // 切换环境（来自 MenuBar 下拉，调用后端，更新 MenuBar 显示）
   const switchEnvironment = async (environmentId) => {
     if (!currentWorkspace.value?.path) return
     try {
@@ -80,15 +81,21 @@ export function useAppSetup() {
         workspacePath: currentWorkspace.value.path,
         environmentId
       })
+      // 更新 MenuBar 显示的激活环境
       activeEnvironmentId.value = environmentId
       activeEnvironment.value = environments.value.find(e => e.id === environmentId) || null
-      // 同步编辑变量列表，如果没有变量则添加一个空行
-      editingEnvVariables.value = activeEnvironment.value?.variables?.length > 0 
-        ? [...activeEnvironment.value.variables] 
-        : [{ key: '', value: '', enabled: true }]
     } catch (e) {
       console.error('切换环境失败:', e)
     }
+  }
+  
+  // 选择环境（来自 Sidebar 选中，更新 EnvironmentPanel 显示）
+  const selectEnvironment = (environmentId) => {
+    selectedEnvironment.value = environments.value.find(e => e.id === environmentId) || null
+    // 同步编辑变量列表
+    selectedEnvVariables.value = selectedEnvironment.value?.variables?.length > 0 
+      ? [...selectedEnvironment.value.variables] 
+      : [{ key: '', value: '', enabled: true }]
   }
 
   // 保存环境
@@ -122,7 +129,7 @@ export function useAppSetup() {
         environmentId
       })
       environments.value = environments.value.filter(e => e.id !== environmentId)
-      // 如果删除的是当前激活环境，切换到第一个
+      // 如果删除的是 MenuBar 激活环境，切换到第一个
       if (activeEnvironmentId.value === environmentId) {
         const firstEnv = environments.value[0]
         if (firstEnv) {
@@ -132,6 +139,11 @@ export function useAppSetup() {
           activeEnvironment.value = null
         }
       }
+      // 如果删除的是 Sidebar 选中的环境，清空
+      if (selectedEnvironment.value?.id === environmentId) {
+        selectedEnvironment.value = null
+        selectedEnvVariables.value = []
+      }
     } catch (e) {
       console.error('删除环境失败:', e)
     }
@@ -139,18 +151,18 @@ export function useAppSetup() {
 
   // 保存环境变量
   const saveEnvVariables = async () => {
-    if (!currentWorkspace.value?.path || !activeEnvironment.value) return
+    if (!currentWorkspace.value?.path || !selectedEnvironment.value) return
     // 过滤非空变量
-    const nonEmptyVars = editingEnvVariables.value.filter(v => v.key.trim())
+    const nonEmptyVars = selectedEnvVariables.value.filter(v => v.key.trim())
     const environment = {
-      ...activeEnvironment.value,
+      ...selectedEnvironment.value,
       variables: nonEmptyVars
     }
     try {
       const result = await saveEnvironment(environment)
       // 更新本地状态，保留一个空行用于添加新变量
-      activeEnvironment.value = result
-      editingEnvVariables.value = [...result.variables, { key: '', value: '', enabled: true }]
+      selectedEnvironment.value = result
+      selectedEnvVariables.value = [...result.variables, { key: '', value: '', enabled: true }]
     } catch (e) {
       console.error('保存环境变量失败:', e)
     }
@@ -215,16 +227,29 @@ export function useAppSetup() {
     showWorkspaceDialog.value = true
   }
 
-  // 工作区创建完成
+  // 工作区创建完成（不自动切换，保持原选中状态）
   const onWorkspaceCreated = async (workspace) => {
-    currentWorkspace.value = workspace
     showWorkspaceDialog.value = false
-    // 清空标签页
-    tabs.value = []
-    activeTab.value = 0
-    // 刷新工作区列表（App.js 和 Sidebar）
+    // 刷新工作区列表（App.js、MenuBar、Sidebar）
     await loadWorkspaces()
-    sidebarRef.value?.loadCollections()
+    sidebarRef.value?.loadWorkspaces()
+  }
+
+  // 工作区删除完成（检查是否是当前选中）
+  const onWorkspaceDeleted = async (deletedId) => {
+    // 刷新工作区列表
+    await loadWorkspaces()
+    // 如果删除的是当前选中的工作区，清空相关状态
+    if (currentWorkspace.value?.id === deletedId) {
+      currentWorkspace.value = null
+      tabs.value = []
+      activeTab.value = 0
+      // 清空环境
+      activeEnvironmentId.value = null
+      activeEnvironment.value = null
+      selectedEnvironment.value = null
+      selectedEnvVariables.value = []
+    }
   }
 
   // 工作区切换（来自 Sidebar 或 MenuBar）
@@ -259,9 +284,14 @@ export function useAppSetup() {
     }
   }
 
-  // 环境切换（来自 Sidebar 或 MenuBar）
+  // 环境切换（来自 MenuBar 下拉，调用后端）
   const onSwitchEnvironment = async (envId) => {
     await switchEnvironment(envId)
+  }
+  
+  // 环境选中（来自 Sidebar，更新显示）
+  const onSelectEnvironment = (envId) => {
+    selectEnvironment(envId)
   }
 
   // 是否显示请求/响应面板
@@ -519,9 +549,11 @@ export function useAppSetup() {
     environments,
     activeEnvironmentId,
     activeEnvironment,
-    editingEnvVariables,
+    selectedEnvironment,
+    selectedEnvVariables,
     loadEnvironments,
     switchEnvironment,
+    selectEnvironment,
     saveEnvironment,
     deleteEnvironment,
     saveEnvVariables,
@@ -529,11 +561,13 @@ export function useAppSetup() {
     currentNavKey,
     onNavChange,
     onSwitchEnvironment,
+    onSelectEnvironment,
     showRequestResponse,
     showWorkspaceInfo,
     showEnvironmentInfo,
     openCreateWorkspace,
     onWorkspaceCreated,
+    onWorkspaceDeleted,
     onSwitchWorkspace,
     loadWorkspaces,
     closeWorkspaceDialog,

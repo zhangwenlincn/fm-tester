@@ -62,6 +62,14 @@ export function useSidebarSetup(props, emit) {
     type: '' // 'root' 或 'env'
   })
   
+  // 工作区右键菜单
+  const wsContextMenu = ref({
+    visible: false,
+    x: 0,
+    y: 0,
+    ws: null
+  })
+  
   // 获取当前导航项
   const currentNavItem = () => navItems[activeNav.value]
   
@@ -91,20 +99,10 @@ export function useSidebarSetup(props, emit) {
     }
   }
   
-  // 切换环境
-  const switchEnvironment = async (envId) => {
-    if (!props.workspace?.path) return
-    try {
-      await invoke('switch_environment', {
-        workspacePath: props.workspace.path,
-        environmentId: envId
-      })
-      activeEnvironmentId.value = envId
-      // 通知父组件更新 activeEnvironment（传递环境 ID）
-      emit('switchEnvironment', envId)
-    } catch (e) {
-      console.error('切换环境失败:', e)
-    }
+  // 选择环境（仅选中效果，通知父组件更新显示）
+  const selectEnvironment = (envId) => {
+    activeEnvironmentId.value = envId
+    emit('selectEnvironment', envId)
   }
   
   // 打开新建环境对话框
@@ -223,6 +221,37 @@ export function useSidebarSetup(props, emit) {
     closeEnvContextMenu()
   }
   
+  // 打开工作区右键菜单
+  const openWsContextMenu = (event, ws) => {
+    event.preventDefault()
+    event.stopPropagation()
+    
+    wsContextMenu.value = {
+      visible: true,
+      x: event.clientX,
+      y: event.clientY,
+      ws: ws
+    }
+  }
+  
+  // 关闭工作区右键菜单
+  const closeWsContextMenu = () => {
+    wsContextMenu.value.visible = false
+  }
+  
+  // 工作区右键菜单操作
+  const handleWsContextAction = async (action) => {
+    const { ws } = wsContextMenu.value
+    
+    if (action === 'delete-ws') {
+      if (ws) {
+        await deleteWorkspace(ws)
+      }
+    }
+    
+    closeWsContextMenu()
+  }
+  
   // 加载集合列表
   const loadCollections = async () => {
     if (!props.workspace?.path) return
@@ -239,21 +268,16 @@ export function useSidebarSetup(props, emit) {
   // 加载工作区列表
   const loadWorkspaces = async () => {
     try {
-      workspaces.value = await invoke('get_workspaces')
+      workspaces.value = await invoke('get_workspaces') || []
     } catch (e) {
       console.error('加载工作区失败:', e)
+      workspaces.value = []
     }
   }
   
-  // 切换工作区
-  const switchWorkspace = async (workspace) => {
-    try {
-      const ws = await invoke('switch_workspace', { id: workspace.id })
-      currentWorkspace.value = ws
-      emit('switchWorkspace', ws)
-    } catch (e) {
-      console.error('切换工作区失败:', e)
-    }
+  // 选择工作区（仅选中效果）
+  const selectWorkspace = (workspace) => {
+    currentWorkspace.value = workspace
   }
   
   // 新建工作区
@@ -266,10 +290,8 @@ export function useSidebarSetup(props, emit) {
     try {
       await invoke('delete_workspace', { id: ws.id })
       await loadWorkspaces()
-      if (currentWorkspace.value?.id === ws.id) {
-        currentWorkspace.value = null
-        emit('switchWorkspace', null)
-      }
+      // 通知父组件（传递被删除的工作区 id，让 App 判断是否需要清空）
+      emit('workspaceDeleted', ws.id)
     } catch (e) {
       console.error('删除工作区失败:', e)
     }
@@ -484,7 +506,7 @@ export function useSidebarSetup(props, emit) {
     return result
   })
   
-  // 监听工作区变化
+  // 监听工作区变化（来自 MenuBar 选择）
   watch(() => props.workspace, async (ws) => {
     if (ws) {
       currentWorkspace.value = ws
@@ -501,6 +523,7 @@ export function useSidebarSetup(props, emit) {
   const handleGlobalClick = () => {
     closeContextMenu()
     closeEnvContextMenu()
+    closeWsContextMenu()
   }
   
   onMounted(async () => {
@@ -538,7 +561,7 @@ export function useSidebarSetup(props, emit) {
     editingEnvName,
     editingEnvVariables,
     loadEnvironments,
-    switchEnvironment,
+    selectEnvironment,
     openCreateEnvDialog,
     openEditEnvDialog,
     addEnvVariable,
@@ -550,11 +573,16 @@ export function useSidebarSetup(props, emit) {
     openEnvContextMenu,
     closeEnvContextMenu,
     handleEnvContextAction,
+    // 工作区右键菜单
+    wsContextMenu,
+    openWsContextMenu,
+    closeWsContextMenu,
+    handleWsContextAction,
     currentNavItem,
     selectNav,
     loadCollections,
     loadWorkspaces,
-    switchWorkspace,
+    selectWorkspace,
     createWorkspace,
     deleteWorkspace,
     toggleExpand,
