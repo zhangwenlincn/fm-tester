@@ -4,323 +4,123 @@
 
 - **前端**: Vue 3 (script setup + composables) + Vite 6
 - **后端**: Tauri 2 + Rust (模块化结构)
-- **纯原生实现**: **禁止使用任何 UI 框架**（Ant Design, Element 等），所有样式手写 CSS
+- **纯原生实现**: **禁止使用任何 UI 框架**，所有样式手写 CSS
 - **HTTP 客户端**: reqwest (Rust 后端发送请求，绕过 CORS)
-- **代码编辑**: Monaco Editor (请求体和响应体编辑器)
-- **语法支持**: JSON5 (编辑时支持注释/单引号/尾逗号，发送时转换为标准 JSON)
+- **代码编辑**: Monaco Editor
+- **语法支持**: JSON5 (编辑时支持注释/尾逗号，发送时转换为标准 JSON)
 
-## 用户明确约束
+## 用户约束（必须遵守）
 
-**必须遵守**：
-- ❌ **禁止使用 UI 框架** - 使用纯原生 Vue 3 + CSS
-- ✅ **使用 cargo 命令** - 开发命令为 `cargo tauri dev`，不是 `npm run dev`
+- ❌ **禁止使用 UI 框架** (Ant Design, Element 等)
 - ❌ **禁止主动 git push** - 只有用户明确要求时才推送
-- ❌ **禁止 AI 启动程序** - 不运行 `cargo tauri dev`、`npm run dev` 等启动命令，仅进行代码编辑等静态操作
-- ✅ **集合最多三层** - `MAX_DEPTH = 2` (depth 0, 1, 2)
-- ✅ **新建接口无需输入名称** - 直接在 request 页面让用户填写
-- ✅ **重命名自动保存** - 修改名称后立即保存到后端
-- ✅ **组件文件夹结构** - 每个组件必须有 `index.vue + index.js + style.css` 三文件
-
-## 目录结构
-
-```
-fm-tester/
-├── src/                    # Vue 前端
-│   ├── App.vue             # 主布局入口
-│   ├── App.js              # App composable (状态管理)
-│   ├── main.js             # Vue 应用入口
-│   └── components/         # UI 组件 (每个组件独立文件夹)
-│       ├── Icon/
-│       │   ├── index.vue   # 组件模板
-│       │   └── style.css   # 组件样式
-│       ├── Sidebar/
-│       │   ├── index.vue       # 主入口，组合子组件
-│       │   ├── index.js        # composable (导航切换逻辑)
-│       │   ├── style.css
-│       │   ├── IconNav/        # 左侧图标导航栏
-│       │   ├── CollectionPanel/ # 集合面板（树形结构）
-│       │   ├── WorkspacePanel/  # 工作区面板
-│       │   ├── EnvironmentPanel/ # 环境面板
-│       │   └── ContextMenu/     # 右键菜单组件
-│       ├── RequestPanel/
-│       ├── ResponsePanel/
-│       ├── TabsBar/
-│       ├── MenuBar/
-│       ├── StatusBar/
-│       ├── WorkspaceDialog/
-│       └── VariableHighlight/   # 环境变量高亮与自动补全
-├── src-tauri/              # Rust 后端 (模块化)
-│   ├── src/
-│   │   ├── lib.rs          # 入口：注册所有命令
-│   │   ├── main.rs         # 二进制入口
-│   │   ├── models.rs       # 数据结构定义
-│   │   ├── workspace/      # 工作区模块
-│   │   │   └── mod.rs      # CRUD 命令
-│   │   ├── collection/     # 集合模块
-│   │   │   └── mod.rs      # 集合/接口 CRUD
-│   │   ├── environment/    # 环境变量模块
-│   │   │   └── mod.rs      # 环境 CRUD + 变量替换
-│   │   └── http/           # HTTP 模块
-│   │   │   └── mod.rs      # send_http_request (支持变量替换)
-│   ├── Cargo.toml
-│   ├── capabilities/       # Tauri 权限配置
-│   └── tauri.conf.json
-```
-
-## 数据存储
-
-- **工作区配置**: `~/.fm/workspace.yaml` (所有工作区列表)
-- **集合配置**: `{工作区路径}/collections.yaml` (集合和接口数据)
-- **环境配置**: `{工作区路径}/environments.yaml` (环境变量，工作区级别)
-- **字段命名**: YAML 中使用 `type` 字段（Rust 有 `#[serde(rename = "type")]`）
+- ❌ **禁止 AI 启动程序** - 不运行 `cargo tauri dev` 等，仅进行代码编辑
+- ✅ **使用 cargo 命令** - 开发用 `cargo tauri dev`，不用 `npm run dev`
+- ✅ **集合最多三层** - `MAX_DEPTH = 2` (CollectionPanel/index.js)
+- ✅ **组件三文件结构** - `index.vue + index.js + style.css`
 
 ## 开发命令
 
 ```bash
-# 启动 Tauri 开发模式（前端 + 后端）
-cargo tauri dev
-
-# 仅启动 Vite 前端
-npm run dev
-
-# 验证 Rust 编译
-cd src-tauri && cargo check
-
-# 构建生产版本
-cargo tauri build
+cargo tauri dev      # 启动开发模式（前端 + 后端）
+cd src-tauri; cargo check  # 验证 Rust 编译
+cargo tauri build    # 构建生产版本
 ```
 
-## 关键配置
+## Rust 后端模块
 
-### Vite (vite.config.js)
-
-- **端口**: 1420 (strictPort, 固定不可改)
-- **忽略监听**: src-tauri 目录
-
-### Cargo.toml 注意事项
-
-Windows 上 lib crate 使用 `_lib` suffix 防止命名冲突：
-```toml
-[lib]
-name = "fm_tester_lib"  # 必须 _lib suffix
-crate-type = ["staticlib", "cdylib", "rlib"]
+```
+src-tauri/src/
+├── lib.rs          # 入口：注册所有命令
+├── models.rs       # 数据结构定义
+├── workspace/      # 工作区 CRUD
+├── collection/     # 集合/接口 CRUD
+├── environment/    # 环境变量 CRUD + 变量替换
+├── http/           # send_http_request
+└── memory/         # 记忆配置（集合展开状态等）
 ```
 
-### 权限 (capabilities/default.json)
+每个模块结构：`mod.rs (入口) + commands.rs + config.rs + utils.rs`
 
-```json
-"permissions": [
-  "core:default",
-  "opener:default",
-  "fs:default",
-  "fs:allow-home-read",
-  "fs:allow-home-write-recursive",
-  "dialog:default"
-]
-```
+## 数据存储
 
-## Rust 模块结构
-
-```rust
-// lib.rs 入口
-mod models;
-mod workspace;
-mod collection;
-mod http;
-mod environment;
-
-pub use models::*;
-pub use workspace::*;  // 导出所有 workspace 命令
-pub use collection::*;
-pub use http::*;
-pub use environment::*;
-
-// 注册命令
-.invoke_handler(tauri::generate_handler![
-    get_workspaces, create_workspace, switch_workspace, ...
-    get_collections, create_collection, create_api, ...
-    get_environments, save_environment, delete_environment, switch_environment, ...
-    send_http_request
-])
-```
+| 文件 | 位置 | 内容 |
+|------|------|------|
+| `workspace.yaml` | `~/.fm/` | 所有工作区列表 |
+| `collections.yaml` | `{工作区路径}/` | 集合和接口数据 |
+| `environments.yaml` | `{工作区路径}/` | 环境变量 |
+| `memory.yaml` | `{工作区路径}/` | 集合展开状态等记忆配置 |
 
 ## Tauri Commands
 
 | 模块 | 命令 | 说明 |
 |------|------|------|
-| workspace | `get_workspaces` | 获取所有工作区 |
-| workspace | `get_last_workspace` | 获取最近打开的工作区 |
-| workspace | `create_workspace` | 创建工作区 |
-| workspace | `switch_workspace` | 切换工作区 |
-| workspace | `set_last_api` | 设置最后打开的接口 |
-| workspace | `get_last_api` | 获取最后打开的接口 |
-| collection | `get_collections` | 获取集合列表 |
-| collection | `create_collection` | 创建集合 |
-| collection | `create_api` | 创建接口 |
-| collection | `update_api` | 更新接口信息 |
-| collection | `update_collection` | 更新集合名称 |
-| collection | `delete_collection_item` | 删除集合或接口 |
-| environment | `get_environments` | 获取环境配置 |
-| environment | `save_environment` | 创建/更新环境 |
-| environment | `delete_environment` | 删除环境 |
-| environment | `switch_environment` | 切换激活环境 |
-| environment | `get_active_variables` | 获取当前激活环境的变量 |
-| http | `send_http_request` | 发送 HTTP 请求（自动替换变量） |
+| workspace | `get_workspaces`, `create_workspace`, `switch_workspace`, `delete_workspace`, `update_workspace` | 工作区 CRUD |
+| workspace | `set_last_api`, `get_last_api` | 最后打开的接口 |
+| collection | `get_collections`, `create_collection`, `create_api`, `update_api`, `update_collection`, `delete_collection_item`, `move_api` | 集合/接口 CRUD |
+| environment | `get_environments`, `save_environment`, `delete_environment`, `switch_environment`, `get_active_variables` | 环境变量 |
+| memory | `get_expanded_collections`, `save_expanded_collections` | 集合展开状态 |
+| http | `send_http_request` | 发送 HTTP 请求（支持变量替换） |
 
-## 前端调用模式
+## 添加新 Tauri Command
+
+1. 选择模块：`workspace/`, `collection/`, `http/`, `environment/`, `memory/`
+2. 在模块 `commands.rs` 添加 `#[tauri::command]` 函数
+3. 在模块 `mod.rs` 导出
+4. 在 `lib.rs` 注册到 `invoke_handler`
+
+## 前端调用
 
 ```js
 import { invoke } from '@tauri-apps/api/core'
 
-// 调用 Tauri 命令
-const result = await invoke('get_workspaces')
-const api = await invoke('create_api', {
-  workspacePath: workspace.path,
-  name: '接口名称',
-  method: 'GET',
-  url: '',
-  parentId: parent?.id
-})
-
-// HTTP 请求（通过 Rust 后端，绕过 CORS，支持环境变量替换）
+// 参数名使用 camelCase (Rust 会自动转换为 snake_case)
+const result = await invoke('get_collections', { workspacePath: path })
 const response = await invoke('send_http_request', {
   method: 'GET',
-  url: 'https://www.baidu.com',  // 支持 {{baseUrl}} 变量替换
+  url: '{{baseUrl}}/api',  // 支持 {{变量名}} 替换
   headers: [{ key: 'Authorization', value: 'Bearer {{token}}', enabled: true }],
   body: null,
-  workspacePath: workspace.path  // 必须传入，用于获取环境变量
+  workspacePath: workspace.path
 })
 ```
 
 ## Vue 组件模式
 
-每个组件使用文件夹结构 + composable：
+每个组件文件夹：`index.vue` + `index.js` (composable) + `style.css`
 
 ```js
-// components/Sidebar/index.vue
-import { useSidebarSetup } from './index.js'
+// index.vue
+import { useComponentSetup } from './index.js'
+const { data, method } = useComponentSetup(props, emit)
 
-const { loadWorkspaces, loadCollections } = useSidebarSetup(props, emit)
-```
-
-```js
-// components/Sidebar/index.js - composable
-export function useSidebarSetup(props, emit) {
-  const collections = ref([])
-  
-  const loadCollections = async () => {
-    collections.value = await invoke('get_collections', { workspacePath: props.workspace.path })
-  }
-  
-  return { collections, loadCollections }
+// index.js
+export function useComponentSetup(props, emit) {
+  const data = ref([])
+  return { data, method: async () => { ... } }
 }
 ```
 
-## 添加新的 Tauri Command
+## 关键交互逻辑
 
-1. 选择合适模块：`workspace/`, `collection/`, `http/`, `environment/`
-2. 在模块 `mod.rs` 中添加：
-```rust
-#[tauri::command]
-pub fn my_command(arg: String) -> Result<String, String> {
-    Ok(format!("result: {}", arg))
-}
+- **新建接口** - 直接打开请求面板，无需对话框
+- **重命名自动保存** - 修改后立即调用后端
+- **删除同步** - 删除接口时关闭对应标签页，删除集合时关闭所有子接口标签页
+- **环境变量** - URL/Headers/Body 支持 `{{变量名}}`，发送时自动替换
+- **JSON5** - 编辑支持注释/尾逗号，发送时转换为标准 JSON
+
+## HTTP 方法颜色
+
+- GET: `#52C416`, POST: `#FA8C16`, PUT: `#1890FF`, DELETE: `#FF4D4F`, PATCH: `#722ED1`
+
+## Cargo.toml 注意
+
+Windows 上 lib crate 必须使用 `_lib` suffix：
+```toml
+[lib]
+name = "fm_tester_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
 ```
-3. 在 `lib.rs` 注册到 `invoke_handler`
-
-## HTTP 颜色方案
-
-- POST: `#FA8C16` (橙色)
-- GET: `#52C416` (绿色)
-- PUT: `#1890FF` (蓝色)
-- DELETE: `#FF4D4F` (红色)
-- PATCH: `#722ED1` (紫色)
-
-## 注意事项
-
-**开发约束**:
-- ❌ **禁止使用 UI 框架** (Ant Design, Element 等)
-- ❌ **禁止使用 pip** - Python 依赖用 uv 管理
-- ❌ **禁止主动 Git push** - 只在用户明确请求时推送
-- ✅ **使用 cargo 命令** - 开发用 `cargo tauri dev`，不用 `npm run dev`
-- ✅ **集合最多三层嵌套** - MAX_DEPTH = 2 (CollectionPanel/index.js)
-
-**交互逻辑**:
-- ✅ **新建接口** - 直接打开请求面板，不需要对话框输入信息
-- ✅ **重命名自动保存** - 调用后端 update_api/update_collection
-- ✅ **删除同步** - 删除接口时关闭对应标签页，删除集合时关闭所有子接口标签页
-- ✅ **URL 参数同步** - URL 输入和参数面板双向同步（RequestPanel/index.js）
-- ✅ **Content-Type 自动适配** - 选择请求体类型时自动添加/更新 Content-Type 请求头
-- ✅ **环境变量替换** - URL、Headers、Body 支持 `{{变量名}}` 格式，发送时自动替换
-- ✅ **新建环境** - 只需输入名称，编辑时可添加变量
-- ✅ **环境切换** - 点击环境切换，右侧面板显示当前环境变量
-- ✅ **变量高亮** - `{{变量名}}` 显示淡蓝色高亮（VariableHighlight 组件）
-- ✅ **变量自动补全** - 输入 `{{` 弹出下拉菜单选择环境变量
-
-**JSON5 特殊处理**:
-- ✅ **编辑支持 JSON5** - Monaco Editor 使用 json5 语言（支持注释、单引号、尾逗号）
-- ✅ **格式化输出标准 JSON** - formatJson 函数输出标准格式（所有 key 必须有双引号）
-- ✅ **发送时转换** - sendRequest 函数自动将 JSON5 转换为标准 JSON 发送
-- 位置: App.js 第 222-237 行, syntax-highlight.js 第 248-262 行
-
-**组件结构要求**:
-- ✅ 每个组件必须有三个文件: `index.vue + index.js + style.css`
-- ✅ Composable 模式: index.js 导出 setup 函数，index.vue 导入并使用
 
 ## 窗口配置
 
-- 默认尺寸: 1280 × 800
-- 最小尺寸: 800 × 600
-- 配置位置: src-tauri/tauri.conf.json
-
-## 数据模型
-
-### Collection (集合/接口)
-```rust
-pub struct Collection {
-    pub id: String,
-    pub name: String,
-    pub description: String,
-    #[serde(rename = "type")]
-    pub type: String,  // "collection" 或 "api"
-    pub children: Vec<Collection>,
-    pub method: String,
-    pub url: String,
-    pub headers: Vec<Header>,
-    pub body: String,
-    pub body_type: String,
-}
-```
-
-### Workspace (工作区)
-```rust
-pub struct Workspace {
-    pub id: String,
-    pub name: String,
-    pub description: String,
-    pub path: String,
-    pub created_at: String,
-    pub last_opened: String,
-    pub last_api_id: Option<String>,
-}
-```
-
-### Environment (环境变量)
-```rust
-pub struct Variable {
-    pub key: String,
-    pub value: String,
-    pub enabled: bool,
-}
-
-pub struct Environment {
-    pub id: String,
-    pub name: String,
-    pub variables: Vec<Variable>,
-}
-
-pub struct EnvironmentsConfig {
-    pub environments: Vec<Environment>,
-    pub active_environment_id: Option<String>,
-}
-```
+- 默认: 1280×800, 最小: 800×600 (tauri.conf.json)
