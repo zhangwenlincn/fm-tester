@@ -163,6 +163,8 @@ export function useSidebarSetup(props, emit) {
       })
       await loadEnvironments()
       showEnvDialog.value = false
+      // 通知父组件刷新环境列表
+      emit('environmentUpdated')
     } catch (e) {
       console.error('保存环境失败:', e)
     }
@@ -177,6 +179,8 @@ export function useSidebarSetup(props, emit) {
         environmentId: envId
       })
       await loadEnvironments()
+      // 通知父组件刷新环境列表
+      emit('environmentUpdated')
     } catch (e) {
       console.error('删除环境失败:', e)
     }

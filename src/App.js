@@ -6,6 +6,7 @@ import JSON5 from 'json5'
 export function useAppSetup() {
   // 工作区数据
   const currentWorkspace = ref(null)
+  const workspaces = ref([])  // 工作区列表
   const showWorkspaceDialog = ref(false)
   const workspaceDialogMode = ref('create')
   const sidebarRef = ref(null)
@@ -38,7 +39,13 @@ export function useAppSetup() {
 
   // 加载环境配置
   const loadEnvironments = async () => {
-    if (!currentWorkspace.value?.path) return
+    if (!currentWorkspace.value?.path) {
+      // 清空环境数据
+      environments.value = []
+      activeEnvironmentId.value = null
+      activeEnvironment.value = null
+      return
+    }
     try {
       const config = await invoke('get_environments', { workspacePath: currentWorkspace.value.path })
       environments.value = config.environments || []
@@ -46,10 +53,14 @@ export function useAppSetup() {
       // 设置当前激活环境
       if (activeEnvironmentId.value) {
         activeEnvironment.value = environments.value.find(e => e.id === activeEnvironmentId.value) || null
+      } else {
+        activeEnvironment.value = null
       }
     } catch (e) {
       console.error('加载环境失败:', e)
       environments.value = []
+      activeEnvironmentId.value = null
+      activeEnvironment.value = null
     }
   }
 
@@ -124,12 +135,28 @@ export function useAppSetup() {
     loadLastWorkspace()
   })
 
+  // 加载工作区列表
+  const loadWorkspaces = async () => {
+    try {
+      const list = await invoke('get_workspaces')
+      workspaces.value = list || []
+    } catch (e) {
+      console.error('加载工作区列表失败:', e)
+      workspaces.value = []
+    }
+  }
+
   // 加载最近工作区
   const loadLastWorkspace = async () => {
     try {
+      // 先加载工作区列表
+      await loadWorkspaces()
+      
       const workspace = await invoke('get_last_workspace')
       if (workspace) {
         currentWorkspace.value = workspace
+        // 加载环境配置
+        await loadEnvironments()
         // 加载最后打开的接口
         await loadLastApi(workspace.id)
       }
@@ -158,29 +185,37 @@ export function useAppSetup() {
   }
 
   // 工作区创建完成
-  const onWorkspaceCreated = (workspace) => {
+  const onWorkspaceCreated = async (workspace) => {
     currentWorkspace.value = workspace
     showWorkspaceDialog.value = false
     // 清空标签页
     tabs.value = []
     activeTab.value = 0
-    // 刷新侧边栏工作区列表和集合列表
-    sidebarRef.value?.loadWorkspaces()
+    // 刷新工作区列表（App.js 和 Sidebar）
+    await loadWorkspaces()
     sidebarRef.value?.loadCollections()
   }
 
-  // 工作区切换（来自 Sidebar）
+  // 工作区切换（来自 Sidebar 或 MenuBar）
   const onSwitchWorkspace = async (workspace) => {
     currentWorkspace.value = workspace
     // 清空当前标签页
     tabs.value = []
     activeTab.value = 0
-    // 加载该工作区的环境配置
+    // 加载该工作区的环境配置（如果 workspace 为 null，会清空环境）
     await loadEnvironments()
     // 加载该工作区的最后接口
     if (workspace?.id) {
       await loadLastApi(workspace.id)
+      // 保存为最后打开的工作区
+      try {
+        await invoke('set_last_workspace', { workspaceId: workspace.id })
+      } catch (e) {
+        console.error('保存工作区失败:', e)
+      }
     }
+    // 刷新侧边栏
+    sidebarRef.value?.loadCollections()
   }
 
   // 导航切换（来自 Sidebar）
@@ -192,10 +227,9 @@ export function useAppSetup() {
     }
   }
 
-  // 环境切换（来自 Sidebar）
-  const onSwitchEnvironment = (env) => {
-    activeEnvironment.value = env
-    activeEnvironmentId.value = env?.id || null
+  // 环境切换（来自 Sidebar 或 MenuBar）
+  const onSwitchEnvironment = async (envId) => {
+    await switchEnvironment(envId)
   }
 
   // 是否显示请求/响应面板
@@ -440,6 +474,7 @@ export function useAppSetup() {
 
   return {
     currentWorkspace,
+    workspaces,
     showWorkspaceDialog,
     workspaceDialogMode,
     sidebarRef,
@@ -466,6 +501,7 @@ export function useAppSetup() {
     openCreateWorkspace,
     onWorkspaceCreated,
     onSwitchWorkspace,
+    loadWorkspaces,
     closeWorkspaceDialog,
     closeTab,
     selectApi,

@@ -24,6 +24,7 @@ pub fn run() {
             switch_workspace,
             delete_workspace,
             update_workspace,
+            set_last_workspace,
             set_last_api,
             get_last_api,
             // 集合

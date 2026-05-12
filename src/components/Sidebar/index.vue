@@ -6,7 +6,7 @@ const props = defineProps({
   workspace: Object
 })
 
-const emit = defineEmits(['selectApi', 'switchWorkspace', 'createWorkspace', 'renameApi', 'deleteApis', 'navChange', 'switchEnvironment'])
+const emit = defineEmits(['selectApi', 'switchWorkspace', 'createWorkspace', 'renameApi', 'deleteApis', 'navChange', 'switchEnvironment', 'environmentUpdated'])
 
 // 使用 composable
 const {
@@ -183,10 +183,9 @@ defineExpose({
             v-for="env in environments" 
             :key="env.id"
             class="env-item"
-            :class="{ active: activeEnvironmentId === env.id }"
             @contextmenu.prevent="(e) => openEnvContextMenu(e, env, 'env')"
           >
-            <div class="env-header" @click="switchEnvironment(env.id)">
+            <div class="env-header">
               <span class="env-icon"><Icon name="environment" /></span>
               <span class="env-name">{{ env.name }}</span>
             </div>
@@ -214,18 +213,6 @@ defineExpose({
           </div>
         </div>
         
-        <!-- 当前工作区 -->
-        <div class="current-workspace" v-if="currentWorkspace">
-          <div class="ws-current-header">当前工作区</div>
-          <div class="ws-current-item">
-            <span class="ws-icon"><Icon name="ws" /></span>
-            <div class="ws-info">
-              <span class="ws-name">{{ currentWorkspace.name }}</span>
-              <span class="ws-path">{{ currentWorkspace.path }}</span>
-            </div>
-          </div>
-        </div>
-        
         <!-- 工作区列表 -->
         <div class="workspace-list">
           <div class="ws-list-header">所有工作区</div>
@@ -233,15 +220,14 @@ defineExpose({
             v-for="ws in workspaces" 
             :key="ws.id"
             class="ws-item"
-            :class="{ active: currentWorkspace?.id === ws.id }"
+            :title="ws.path"
           >
-            <span class="ws-icon" @click="switchWorkspace(ws)"><Icon name="ws" /></span>
-            <div class="ws-info" @click="switchWorkspace(ws)">
+            <span class="ws-icon"><Icon name="ws" /></span>
+            <div class="ws-info">
               <span class="ws-name">{{ ws.name }}</span>
               <span class="ws-desc">{{ ws.description || '无描述' }}</span>
-              <span class="ws-time">最后打开: {{ ws.last_opened }}</span>
             </div>
-            <span class="ws-delete" @click="deleteWorkspace(ws)" title="删除工作区">×</span>
+            <span class="ws-delete" @click.stop="deleteWorkspace(ws)" title="删除工作区">×</span>
           </div>
           
           <div v-if="workspaces.length === 0" class="ws-empty">

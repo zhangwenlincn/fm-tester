@@ -4,34 +4,6 @@
   background: #fafafa;
 }
 
-.workspace-bar {
-  display: flex;
-  align-items: center;
-  padding: 4px 12px;
-  background: #f5f5f5;
-  border-bottom: 1px solid #e8e8e8;
-}
-
-.workspace-info {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.ws-icon {
-  font-size: 14px;
-}
-
-.ws-name {
-  font-size: 12px;
-  color: #262626;
-  font-weight: 500;
-}
-
-.no-workspace .ws-name {
-  color: #8c8c8c;
-}
-
 .tabs-bar {
   display: flex;
   align-items: center;

@@ -11,6 +11,7 @@ import WorkspaceDialog from './components/WorkspaceDialog/index.vue'
 // 使用 composable
 const {
   currentWorkspace,
+  workspaces,
   showWorkspaceDialog,
   workspaceDialogMode,
   sidebarRef,
@@ -35,6 +36,7 @@ const {
   openCreateWorkspace,
   onWorkspaceCreated,
   onSwitchWorkspace,
+  loadWorkspaces,
   onNavChange,
   closeWorkspaceDialog,
   closeTab,
@@ -50,7 +52,14 @@ const {
   <div class="app-container">
     <!-- 顶部区域 -->
     <div class="top-area">
-      <MenuBar />
+      <MenuBar
+        :workspaces="workspaces"
+        :current-workspace="currentWorkspace"
+        :environments="environments"
+        :active-environment="activeEnvironment"
+        @switch-workspace="onSwitchWorkspace"
+        @switch-environment="onSwitchEnvironment"
+      />
       <TabsBar 
         :tabs="tabs"
         :active-tab="activeTab"
@@ -73,6 +82,7 @@ const {
         @delete-apis="onDeleteApis"
         @nav-change="onNavChange"
         @switch-environment="onSwitchEnvironment"
+        @environment-updated="loadEnvironments"
       />
       
       <!-- 中间内容区 -->

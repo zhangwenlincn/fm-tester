@@ -24,18 +24,6 @@ const { selectTab, closeTab } = useTabsBarSetup(props, emit)
 
 <template>
   <div class="tabs-wrapper">
-    <!-- 工作区显示栏 -->
-    <div class="workspace-bar">
-      <div class="workspace-info" v-if="workspace">
-        <span class="ws-icon"><Icon name="ws" :size="14" /></span>
-        <span class="ws-name">{{ workspace.name }}</span>
-      </div>
-      <div class="workspace-info no-workspace" v-else>
-        <span class="ws-icon"><Icon name="ws" :size="14" /></span>
-        <span class="ws-name">未选择工作区</span>
-      </div>
-    </div>
-    
     <!-- 标签栏 -->
     <div class="tabs-bar">
       <div class="tabs-container">

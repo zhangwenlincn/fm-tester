@@ -259,10 +259,6 @@
   background: #f5f5f5;
 }
 
-.ws-item.active {
-  background: #e6f7ff;
-}
-
 .ws-desc {
   font-size: 12px;
   color: #8c8c8c;
@@ -463,11 +459,6 @@
 
 .env-item:hover {
   background: #f5f5f5;
-}
-
-.env-item.active {
-  border-color: #1890ff;
-  background: #e6f7ff;
 }
 
 .env-header {

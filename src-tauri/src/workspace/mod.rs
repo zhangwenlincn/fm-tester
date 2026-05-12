@@ -175,3 +175,27 @@ pub fn get_last_api(workspace_id: String) -> Result<Option<crate::models::Collec
     
     Ok(None)
 }
+
+/// 设置最后打开的工作区
+#[tauri::command]
+pub fn set_last_workspace(workspace_id: String) -> Result<(), String> {
+    let mut config = read_config();
+    
+    // 验证工作区是否存在
+    if !config.workspaces.iter().any(|w| w.id == workspace_id) {
+        return Err("工作区不存在".to_string());
+    }
+    
+    // 更新最后打开时间
+    let now = chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
+    for w in &mut config.workspaces {
+        if w.id == workspace_id {
+            w.last_opened = now;
+            break;
+        }
+    }
+    
+    config.last_workspace_id = Some(workspace_id);
+    write_config(&config)?;
+    Ok(())
+}
