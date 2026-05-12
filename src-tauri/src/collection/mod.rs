@@ -67,6 +67,19 @@ pub fn find_api_in_collections<'a>(items: &'a [Collection], id: &str) -> Option<
     None
 }
 
+/// 递归获取集合深度
+pub fn get_collection_depth(items: &[Collection], id: &str, current_depth: usize) -> Option<usize> {
+    for item in items {
+        if item.id == id {
+            return Some(current_depth);
+        }
+        if let Some(d) = get_collection_depth(&item.children, id, current_depth + 1) {
+            return Some(d);
+        }
+    }
+    None
+}
+
 /// 获取集合列表
 #[tauri::command]
 pub fn get_collections(workspace_path: String) -> Vec<Collection> {
@@ -201,6 +214,50 @@ pub fn update_collection(workspace_path: String, id: String, name: String, descr
         col.description = description;
     } else {
         return Err("集合不存在".to_string());
+    }
+    
+    write_collections(&workspace_path, &config)?;
+    Ok(())
+}
+
+/// 移动 API 到另一个集合
+#[tauri::command]
+pub fn move_api(workspace_path: String, api_id: String, target_collection_id: Option<String>) -> Result<(), String> {
+    let mut config = read_collections(&workspace_path);
+    
+    // 先克隆 API 数据，再从原位置移除
+    let api = if let Some(found_api) = find_api_in_collections(&config.collections, &api_id) {
+        let cloned = found_api.clone();
+        remove_collection_item(&mut config.collections, &api_id);
+        cloned
+    } else {
+        return Err("API 不存在".to_string());
+    };
+    
+    // 验证 API 类型
+    if api.item_type != "api" {
+        return Err("只能移动 API".to_string());
+    }
+    
+    // 添加到目标位置
+    if let Some(target_id) = target_collection_id {
+        // 先检查目标集合的深度（限制最多三层）
+        let target_depth = get_collection_depth(&config.collections, &target_id, 0).unwrap_or(0);
+        if target_depth >= 2 {
+            return Err("集合最多三层，无法移动到更深层".to_string());
+        }
+        
+        if let Some(target) = find_collection_item(&mut config.collections, &target_id) {
+            if target.item_type != "collection" {
+                return Err("目标不是集合".to_string());
+            }
+            target.children.push(api);
+        } else {
+            return Err("目标集合不存在".to_string());
+        }
+    } else {
+        // 移动到根级别
+        config.collections.push(api);
     }
     
     write_collections(&workspace_path, &config)?;

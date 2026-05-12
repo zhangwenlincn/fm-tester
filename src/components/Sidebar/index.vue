@@ -71,7 +71,15 @@ const {
   handleCreate,
   deleteItem,
   getMethodClass,
-  flatTreeList
+  flatTreeList,
+  // 拖拽
+  draggingApiId,
+  dropTargetId,
+  onDragStart,
+  onDragEnd,
+  onDragOver,
+  onDragLeave,
+  onDrop
 } = useSidebarSetup(props, emit)
 
 // 暴露方法给父组件
@@ -128,6 +136,8 @@ defineExpose({
           v-else 
           class="tree-list" 
           @contextmenu="(e) => openContextMenu(e, null, 0, 'root')"
+          @dragover.prevent="onDragOver(e, null)"
+          @drop.stop="onDrop(e, null)"
         >
           <div v-if="flatTreeList.length === 0" class="empty-panel">
             暂无集合，右键创建
@@ -138,9 +148,13 @@ defineExpose({
             <div 
               v-if="row.isCollection"
               class="tree-folder"
+              :class="{ 'drop-target': dropTargetId === row.item.id }"
               :style="{ paddingLeft: (16 + row.depth * 16) + 'px' }"
               @click.stop="toggleExpand(row.item.id)"
               @contextmenu.prevent="(e) => openContextMenu(e, row.item, row.depth, 'collection')"
+              @dragover.prevent.stop="onDragOver(e, row.item)"
+              @dragleave.stop="onDragLeave"
+              @drop.stop="(e) => onDrop(e, row.item)"
             >
               <span class="folder-icon">
                 <Icon :name="row.expanded ? 'folder-open' : 'folder'" :size="14" />
@@ -152,10 +166,13 @@ defineExpose({
             <div 
               v-if="!row.isCollection"
               class="tree-item"
-              :class="{ selected: selectedApi === row.item.id }"
+              :class="{ selected: selectedApi === row.item.id, dragging: draggingApiId === row.item.id }"
               :style="{ paddingLeft: (16 + row.depth * 16) + 'px' }"
+              draggable="true"
               @click="selectApiItem(row.item)"
               @contextmenu.prevent="(e) => openContextMenu(e, row.item, row.depth, 'api')"
+              @dragstart.stop="onDragStart(e, row.item)"
+              @dragend.stop="onDragEnd"
             >
               <span class="method-tag" :class="getMethodClass(row.item.method)">{{ row.item.method }}</span>
               <span class="item-name">{{ row.item.name }}</span>
