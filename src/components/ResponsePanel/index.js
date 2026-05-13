@@ -23,10 +23,15 @@ const contentTypeToLanguage = {
 }
 
 // 导出 composable 函数
-export function useResponsePanelSetup(props) {
+export function useResponsePanelSetup(props, emit) {
   const activeTab = ref('body')
   const editorContainer = ref(null)
   let monacoEditor = null
+
+  // 保存响应
+  const handleSaveResponse = () => {
+    emit('save-response')
+  }
 
   const statusClass = computed(() => {
     if (!props.response) return ''
@@ -201,6 +206,7 @@ export function useResponsePanelSetup(props) {
     detectedLanguage,
     formatSize,
     formatTime,
-    editorContainer
+    editorContainer,
+    handleSaveResponse
   }
 }

@@ -13,6 +13,8 @@ const props = defineProps({
   }
 })
 
+const emit = defineEmits(['save-response'])
+
 const {
   tabs,
   activeTab,
@@ -21,8 +23,9 @@ const {
   detectedLanguage,
   formatSize,
   formatTime,
-  editorContainer
-} = useResponsePanelSetup(props)
+  editorContainer,
+  handleSaveResponse
+} = useResponsePanelSetup(props, emit)
 </script>
 
 <template>
@@ -34,18 +37,24 @@ const {
         <span>请求中...</span>
       </div>
       <template v-else-if="response">
-        <div class="status-item">
-          <span class="status-label">状态:</span>
-          <span class="status-value" :class="statusClass">{{ response.status }} {{ response.statusText }}</span>
+        <div class="status-info">
+          <div class="status-item">
+            <span class="status-label">状态:</span>
+            <span class="status-value" :class="statusClass">{{ response.status }} {{ response.statusText }}</span>
+          </div>
+          <div class="status-item">
+            <span class="status-label">时间:</span>
+            <span class="status-value">{{ formatTime(response.time) }}</span>
+          </div>
+          <div class="status-item">
+            <span class="status-label">大小:</span>
+            <span class="status-value">{{ formatSize(response.size) }}</span>
+          </div>
         </div>
-        <div class="status-item">
-          <span class="status-label">时间:</span>
-          <span class="status-value">{{ formatTime(response.time) }}</span>
-        </div>
-        <div class="status-item">
-          <span class="status-label">大小:</span>
-          <span class="status-value">{{ formatSize(response.size) }}</span>
-        </div>
+        <button class="save-response-btn" @click="handleSaveResponse">
+          <Icon name="save" :size="14" />
+          <span>保存响应</span>
+        </button>
       </template>
     </div>
     

@@ -320,3 +320,81 @@
   background: #e8e8e8;
   margin: 4px 0;
 }
+
+/* 保存响应展开箭头（右侧） */
+.expand-arrow {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #8c8c8c;
+  transition: transform 0.2s ease;
+  margin-left: auto;
+}
+
+.expand-arrow:hover {
+  color: #1890ff;
+}
+
+.expand-arrow.expanded {
+  transform: rotate(90deg);
+}
+
+/* 保存响应列表 */
+.saved-responses-list {
+  margin-left: 16px;
+}
+
+.saved-response-item {
+  display: flex;
+  align-items: center;
+  padding: 4px 16px;
+  padding-left: 32px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.saved-response-item:hover {
+  background: #f5f5f5;
+}
+
+.status-tag {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 1px 4px;
+  border-radius: 2px;
+  margin-right: 6px;
+  min-width: 32px;
+  text-align: center;
+}
+
+.status-tag.success {
+  background: #f6ffed;
+  color: #52c416;
+}
+
+.status-tag.warning {
+  background: #fffbe6;
+  color: #faad14;
+}
+
+.status-tag.error {
+  background: #fff1f0;
+  color: #ff4d4f;
+}
+
+.resp-name {
+  color: #262626;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.resp-time {
+  color: #8c8c8c;
+  font-size: 11px;
+  margin-left: 8px;
+}

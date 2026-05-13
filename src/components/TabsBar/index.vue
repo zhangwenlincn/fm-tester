@@ -32,6 +32,7 @@ const { selectTab, closeTab } = useTabsBarSetup(props, emit)
           :key="tab.id || index"
           class="tab"
           :class="{ active: activeTab === index }"
+          :title="tab.fullName || tab.name"
           @click="selectTab(index)"
         >
           <span class="tab-method" :class="tab.method?.toLowerCase()">{{ tab.method }}</span>

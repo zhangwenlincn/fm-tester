@@ -47,6 +47,10 @@ export function useAppSetup() {
   const cookies = ref([])
   const showCookiePanel = ref(false)
 
+  // 保存响应对话框
+  const showSaveResponseDialog = ref(false)
+  const saveResponseDefaultName = ref('')
+
   // 当前侧边栏导航项
   const currentNavKey = ref('collection')
 
@@ -525,13 +529,12 @@ export function useAppSetup() {
   // 监听标签切换，更新请求内容
   watch(activeTab, async () => {
     updateCurrentRequest()
-    // 切换标签时清空响应
-    response.value = null
     // 同步左侧选中状态和子标签状态
     if (tabs.value.length > 0) {
       const currentTab = tabs.value[activeTab.value]
       if (currentTab?.id) {
-        if (sidebarRef.value) {
+        // 如果不是保存响应的 tab，同步左侧选中状态
+        if (!currentTab.id.startsWith('saved_') && sidebarRef.value) {
           sidebarRef.value.setSelectedApi(currentTab.id)
         }
         // 恢复当前标签页的子标签状态
@@ -565,6 +568,7 @@ export function useAppSetup() {
       currentRequest.bodyType = 'raw'
       currentRequest.formData = []
       currentRequest.binaryFile = null
+      response.value = null
       return
     }
     
@@ -579,6 +583,11 @@ export function useAppSetup() {
       currentRequest.bodyType = currentTab.bodyType || 'raw'
       currentRequest.formData = currentTab.formData || []
       currentRequest.binaryFile = currentTab.binaryFile || null
+      
+      // 如果是保存响应的 tab，恢复响应数据
+      if (currentTab.savedResponseData) {
+        response.value = currentTab.savedResponseData
+      }
     }
   }
 
@@ -739,6 +748,162 @@ export function useAppSetup() {
     }
   }
 
+  // 保存响应 - 打开对话框
+  const onSaveResponse = () => {
+    if (!response.value) {
+      console.error('没有响应数据')
+      return
+    }
+    // 生成默认名称：响应 - 日期时间
+    const now = new Date()
+    const dateStr = now.toLocaleDateString('zh-CN')
+    const timeStr = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+    saveResponseDefaultName.value = `响应 - ${dateStr} ${timeStr}`
+    showSaveResponseDialog.value = true
+  }
+
+  // 保存响应 - 执行保存
+  const handleSaveResponse = async (name) => {
+    if (!currentWorkspace.value?.path) {
+      console.error('未选择工作区')
+      return
+    }
+    
+    if (!response.value) {
+      console.error('没有响应数据')
+      return
+    }
+    
+    if (tabs.value.length === 0) {
+      console.error('没有打开的接口')
+      return
+    }
+    
+    const currentTab = tabs.value[activeTab.value]
+    if (!currentTab?.id) {
+      console.error('当前标签没有接口 ID')
+      return
+    }
+    
+    // 准备请求数据
+    const formFields = currentRequest.formData?.map(field => ({
+      key: field.key,
+      value: field.value,
+      type: field.type,
+      enabled: field.enabled,
+      files: field.files
+    })) || null
+    
+    const binaryFilePath = currentRequest.binaryFile?.path || null
+    
+    // 准备请求对象（使用 snake_case 字段名匹配后端）
+    const request = {
+      method: currentRequest.method,
+      url: currentRequest.url,           // 原始 URL
+      resolved_url: currentRequest.url,  // 替换变量后的 URL（暂用原始 URL）
+      headers: currentRequest.headers || [],
+      body: currentRequest.body || null,
+      body_type: currentRequest.bodyType || null,
+      form_fields: formFields,
+      binary_file_path: binaryFilePath
+    }
+    
+    // 准备响应对象（使用 snake_case 字段名匹配后端）
+    const responseData = {
+      status: response.value.status,
+      status_text: response.value.statusText,
+      headers: response.value.headers || {},
+      body: response.value.body || '',
+      time: response.value.time || 0,
+      size: response.value.size || 0
+    }
+    
+    try {
+      await invoke('save_response', {
+        workspacePath: currentWorkspace.value.path,
+        name: name,
+        apiId: currentTab.id,
+        request: request,
+        response: responseData,
+        cookies: cookies.value
+      })
+      
+      // 关闭对话框
+      showSaveResponseDialog.value = false
+      
+      // 刷新集合列表（响应会保存到当前接口下）
+      sidebarRef.value?.loadCollections()
+      
+      console.log('保存响应成功')
+    } catch (e) {
+      console.error('保存响应失败:', e)
+    }
+  }
+
+  // 选择已保存响应（打开新 tab 显示）
+  const onSelectSavedResponse = async (responseItem) => {
+    if (!currentWorkspace.value?.path) {
+      console.error('未选择工作区')
+      return
+    }
+    
+    try {
+      // 从后端获取完整响应数据
+      const fullResponse = await invoke('get_saved_response', {
+        workspacePath: currentWorkspace.value.path,
+        id: responseItem.id
+      })
+      
+      // 使用 saved_ 前缀的 id，避免与普通接口冲突
+      const savedTabId = `saved_${responseItem.id}`
+      
+      // 查找是否已存在该保存响应的标签
+      const existingIndex = tabs.value.findIndex(t => t.id === savedTabId)
+      
+      // 组合名称：[接口名] 响应名
+      const apiName = responseItem.apiName || '接口'
+      const fullTabName = `[${apiName}] ${fullResponse.name}`
+      
+      if (existingIndex >= 0) {
+        // 已存在，切换到该标签
+        activeTab.value = existingIndex
+      } else {
+        // 不存在，添加新标签
+        tabs.value.push({
+          id: savedTabId,
+          name: fullTabName,
+          fullName: fullTabName,  // 保存完整名称，用于 title 显示
+          method: fullResponse.request.method,
+          url: fullResponse.request.url,
+          headers: fullResponse.request.headers || [],
+          body: fullResponse.request.body || '',
+          bodyType: fullResponse.request.body_type || 'raw',
+          formData: fullResponse.request.form_fields || [],
+          binaryFile: fullResponse.request.binary_file_path ? { path: fullResponse.request.binary_file_path, name: fullResponse.request.binary_file_path.split(/[/\\]/).pop() } : null,
+          // 保存响应数据（用于显示）
+          savedResponseData: {
+            status: fullResponse.response.status,
+            statusText: fullResponse.response.status_text,
+            headers: fullResponse.response.headers || {},
+            body: fullResponse.response.body || '',
+            time: fullResponse.response.time || 0,
+            size: fullResponse.response.size || 0
+          }
+        })
+        activeTab.value = tabs.value.length - 1
+      }
+      
+      // 更新当前请求
+      updateCurrentRequest()
+      
+      // 设置响应数据
+      response.value = tabs.value[activeTab.value]?.savedResponseData || null
+      
+    } catch (e) {
+      console.error('获取保存响应失败:', e)
+    }
+  }
+
   return {
     currentWorkspace,
     workspaces,
@@ -771,6 +936,13 @@ export function useAppSetup() {
     loadCookies,
     openCookiePanel,
     closeCookiePanel,
+    // 保存响应相关
+    showSaveResponseDialog,
+    saveResponseDefaultName,
+    onSaveResponse,
+    handleSaveResponse,
+    // 已保存响应查看
+    onSelectSavedResponse,
     // 导航相关
     currentNavKey,
     onNavChange,

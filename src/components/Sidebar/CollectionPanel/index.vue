@@ -6,7 +6,7 @@ const props = defineProps({
   workspace: Object
 })
 
-const emit = defineEmits(['selectApi', 'deleteApis', 'renameApi'])
+const emit = defineEmits(['selectApi', 'deleteApis', 'renameApi', 'selectSavedResponse'])
 
 // 使用 composable
 const {
@@ -24,6 +24,7 @@ const {
   contextMenu,
   draggingApiId,
   dropTargetId,
+  expandedResponses,
   loadCollections,
   toggleExpand,
   isExpanded,
@@ -39,6 +40,10 @@ const {
   handleCreate,
   deleteItem,
   getMethodClass,
+  toggleResponses,
+  selectSavedResponse,
+  getStatusClass,
+  formatTime,
   flatTreeList,
   onDragStart,
   onDragEnd,
@@ -111,7 +116,7 @@ defineExpose({
         </div>
         
         <!-- API 项 -->
-        <div 
+        <div
           v-if="!row.isCollection"
           class="tree-item"
           :class="{ selected: selectedApi === row.item.id, dragging: draggingApiId === row.item.id }"
@@ -124,6 +129,32 @@ defineExpose({
         >
           <span class="method-tag" :class="getMethodClass(row.item.method)">{{ row.item.method }}</span>
           <span class="item-name">{{ row.item.name }}</span>
+          <!-- 如果有保存响应，显示展开箭头（在右边） -->
+          <span
+            v-if="row.item.saved_responses && row.item.saved_responses.length > 0"
+            class="expand-arrow"
+            :class="{ expanded: expandedResponses[row.item.id] }"
+            @click.stop="toggleResponses(row.item.id)"
+          >
+            <Icon name="arrow-right" :size="12" />
+          </span>
+        </div>
+
+        <!-- 保存响应子列表 -->
+        <div
+          v-if="!row.isCollection && expandedResponses[row.item.id] && row.item.saved_responses && row.item.saved_responses.length > 0"
+          class="saved-responses-list"
+        >
+          <div
+            v-for="resp in row.item.saved_responses"
+            :key="resp.id"
+            class="saved-response-item"
+            @click.stop="selectSavedResponse(resp, row.item.name)"
+          >
+            <span class="status-tag" :class="getStatusClass(resp.status)">{{ resp.status }}</span>
+            <span class="resp-name">{{ resp.name }}</span>
+            <span class="resp-time">{{ formatTime(resp.created_at) }}</span>
+          </div>
         </div>
       </template>
     </div>

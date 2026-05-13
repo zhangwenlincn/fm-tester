@@ -4,6 +4,7 @@ import IconNav from './IconNav/index.vue'
 import CollectionPanel from './CollectionPanel/index.vue'
 import EnvironmentPanel from './EnvironmentPanel/index.vue'
 import WorkspacePanel from './WorkspacePanel/index.vue'
+import SavedResponsesPanel from './SavedResponsesPanel/index.vue'
 
 const props = defineProps({
   workspace: Object
@@ -17,7 +18,8 @@ const emit = defineEmits([
   'deleteApis',
   'navChange',
   'environmentUpdated',
-  'workspaceDeleted'
+  'workspaceDeleted',
+  'selectSavedResponse'
 ])
 
 // 使用 composable
@@ -27,6 +29,7 @@ const {
   collectionPanelRef,
   environmentPanelRef,
   workspacePanelRef,
+  savedResponsesPanelRef,
   handleNavChange,
   handleSelectApi,
   handleDeleteApis,
@@ -36,9 +39,12 @@ const {
   handleSelectWorkspace,
   handleCreateWorkspace,
   handleWorkspaceDeleted,
+  handleSelectSavedResponse,
+  handleDeleteSavedResponse,
   loadWorkspaces,
   loadCollections,
   loadEnvironments,
+  loadSavedResponses,
   setSelectedApi
 } = useSidebarSetup(props, emit)
 
@@ -47,6 +53,7 @@ defineExpose({
   loadWorkspaces,
   loadCollections,
   loadEnvironments,
+  loadSavedResponses,
   setSelectedApi
 })
 </script>
@@ -69,6 +76,7 @@ defineExpose({
         @select-api="handleSelectApi"
         @delete-apis="handleDeleteApis"
         @rename-api="handleRenameApi"
+        @select-saved-response="handleSelectSavedResponse"
       />
       
       <!-- 环境面板 -->
@@ -90,11 +98,21 @@ defineExpose({
         @workspace-deleted="handleWorkspaceDeleted"
       />
       
-      <!-- 其他面板（功能、性能、工具箱、历史） -->
+      <!-- 已保存响应面板 -->
+      <SavedResponsesPanel 
+        v-if="navItems[activeNav]?.key === 'saved-responses'"
+        ref="savedResponsesPanelRef"
+        :workspace="props.workspace"
+        @select="handleSelectSavedResponse"
+        @delete="handleDeleteSavedResponse"
+      />
+      
+      <!-- 其他面板（功能、性能、工具箱） -->
       <div 
         v-if="navItems[activeNav]?.key !== 'collection' && 
               navItems[activeNav]?.key !== 'workspace' && 
-              navItems[activeNav]?.key !== 'environment'"
+              navItems[activeNav]?.key !== 'environment' &&
+              navItems[activeNav]?.key !== 'saved-responses'"
         class="other-panel"
       >
         <div class="panel-header">

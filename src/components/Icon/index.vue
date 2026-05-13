@@ -72,6 +72,16 @@ const props = defineProps({
     <svg v-if="name === 'send'" :width="size" :height="size" viewBox="0 0 24 24" fill="currentColor">
       <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
     </svg>
+    
+    <!-- 保存 -->
+    <svg v-if="name === 'save'" :width="size" :height="size" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/>
+    </svg>
+
+    <!-- 右箭头 -->
+    <svg v-if="name === 'arrow-right'" :width="size" :height="size" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
+    </svg>
   </span>
 </template>
 

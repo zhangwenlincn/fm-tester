@@ -8,7 +8,7 @@ export const navItems = [
   { icon: 'function', name: '功能', key: 'function' },
   { icon: 'performance', name: '性能', key: 'performance' },
   { icon: 'toolbox', name: '工具箱', key: 'toolbox' },
-  { icon: 'history', name: '历史', key: 'history' }
+  { icon: 'history', name: '已保存响应', key: 'saved-responses' }
 ]
 
 // 导出 composable 函数

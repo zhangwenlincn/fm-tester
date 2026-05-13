@@ -34,6 +34,9 @@ export function useCollectionPanelSetup(props, emit) {
   // 拖拽状态
   const draggingApiId = ref(null)
   const dropTargetId = ref(null)
+
+  // 保存响应展开状态
+  const expandedResponses = ref({})
   
   // 加载集合列表
   const loadCollections = async () => {
@@ -325,6 +328,43 @@ export function useCollectionPanelSetup(props, emit) {
   
   // 获取 HTTP 方法样式类
   const getMethodClass = (method) => method?.toLowerCase() || ''
+
+  // 切换保存响应展开状态
+  const toggleResponses = (apiId) => {
+    expandedResponses.value[apiId] = !expandedResponses.value[apiId]
+  }
+
+  // 选择保存响应
+  const selectSavedResponse = (response, apiName) => {
+    emit('selectSavedResponse', { ...response, apiName })
+  }
+
+  // 获取状态码样式类
+  const getStatusClass = (status) => {
+    if (!status) return ''
+    const code = parseInt(status)
+    if (code >= 200 && code < 300) return 'success'
+    if (code >= 400 && code < 500) return 'warning'
+    if (code >= 500) return 'error'
+    return ''
+  }
+
+  // 格式化时间
+  const formatTime = (timestamp) => {
+    if (!timestamp) return ''
+    const date = new Date(timestamp)
+    const now = new Date()
+    const diff = now - date
+    const minutes = Math.floor(diff / 60000)
+    const hours = Math.floor(diff / 3600000)
+    const days = Math.floor(diff / 86400000)
+
+    if (minutes < 1) return '刚刚'
+    if (minutes < 60) return `${minutes}分钟前`
+    if (hours < 24) return `${hours}小时前`
+    if (days < 7) return `${days}天前`
+    return date.toLocaleDateString()
+  }
   
   // 计算扁平化的树列表（用于渲染）
   const flatTreeList = computed(() => {
@@ -388,6 +428,7 @@ return {
     contextMenu,
     draggingApiId,
     dropTargetId,
+    expandedResponses,
     loadCollections,
     toggleExpand,
     isExpanded,
@@ -403,6 +444,10 @@ return {
     handleCreate,
     deleteItem,
     getMethodClass,
+    toggleResponses,
+    selectSavedResponse,
+    getStatusClass,
+    formatTime,
     flatTreeList,
     onDragStart,
     onDragEnd,

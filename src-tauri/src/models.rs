@@ -79,6 +79,8 @@ pub struct Collection {
     pub form_fields: Option<Vec<FormField>>, // form-data 字段
     #[serde(skip_serializing_if = "Option::is_none")]
     pub binary_file_path: Option<String>, // binary 文件路径
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub saved_responses: Option<Vec<SavedResponseIndexEntry>>, // API 关联的保存响应索引
 }
 
 /// 集合配置文件结构
@@ -153,4 +155,60 @@ pub struct Cookie {
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct CookiesConfig {
     pub cookies: Vec<Cookie>,
+}
+
+/// 保存的请求信息
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SavedRequest {
+    pub method: String,
+    pub url: String,           // 原始 URL（带变量 {{xxx}}）
+    pub resolved_url: String,  // 替换变量后的实际 URL
+    pub headers: Vec<Header>,
+    pub body: Option<String>,
+    pub body_type: Option<String>,
+    pub form_fields: Option<Vec<FormField>>,
+    pub binary_file_path: Option<String>,
+}
+
+/// 保存的响应数据
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SavedResponseData {
+    pub status: u16,
+    pub status_text: String,
+    pub headers: std::collections::HashMap<String, String>,
+    pub body: String,
+    pub time: u64,
+    pub size: u64,
+}
+
+/// 保存的响应（完整快照）
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SavedResponse {
+    pub id: String,
+    pub name: String,
+    pub created_at: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub api_id: Option<String>,  // 关联的 API ID
+    pub request: SavedRequest,
+    pub response: SavedResponseData,
+    pub cookies: Vec<Cookie>,  // 请求时的 Cookie 快照
+}
+
+/// 响应索引条目（用于快速列出）
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SavedResponseIndexEntry {
+    pub id: String,
+    pub name: String,
+    pub method: String,
+    pub url: String,
+    pub status: u16,
+    pub created_at: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub api_id: Option<String>,  // 关联的 API ID
+}
+
+/// 响应索引文件结构
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct SavedResponsesIndex {
+    pub responses: Vec<SavedResponseIndexEntry>,
 }

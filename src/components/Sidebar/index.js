@@ -1,4 +1,5 @@
 import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { invoke } from '@tauri-apps/api/core'
 
 // 导航项配置（从 IconNav 导入）
 import { navItems } from './IconNav/index.js'
@@ -12,6 +13,7 @@ export function useSidebarSetup(props, emit) {
   const collectionPanelRef = ref(null)
   const environmentPanelRef = ref(null)
   const workspacePanelRef = ref(null)
+  const savedResponsesPanelRef = ref(null)
   
   // 处理导航切换
   const handleNavChange = (key) => {
@@ -32,6 +34,22 @@ export function useSidebarSetup(props, emit) {
   const handleCreateWorkspace = () => emit('createWorkspace')
   const handleWorkspaceDeleted = (wsId) => emit('workspaceDeleted', wsId)
   
+  // 处理已保存响应事件
+  const handleSelectSavedResponse = (item) => emit('selectSavedResponse', item)
+  const handleDeleteSavedResponse = async (item) => {
+    if (!props.workspace?.path || !item?.id) return
+    try {
+      await invoke('delete_saved_response', {
+        workspacePath: props.workspace.path,
+        responseId: item.id
+      })
+      // 刷新列表
+      await loadSavedResponses()
+    } catch (e) {
+      console.error('删除已保存响应失败:', e)
+    }
+  }
+  
   // 加载方法（暴露给父组件）
   const loadWorkspaces = async () => {
     if (workspacePanelRef.value) {
@@ -48,6 +66,12 @@ export function useSidebarSetup(props, emit) {
   const loadEnvironments = async () => {
     if (environmentPanelRef.value) {
       await environmentPanelRef.value.loadEnvironments()
+    }
+  }
+  
+  const loadSavedResponses = async () => {
+    if (savedResponsesPanelRef.value) {
+      await savedResponsesPanelRef.value.loadResponses()
     }
   }
   
@@ -80,6 +104,8 @@ export function useSidebarSetup(props, emit) {
       await loadCollections()
     } else if (key === 'environment') {
       await loadEnvironments()
+    } else if (key === 'saved-responses') {
+      await loadSavedResponses()
     }
   })
   
@@ -92,6 +118,7 @@ export function useSidebarSetup(props, emit) {
     collectionPanelRef,
     environmentPanelRef,
     workspacePanelRef,
+    savedResponsesPanelRef,
     
     // 事件处理
     handleNavChange,
@@ -103,11 +130,14 @@ export function useSidebarSetup(props, emit) {
     handleSelectWorkspace,
     handleCreateWorkspace,
     handleWorkspaceDeleted,
+    handleSelectSavedResponse,
+    handleDeleteSavedResponse,
     
     // 暴露给父组件的方法
     loadWorkspaces,
     loadCollections,
     loadEnvironments,
+    loadSavedResponses,
     setSelectedApi
   }
 }

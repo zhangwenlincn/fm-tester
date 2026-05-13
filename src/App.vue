@@ -9,6 +9,7 @@ import StatusBar from './components/StatusBar/index.vue'
 import WorkspaceDialog from './components/WorkspaceDialog/index.vue'
 import EnvironmentPanel from './components/EnvironmentPanel/index.vue'
 import CookiePanel from './components/CookiePanel/index.vue'
+import SaveResponseDialog from './components/SaveResponseDialog/index.vue'
 
 // 使用 composable
 const {
@@ -43,6 +44,13 @@ const {
   loadCookies,
   openCookiePanel,
   closeCookiePanel,
+  // 保存响应相关
+  showSaveResponseDialog,
+  saveResponseDefaultName,
+  onSaveResponse,
+  handleSaveResponse,
+  // 已保存响应查看
+  onSelectSavedResponse,
   // 导航相关
   showRequestResponse,
   showWorkspaceInfo,
@@ -104,6 +112,7 @@ const {
         @select-environment="onSelectEnvironment"
         @environment-updated="loadEnvironments"
         @workspace-deleted="onWorkspaceDeleted"
+        @select-saved-response="onSelectSavedResponse"
       />
       
       <!-- 中间内容区 -->
@@ -127,6 +136,7 @@ const {
           <ResponsePanel 
             :response="response"
             :loading="loading"
+            @save-response="onSaveResponse"
           />
         </div>
       </div>
@@ -173,7 +183,16 @@ const {
       @close="closeWorkspaceDialog"
       @created="onWorkspaceCreated"
     />
-  </div>
+    
+    <!-- 保存响应对话框 -->
+    <SaveResponseDialog 
+      :show="showSaveResponseDialog"
+      :default-name="saveResponseDefaultName"
+      @save="handleSaveResponse"
+      @cancel="showSaveResponseDialog = false"
+    />
+    
+    </div>
 </template>
 
 <style>

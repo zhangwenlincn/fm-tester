@@ -9,10 +9,35 @@
 .response-status {
   display: flex;
   align-items: center;
-  gap: 24px;
+  justify-content: space-between;
   padding: 8px 16px;
   background: #fafafa;
   border-bottom: 1px solid #e8e8e8;
+}
+
+.status-info {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.save-response-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 13px;
+  color: #262626;
+  background: #ffffff;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.save-response-btn:hover {
+  border-color: #1890ff;
+  color: #1890ff;
 }
 
 .loading-indicator {

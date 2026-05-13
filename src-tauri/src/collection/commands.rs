@@ -3,11 +3,29 @@ use crate::collection::utils::{
     find_api_in_collections, find_collection_item, get_collection_depth, remove_collection_item,
 };
 use crate::models::{Collection, FormField, Header};
+use crate::saved_response::config::get_api_saved_responses_index;
+
+/// 递归加载 API 的保存响应索引
+fn load_saved_responses_for_apis(collections: &mut [Collection], workspace_path: &str) {
+    for item in collections.iter_mut() {
+        if item.item_type == "api" {
+            // 为 API 加载保存响应索引
+            let saved_responses = get_api_saved_responses_index(workspace_path.to_string(), item.id.clone());
+            if !saved_responses.is_empty() {
+                item.saved_responses = Some(saved_responses);
+            }
+        }
+        // 递归处理子项
+        load_saved_responses_for_apis(&mut item.children, workspace_path);
+    }
+}
 
 /// 获取集合列表
 #[tauri::command]
 pub fn get_collections(workspace_path: String) -> Vec<Collection> {
-    read_collections(&workspace_path).collections
+    let mut collections = read_collections(&workspace_path).collections;
+    load_saved_responses_for_apis(&mut collections, &workspace_path);
+    collections
 }
 
 /// 创建集合
@@ -35,6 +53,7 @@ pub fn create_collection(
         body_type: None,
         form_fields: None,
         binary_file_path: None,
+        saved_responses: None,
     };
 
     if let Some(pid) = parent_id {
@@ -81,6 +100,7 @@ pub fn create_api(
         body_type: Some("raw".to_string()),
         form_fields: None,
         binary_file_path: None,
+        saved_responses: None,
     };
 
     if let Some(pid) = parent_id {
