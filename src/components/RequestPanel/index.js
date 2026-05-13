@@ -1,4 +1,4 @@
-import { ref, computed, watch, onUnmounted, nextTick } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import * as monaco from 'monaco-editor'
 import { open } from '@tauri-apps/plugin-dialog'
 import { formatJson, formatXml, formatHtml } from '../../utils/syntax-highlight.js'
@@ -303,7 +303,7 @@ export function useRequestPanelSetup(props, emit) {
         }
       }, 50)
     }
-  })
+  }, { immediate: true })
 
   // 监听 bodyType 变化，当切换到需要编辑器的类型时初始化
   watch(() => localRequest.value.bodyType, (newType) => {
@@ -315,6 +315,20 @@ export function useRequestPanelSetup(props, emit) {
           monacoEditor.layout()
         }
       }, 50)
+    }
+  })
+
+  // 组件挂载后初始化编辑器（如果当前是 body tab）
+  onMounted(() => {
+    if (activeTab.value === 'body' && !monacoEditor) {
+      nextTick(() => {
+        // 使用多次 nextTick 确保 DOM 完全渲染
+        nextTick(() => {
+          if (editorContainer.value) {
+            initMonacoEditor()
+          }
+        })
+      })
     }
   })
 
