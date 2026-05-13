@@ -9,13 +9,17 @@ const props = defineProps({
 const {
   requestTab,
   responseTab,
-  responseFormat,
-  formattedBody,
+  formattedRequestBody,
+  detectedRequestLanguage,
+  formattedResponseBody,
+  detectedResponseLanguage,
   formatResponseTime,
   formatSize,
   getStatusClass,
   getMethodClass,
-  formatTime
+  formatTime,
+  requestEditorContainer,
+  responseEditorContainer
 } = useHistoryDetailSetup(props)
 
 const requestTabs = [
@@ -148,14 +152,15 @@ const parseUrlParams = (url) => {
             <div class="body-type-display">
               Body 类型: <span class="type-value">{{ entry.body_type || 'none' }}</span>
             </div>
+            <div class="language-indicator" v-if="entry.body">
+              <span class="language-tag">{{ detectedRequestLanguage }}</span>
+            </div>
           </div>
           <div v-if="!entry.body" class="body-empty">
             <span class="empty-text">无请求体</span>
           </div>
           <div v-else class="editor-wrapper">
-            <div class="monaco-editor-container readonly">
-              <pre class="readonly-editor">{{ entry.body }}</pre>
-            </div>
+            <div ref="requestEditorContainer" class="monaco-editor-container"></div>
           </div>
         </div>
       </div>
@@ -192,20 +197,16 @@ const parseUrlParams = (url) => {
         >
           {{ tab.name }}
         </div>
-        <div class="format-toggle" v-show="responseTab === 'body'">
-          <span :class="{ active: responseFormat === 'pretty' }" @click="responseFormat = 'pretty'">格式化</span>
-          <span :class="{ active: responseFormat === 'raw' }" @click="responseFormat = 'raw'">原始</span>
+        <div class="language-indicator" v-show="responseTab === 'body'">
+          <span class="language-tag">{{ detectedResponseLanguage }}</span>
         </div>
       </div>
       
       <!-- 响应内容 -->
       <div class="response-content">
-        <!-- 响应体 -->
+        <!-- 响应体 - Monaco Editor -->
         <div v-show="responseTab === 'body'" class="body-content">
-          <div class="monaco-editor-container readonly">
-            <pre class="readonly-editor" v-if="responseFormat === 'pretty'">{{ formattedBody }}</pre>
-            <pre class="readonly-editor" v-else>{{ entry.response_body }}</pre>
-          </div>
+          <div ref="responseEditorContainer" class="monaco-editor-container"></div>
         </div>
         
         <!-- 响应头 -->
