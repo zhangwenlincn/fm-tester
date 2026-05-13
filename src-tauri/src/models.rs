@@ -129,4 +129,6 @@ pub struct MemoryConfig {
     pub open_tabs: Vec<String>,      // 打开的标签页 API ID 列表
     #[serde(default)]
     pub active_tab_index: usize,     // 当前激活的标签页索引
+    #[serde(default)]
+    pub request_tabs: std::collections::HashMap<String, String>,  // 每个 API 的子标签页状态
 }

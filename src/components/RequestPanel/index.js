@@ -98,7 +98,19 @@ const languageMap = {
 
 // 导出 composable 函数
 export function useRequestPanelSetup(props, emit) {
-  const activeTab = ref('params')
+  const activeTab = ref(props.requestTab || 'params')
+  
+  // 监听 props.requestTab 变化
+  watch(() => props.requestTab, (newVal) => {
+    if (newVal && newVal !== activeTab.value) {
+      activeTab.value = newVal
+    }
+  })
+  
+  // 监听 activeTab 变化，emit 更新事件
+  watch(activeTab, (newVal) => {
+    emit('updateTab', newVal)
+  })
 
   const localRequest = ref({
     method: 'GET',

@@ -15,10 +15,14 @@ const props = defineProps({
   variables: {
     type: Array,
     default: () => []
+  },
+  requestTab: {
+    type: String,
+    default: 'params'
   }
 })
 
-const emit = defineEmits(['update:request', 'send', 'save'])
+const emit = defineEmits(['update:request', 'send', 'save', 'updateTab'])
 
 const {
   methods,

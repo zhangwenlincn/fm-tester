@@ -14,6 +14,10 @@ export function useAppSetup() {
   // 标签页数据
   const tabs = ref([])
   const activeTab = ref(0)
+  
+  // 每个接口的子标签页状态
+  const requestTabs = ref({})  // { apiId: 'params' | 'docs' | ... }
+  const currentRequestTab = ref('params')
 
   // 当前请求
   const currentRequest = reactive({
@@ -234,8 +238,10 @@ export function useAppSetup() {
   // 加载打开的标签页
   const loadOpenTabs = async (workspacePath) => {
     try {
-      const [openTabIds, activeIndex] = await invoke('get_open_tabs', { workspacePath })
-      console.log('加载标签页:', openTabIds, activeIndex)
+      const [openTabIds, activeIndex, savedRequestTabs] = await invoke('get_open_tabs', { workspacePath })
+      console.log('加载标签页:', openTabIds, activeIndex, savedRequestTabs)
+      // 恢复 requestTabs
+      requestTabs.value = savedRequestTabs || {}
       if (openTabIds.length > 0) {
         // 从集合中找到这些接口并打开
         const collections = await invoke('get_collections', { workspacePath })
@@ -261,11 +267,14 @@ export function useAppSetup() {
         // 设置激活标签页
         if (tabs.value.length > 0 && activeIndex < tabs.value.length) {
           activeTab.value = activeIndex
+          // 恢复当前标签页的子标签状态
+          const activeApiId = tabs.value[activeIndex].id
+          currentRequestTab.value = requestTabs.value[activeApiId] || 'params'
           updateCurrentRequest()
           // 等待组件渲染完成后同步左侧选中
           await nextTick()
           if (sidebarRef.value) {
-            sidebarRef.value.setSelectedApi(tabs.value[activeIndex].id)
+            sidebarRef.value.setSelectedApi(activeApiId)
           }
         }
       }
@@ -296,7 +305,8 @@ export function useAppSetup() {
       await invoke('save_open_tabs', {
         workspacePath: currentWorkspace.value.path,
         openTabs: openTabIds,
-        activeTabIndex: activeTab.value
+        activeTabIndex: activeTab.value,
+        requestTabs: requestTabs.value
       })
     } catch (e) {
       console.error('保存标签页失败:', e)
@@ -483,16 +493,33 @@ export function useAppSetup() {
     updateCurrentRequest()
     // 切换标签时清空响应
     response.value = null
-    // 同步左侧选中状态
+    // 同步左侧选中状态和子标签状态
     if (tabs.value.length > 0) {
       const currentTab = tabs.value[activeTab.value]
-      if (currentTab?.id && sidebarRef.value) {
-        sidebarRef.value.setSelectedApi(currentTab.id)
+      if (currentTab?.id) {
+        if (sidebarRef.value) {
+          sidebarRef.value.setSelectedApi(currentTab.id)
+        }
+        // 恢复当前标签页的子标签状态
+        currentRequestTab.value = requestTabs.value[currentTab.id] || 'params'
       }
     }
     // 保存标签页状态
     await saveOpenTabs()
   })
+  
+  // 更新当前接口的子标签状态
+  const onUpdateRequestTab = async (tabKey) => {
+    currentRequestTab.value = tabKey
+    if (tabs.value.length > 0) {
+      const currentTab = tabs.value[activeTab.value]
+      if (currentTab?.id) {
+        requestTabs.value[currentTab.id] = tabKey
+        // 立即保存
+        await saveOpenTabs()
+      }
+    }
+  }
 
   // 更新当前请求
   const updateCurrentRequest = () => {
@@ -687,6 +714,7 @@ export function useAppSetup() {
     tabs,
     activeTab,
     currentRequest,
+    currentRequestTab,
     response,
     loading,
     // 环境相关
@@ -723,6 +751,7 @@ export function useAppSetup() {
     saveRequest,
     updateRequest,
     onRenameApi,
-    onDeleteApis
+    onDeleteApis,
+    onUpdateRequestTab
   }
 }

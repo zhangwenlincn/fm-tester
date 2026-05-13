@@ -19,6 +19,7 @@ const {
   tabs,
   activeTab,
   currentRequest,
+  currentRequestTab,
   response,
   loading,
   // 环境相关
@@ -54,7 +55,8 @@ const {
   saveRequest,
   updateRequest,
   onRenameApi,
-  onDeleteApis
+  onDeleteApis,
+  onUpdateRequestTab
 } = useAppSetup()
 </script>
 
@@ -105,9 +107,11 @@ const {
             :request="currentRequest"
             :has-active-tab="tabs.length > 0"
             :variables="activeVariables"
+            :request-tab="currentRequestTab"
             @update:request="updateRequest($event)"
             @send="sendRequest"
             @save="saveRequest"
+            @update-tab="onUpdateRequestTab"
           />
         </div>
         
