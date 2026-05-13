@@ -38,14 +38,16 @@ const {
   handleWorkspaceDeleted,
   loadWorkspaces,
   loadCollections,
-  loadEnvironments
+  loadEnvironments,
+  setSelectedApi
 } = useSidebarSetup(props, emit)
 
 // 暴露方法给父组件
 defineExpose({
   loadWorkspaces,
   loadCollections,
-  loadEnvironments
+  loadEnvironments,
+  setSelectedApi
 })
 </script>
 

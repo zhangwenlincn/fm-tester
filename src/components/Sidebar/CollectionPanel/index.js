@@ -83,6 +83,11 @@ export function useCollectionPanelSetup(props, emit) {
     emit('selectApi', api)
   }
   
+  // 外部设置选中 API（用于标签页联动）
+  const setSelectedApiId = (apiId) => {
+    selectedApi.value = apiId
+  }
+  
   // 打开创建对话框（根级别）
   const openRootCreateDialog = () => {
     createDialogParent.value = null
@@ -368,8 +373,7 @@ export function useCollectionPanelSetup(props, emit) {
     document.removeEventListener('click', handleGlobalClick)
   })
   
-  return {
-    MAX_DEPTH,
+return {
     collections,
     expandedItems,
     selectedApi,
@@ -388,6 +392,7 @@ export function useCollectionPanelSetup(props, emit) {
     toggleExpand,
     isExpanded,
     selectApiItem,
+    setSelectedApiId,
     openRootCreateDialog,
     openCreateDialog,
     canCreateSubCollection,

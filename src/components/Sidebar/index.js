@@ -51,6 +51,13 @@ export function useSidebarSetup(props, emit) {
     }
   }
   
+  // 设置选中 API（用于标签页联动）
+  const setSelectedApi = (apiId) => {
+    if (collectionPanelRef.value) {
+      collectionPanelRef.value.setSelectedApiId(apiId)
+    }
+  }
+  
   // 监听工作区变化，通知子组件加载数据
   watch(() => props.workspace, async (ws) => {
     if (ws) {
@@ -100,6 +107,7 @@ export function useSidebarSetup(props, emit) {
     // 暴露给父组件的方法
     loadWorkspaces,
     loadCollections,
-    loadEnvironments
+    loadEnvironments,
+    setSelectedApi
   }
 }

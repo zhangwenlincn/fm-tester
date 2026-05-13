@@ -28,6 +28,7 @@ const {
   toggleExpand,
   isExpanded,
   selectApiItem,
+  setSelectedApiId,
   openRootCreateDialog,
   openCreateDialog,
   canCreateSubCollection,
@@ -48,7 +49,8 @@ const {
 
 // 暴露方法给父组件
 defineExpose({
-  loadCollections
+  loadCollections,
+  setSelectedApiId
 })
 </script>
 

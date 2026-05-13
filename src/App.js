@@ -339,6 +339,7 @@ export function useAppSetup() {
 
   // 关闭标签页
   const closeTab = (index) => {
+    const wasActive = index === activeTab.value
     tabs.value.splice(index, 1)
     if (tabs.value.length === 0) {
       activeTab.value = 0
@@ -348,8 +349,18 @@ export function useAppSetup() {
       currentRequest.headers = []
       currentRequest.body = ''
       currentRequest.bodyType = 'raw'
+      // 清空左侧选中
+      if (sidebarRef.value) {
+        sidebarRef.value.setSelectedApi(null)
+      }
     } else if (activeTab.value >= tabs.value.length) {
       activeTab.value = tabs.value.length - 1
+      // 同步左侧选中到新的激活标签（watch 会触发）
+    } else if (wasActive) {
+      // 关闭的是当前激活标签，activeTab 值不变但指向新标签，需手动同步
+      if (sidebarRef.value) {
+        sidebarRef.value.setSelectedApi(tabs.value[activeTab.value].id)
+      }
     }
   }
 
@@ -419,6 +430,13 @@ export function useAppSetup() {
     updateCurrentRequest()
     // 切换标签时清空响应
     response.value = null
+    // 同步左侧选中状态
+    if (tabs.value.length > 0) {
+      const currentTab = tabs.value[activeTab.value]
+      if (currentTab?.id && sidebarRef.value) {
+        sidebarRef.value.setSelectedApi(currentTab.id)
+      }
+    }
   })
 
   // 更新当前请求
