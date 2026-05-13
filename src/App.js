@@ -861,7 +861,10 @@ export function useAppSetup() {
       const existingIndex = tabs.value.findIndex(t => t.id === savedTabId)
       
       // 组合名称：[接口名] 响应名
-      const apiName = responseItem.apiName || '接口'
+      // 从 tabs 中查找接口名（使用 api_id）
+      const apiId = responseItem.api_id
+      const apiTab = tabs.value.find(t => t.id === apiId)
+      const apiName = apiTab?.name || '接口'
       const fullTabName = `[${apiName}] ${fullResponse.name}`
       
       if (existingIndex >= 0) {
