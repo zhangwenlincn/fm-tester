@@ -42,7 +42,7 @@ pub fn send_http_request(
         .collect();
 
     // 替换 Body 中的变量（仅用于 raw 类型）
-    let replaced_body = body.map(|b| replace_variables(&b, &variables));
+    let replaced_body = body.as_ref().map(|b| replace_variables(b, &variables));
 
     let client = reqwest::blocking::Client::new();
 
@@ -207,16 +207,16 @@ pub fn send_http_request(
         }
     }
 
-    let body = response
+    let response_body = response
         .text()
         .map_err(|e| format!("读取响应体失败: {}", e))?;
-    let size = body.len() as u64;
+    let size = response_body.len() as u64;
 
     let http_response = HttpResponse {
         status,
         status_text,
         headers: response_headers,
-        body,
+        body: response_body,
         time: elapsed,
         size,
     };
@@ -228,7 +228,7 @@ pub fn send_http_request(
         url.clone(),           // 原始 URL
         replaced_url.clone(),  // 替换变量后的 URL
         headers.clone(),
-        Some(http_response.body.clone()),
+        body.clone(),          // 请求体（原始）
         body_type,
         form_fields,
         binary_file_path,
