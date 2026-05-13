@@ -587,8 +587,11 @@ export function useAppSetup() {
       // 如果是保存响应的 tab，恢复响应数据
       if (currentTab.savedResponseData) {
         response.value = currentTab.savedResponseData
+      } else if (currentTab.lastResponseData) {
+        // 普通接口 tab，恢复该接口上次发送请求的响应
+        response.value = currentTab.lastResponseData
       } else {
-        // 普通接口 tab，清除 response（显示"发送请求以查看响应"）
+        // 该接口从未发送过请求
         response.value = null
       }
     }
@@ -669,6 +672,12 @@ export function useAppSetup() {
         time: result.time,
         size: result.size
       }
+      
+      // 保存响应到当前 tab（切换时恢复）
+      const currentTab = tabs.value[activeTab.value]
+      if (currentTab && !currentTab.id.startsWith('saved_')) {
+        currentTab.lastResponseData = response.value
+      }
     } catch (error) {
       response.value = {
         status: 0,
@@ -677,6 +686,12 @@ export function useAppSetup() {
         body: `错误: ${error}`,
         time: 0,
         size: 0
+      }
+      
+      // 保存错误响应到当前 tab
+      const currentTab = tabs.value[activeTab.value]
+      if (currentTab && !currentTab.id.startsWith('saved_')) {
+        currentTab.lastResponseData = response.value
       }
     } finally {
       loading.value = false
