@@ -409,6 +409,10 @@ export function useAppSetup() {
   // 导航切换（来自 Sidebar）
   const onNavChange = async (navKey) => {
     currentNavKey.value = navKey
+    // 切换离开历史页面时清空选中的历史记录
+    if (navKey !== 'history') {
+      selectedHistoryEntry.value = null
+    }
     // 切换到环境面板时加载环境数据
     if (navKey === 'environment') {
       await loadEnvironments()

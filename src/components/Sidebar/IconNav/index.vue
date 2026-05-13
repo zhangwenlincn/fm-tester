@@ -1,4 +1,5 @@
 <script setup>
+import { watch } from 'vue'
 import { useIconNavSetup } from './index.js'
 import Icon from '../../Icon/index.vue'
 
@@ -13,10 +14,12 @@ const emit = defineEmits(['navChange'])
 
 const { navItems, activeNav, selectNav } = useIconNavSetup(props, emit)
 
-// 如果传入了 activeIndex，同步更新
-if (props.activeIndex !== undefined && props.activeIndex !== activeNav.value) {
-  activeNav.value = props.activeIndex
-}
+// 监听 activeIndex 变化，同步更新
+watch(() => props.activeIndex, (newIndex) => {
+  if (newIndex !== undefined && newIndex !== activeNav.value) {
+    activeNav.value = newIndex
+  }
+}, { immediate: true })
 </script>
 
 <template>

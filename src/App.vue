@@ -95,6 +95,7 @@ const {
         @switch-environment="onSwitchEnvironment"
       />
       <TabsBar 
+        v-if="currentNavKey === 'collection'"
         :tabs="tabs"
         :active-tab="activeTab"
         :workspace="currentWorkspace"
