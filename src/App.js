@@ -587,6 +587,9 @@ export function useAppSetup() {
       // 如果是保存响应的 tab，恢复响应数据
       if (currentTab.savedResponseData) {
         response.value = currentTab.savedResponseData
+      } else {
+        // 普通接口 tab，清除 response（显示"发送请求以查看响应"）
+        response.value = null
       }
     }
   }
