@@ -1,9 +1,12 @@
+use crate::cookie::{get_cookies_config, save_cookies_config};
 use crate::environment::{get_active_variables, replace_variables};
-use crate::models::{FormField, Header, HttpResponse};
+use crate::models::{Cookie, CookiesConfig, FormField, Header, HttpResponse};
+use chrono::Utc;
 use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 use std::time::Instant;
+use url::Url;
 
 /// 发送 HTTP 请求（支持环境变量替换、multipart/form-data、binary 文件）
 #[tauri::command]
@@ -20,7 +23,7 @@ pub fn send_http_request(
     let start_time = Instant::now();
 
     // 获取当前激活环境的变量
-    let variables = get_active_variables(workspace_path);
+    let variables = get_active_variables(workspace_path.clone());
 
     // 替换 URL 中的变量
     let replaced_url = replace_variables(&url, &variables);
@@ -50,6 +53,23 @@ pub fn send_http_request(
         "OPTIONS" => client.request(reqwest::Method::OPTIONS, &replaced_url),
         _ => return Err(format!("不支持的 HTTP 方法: {}", method)),
     };
+
+    // 获取 URL 的 domain
+    let parsed_url = Url::parse(&replaced_url).ok();
+    let domain = parsed_url
+        .as_ref()
+        .and_then(|u| u.host_str())
+        .unwrap_or("");
+
+    // 获取并携带相关 cookies
+    let cookies_config = get_cookies_config(workspace_path.clone());
+    for cookie in &cookies_config.cookies {
+        // 匹配 domain（支持子域名匹配）
+        if domain.ends_with(&cookie.domain) || cookie.domain.ends_with(domain) {
+            let cookie_header = format!("{}={}", cookie.name, cookie.value);
+            request = request.header("Cookie", cookie_header);
+        }
+    }
 
     // 处理请求体类型
     let actual_body_type = body_type.unwrap_or_else(|| "raw".to_string());
@@ -160,6 +180,30 @@ pub fn send_http_request(
         .map(|(k, v)| (k.to_string(), v.to_str().unwrap_or("").to_string()))
         .collect();
 
+    // 从响应 headers 中提取 Set-Cookie 并保存
+    if let Some(set_cookie_value) = response_headers.get("set-cookie") {
+        // 解析 Set-Cookie header（可能有多个，用逗号分隔）
+        for cookie_str in set_cookie_value.split(", ") {
+            if let Ok(cookie) = parse_set_cookie(cookie_str, domain) {
+                let config = get_cookies_config(workspace_path.clone());
+                let mut cookies = config.cookies;
+                // 更新或添加
+                let existing_idx = cookies
+                    .iter()
+                    .position(|c| c.name == cookie.name && c.domain == cookie.domain);
+                if let Some(idx) = existing_idx {
+                    cookies[idx] = cookie;
+                } else {
+                    cookies.push(cookie);
+                }
+                if let Err(e) = save_cookies_config(workspace_path.clone(), CookiesConfig { cookies })
+                {
+                    eprintln!("保存 cookie 失败: {}", e);
+                }
+            }
+        }
+    }
+
     let body = response
         .text()
         .map_err(|e| format!("读取响应体失败: {}", e))?;
@@ -172,5 +216,53 @@ pub fn send_http_request(
         body,
         time: elapsed,
         size,
+    })
+}
+
+/// 解析 Set-Cookie header
+fn parse_set_cookie(cookie_str: &str, default_domain: &str) -> Result<Cookie, String> {
+    let parts: Vec<&str> = cookie_str.split(';').collect();
+    let name_value = parts.first().unwrap_or(&"");
+
+    let (name, value) = name_value.split_once('=').unwrap_or(("", ""));
+
+    let mut domain = default_domain.to_string();
+    let mut path = "/".to_string();
+    let mut secure = false;
+    let mut http_only = false;
+    let mut expires = None;
+    let mut max_age = None;
+
+    for part in parts.iter().skip(1) {
+        let part = part.trim();
+        if part.starts_with("Domain=") {
+            domain = part[7..].to_string();
+            // 移除前导点
+            if domain.starts_with('.') {
+                domain = domain[1..].to_string();
+            }
+        } else if part.starts_with("Path=") {
+            path = part[5..].to_string();
+        } else if part == "Secure" {
+            secure = true;
+        } else if part == "HttpOnly" {
+            http_only = true;
+        } else if part.starts_with("Expires=") {
+            expires = Some(part[8..].to_string());
+        } else if part.starts_with("Max-Age=") {
+            max_age = part[8..].parse::<u64>().ok();
+        }
+    }
+
+    Ok(Cookie {
+        name: name.to_string(),
+        value: value.to_string(),
+        domain,
+        path,
+        expires,
+        max_age,
+        secure,
+        http_only,
+        created_at: Utc::now().to_rfc3339(),
     })
 }

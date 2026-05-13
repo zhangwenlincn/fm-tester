@@ -8,6 +8,7 @@ import ResponsePanel from './components/ResponsePanel/index.vue'
 import StatusBar from './components/StatusBar/index.vue'
 import WorkspaceDialog from './components/WorkspaceDialog/index.vue'
 import EnvironmentPanel from './components/EnvironmentPanel/index.vue'
+import CookiePanel from './components/CookiePanel/index.vue'
 
 // 使用 composable
 const {
@@ -36,6 +37,12 @@ const {
   saveEnvironment,
   deleteEnvironment,
   saveEnvVariables,
+  // Cookie 相关
+  cookies,
+  showCookiePanel,
+  loadCookies,
+  openCookiePanel,
+  closeCookiePanel,
   // 导航相关
   showRequestResponse,
   showWorkspaceInfo,
@@ -146,7 +153,18 @@ const {
     </div>
     
     <!-- 底部状态栏 -->
-    <StatusBar />
+    <StatusBar 
+      @open-cookie-panel="openCookiePanel"
+    />
+    
+    <!-- Cookie 管理面板 -->
+    <CookiePanel 
+      :visible="showCookiePanel"
+      :cookies="cookies"
+      :workspace-path="currentWorkspace?.path || ''"
+      @close="closeCookiePanel"
+      @refresh="loadCookies"
+    />
     
     <!-- 工作区对话框 -->
     <WorkspaceDialog 

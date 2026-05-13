@@ -43,6 +43,10 @@ export function useAppSetup() {
   const selectedEnvVariables = ref([])   // Sidebar 选中环境的变量列表
   const activeVariables = ref([])        // 当前激活环境的变量列表（用于自动补全）
 
+  // Cookie 数据
+  const cookies = ref([])
+  const showCookiePanel = ref(false)
+
   // 当前侧边栏导航项
   const currentNavKey = ref('collection')
 
@@ -98,6 +102,32 @@ export function useAppSetup() {
       console.error('加载激活变量失败:', e)
       activeVariables.value = []
     }
+  }
+
+  // 加载 cookies
+  const loadCookies = async () => {
+    if (!currentWorkspace.value?.path) {
+      cookies.value = []
+      return
+    }
+    try {
+      const cookieList = await invoke('get_cookies', { workspacePath: currentWorkspace.value.path })
+      cookies.value = cookieList || []
+    } catch (e) {
+      console.error('加载 Cookies 失败:', e)
+      cookies.value = []
+    }
+  }
+
+  // 打开 Cookie 管理面板
+  const openCookiePanel = async () => {
+    await loadCookies()
+    showCookiePanel.value = true
+  }
+
+  // 关闭 Cookie 管理面板
+  const closeCookiePanel = () => {
+    showCookiePanel.value = false
   }
 
   // 切换环境（来自 MenuBar 下拉，调用后端，更新 MenuBar 显示）
@@ -227,6 +257,8 @@ export function useAppSetup() {
         currentWorkspace.value = workspace
         // 加载环境配置
         await loadEnvironments()
+        // 加载 cookies
+        await loadCookies()
         // 加载打开的标签页
         await loadOpenTabs(workspace.path)
       }
@@ -352,6 +384,8 @@ export function useAppSetup() {
     activeTab.value = 0
     // 加载该工作区的环境配置（如果 workspace 为 null，会清空环境）
     await loadEnvironments()
+    // 加载该工作区的 cookies
+    await loadCookies()
     // 加载该工作区的标签页
     if (workspace?.path) {
       // 先加载集合数据
@@ -731,6 +765,12 @@ export function useAppSetup() {
     saveEnvironment,
     deleteEnvironment,
     saveEnvVariables,
+    // Cookie 相关
+    cookies,
+    showCookiePanel,
+    loadCookies,
+    openCookiePanel,
+    closeCookiePanel,
     // 导航相关
     currentNavKey,
     onNavChange,
