@@ -46,6 +46,8 @@ pub fn run() {
             // 记忆
             get_expanded_collections,
             save_expanded_collections,
+            get_open_tabs,
+            save_open_tabs,
             // HTTP
             send_http_request
         ])

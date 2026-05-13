@@ -1,4 +1,4 @@
-import { ref, reactive, onMounted, watch, computed } from 'vue'
+import { ref, reactive, onMounted, watch, computed, nextTick } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import JSON5 from 'json5'
 
@@ -192,13 +192,13 @@ export function useAppSetup() {
   }
 
   // 禁用右键菜单
-  onMounted(() => {
+  onMounted(async () => {
     document.addEventListener('contextmenu', (e) => {
       e.preventDefault()
     })
     
     // 加载最近打开的工作区
-    loadLastWorkspace()
+    await loadLastWorkspace()
   })
 
   // 加载工作区列表
@@ -223,24 +223,83 @@ export function useAppSetup() {
         currentWorkspace.value = workspace
         // 加载环境配置
         await loadEnvironments()
-        // 加载最后打开的接口
-        await loadLastApi(workspace.id)
+        // 加载打开的标签页
+        await loadOpenTabs(workspace.path)
       }
     } catch (e) {
       console.error('加载工作区失败:', e)
     }
   }
 
-  // 加载最后打开的接口
-  const loadLastApi = async (workspaceId) => {
+  // 加载打开的标签页
+  const loadOpenTabs = async (workspacePath) => {
     try {
-      const lastApi = await invoke('get_last_api', { workspaceId })
-      if (lastApi) {
-        // 自动打开最后接口
-        selectApi(lastApi)
+      const [openTabIds, activeIndex] = await invoke('get_open_tabs', { workspacePath })
+      console.log('加载标签页:', openTabIds, activeIndex)
+      if (openTabIds.length > 0) {
+        // 从集合中找到这些接口并打开
+        const collections = await invoke('get_collections', { workspacePath })
+        const apis = findApisInCollections(collections || [], openTabIds)
+        console.log('找到的接口:', apis.length)
+        // 按保存的顺序打开标签页
+        for (const apiId of openTabIds) {
+          const api = apis.find(a => a.id === apiId)
+          if (api) {
+            tabs.value.push({
+              id: api.id,
+              name: api.name,
+              method: api.method || 'GET',
+              url: api.url || '',
+              headers: api.headers || [],
+              body: api.body || '',
+              bodyType: api.body_type || 'raw',
+              formData: api.form_fields || [],
+              binaryFile: api.binary_file_path ? { path: api.binary_file_path, name: api.binary_file_path.split(/[/\\]/).pop() } : null
+            })
+          }
+        }
+        // 设置激活标签页
+        if (tabs.value.length > 0 && activeIndex < tabs.value.length) {
+          activeTab.value = activeIndex
+          updateCurrentRequest()
+          // 等待组件渲染完成后同步左侧选中
+          await nextTick()
+          if (sidebarRef.value) {
+            sidebarRef.value.setSelectedApi(tabs.value[activeIndex].id)
+          }
+        }
       }
     } catch (e) {
-      console.error('加载最后接口失败:', e)
+      console.error('加载标签页失败:', e)
+    }
+  }
+  
+  // 从集合树中递归查找接口
+  const findApisInCollections = (collections, apiIds) => {
+    const apis = []
+    for (const item of collections) {
+      if (item.type === 'api' && apiIds.includes(item.id)) {
+        apis.push(item)
+      }
+      if (item.children && item.children.length > 0) {
+        apis.push(...findApisInCollections(item.children, apiIds))
+      }
+    }
+    return apis
+  }
+  
+  // 保存打开的标签页
+  const saveOpenTabs = async () => {
+    if (!currentWorkspace.value?.path) return
+    try {
+      const openTabIds = tabs.value.map(t => t.id)
+      await invoke('save_open_tabs', {
+        workspacePath: currentWorkspace.value.path,
+        openTabs: openTabIds,
+        activeTabIndex: activeTab.value
+      })
+    } catch (e) {
+      console.error('保存标签页失败:', e)
     }
   }
 
@@ -283,9 +342,13 @@ export function useAppSetup() {
     activeTab.value = 0
     // 加载该工作区的环境配置（如果 workspace 为 null，会清空环境）
     await loadEnvironments()
-    // 加载该工作区的最后接口
-    if (workspace?.id) {
-      await loadLastApi(workspace.id)
+    // 加载该工作区的标签页
+    if (workspace?.path) {
+      // 先加载集合数据
+      await sidebarRef.value?.loadCollections()
+      await sidebarRef.value?.loadEnvironments()
+      // 再加载标签页
+      await loadOpenTabs(workspace.path)
       // 保存为最后打开的工作区
       try {
         await invoke('set_last_workspace', { workspaceId: workspace.id })
@@ -293,9 +356,6 @@ export function useAppSetup() {
         console.error('保存工作区失败:', e)
       }
     }
-    // 刷新侧边栏
-    sidebarRef.value?.loadCollections()
-    sidebarRef.value?.loadEnvironments()
   }
 
   // 导航切换（来自 Sidebar）
@@ -338,7 +398,7 @@ export function useAppSetup() {
   }
 
   // 关闭标签页
-  const closeTab = (index) => {
+  const closeTab = async (index) => {
     const wasActive = index === activeTab.value
     tabs.value.splice(index, 1)
     if (tabs.value.length === 0) {
@@ -362,6 +422,8 @@ export function useAppSetup() {
         sidebarRef.value.setSelectedApi(tabs.value[activeTab.value].id)
       }
     }
+    // 保存标签页状态
+    await saveOpenTabs()
   }
 
   // 删除接口时关闭对应标签页
@@ -412,21 +474,12 @@ export function useAppSetup() {
     // 更新当前请求
     updateCurrentRequest()
     
-    // 保存为最后打开的接口
-    if (currentWorkspace.value?.id) {
-      try {
-        await invoke('set_last_api', {
-          workspaceId: currentWorkspace.value.id,
-          apiId: api.id
-        })
-      } catch (e) {
-        console.error('保存最后接口失败:', e)
-      }
-    }
+    // 保存标签页状态
+    await saveOpenTabs()
   }
 
   // 监听标签切换，更新请求内容
-  watch(activeTab, () => {
+  watch(activeTab, async () => {
     updateCurrentRequest()
     // 切换标签时清空响应
     response.value = null
@@ -437,6 +490,8 @@ export function useAppSetup() {
         sidebarRef.value.setSelectedApi(currentTab.id)
       }
     }
+    // 保存标签页状态
+    await saveOpenTabs()
   })
 
   // 更新当前请求

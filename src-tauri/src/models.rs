@@ -121,8 +121,12 @@ pub struct HttpResponse {
     pub size: u64,
 }
 
-/// 工作区记忆配置（集合展开状态）
+/// 工作区记忆配置（集合展开状态、打开的标签页）
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct MemoryConfig {
     pub expanded_ids: Vec<String>,
+    #[serde(default)]
+    pub open_tabs: Vec<String>,      // 打开的标签页 API ID 列表
+    #[serde(default)]
+    pub active_tab_index: usize,     // 当前激活的标签页索引
 }

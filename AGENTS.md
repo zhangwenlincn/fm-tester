@@ -58,7 +58,7 @@ src-tauri/src/
 | workspace | `set_last_api`, `get_last_api` | 最后打开的接口 |
 | collection | `get_collections`, `create_collection`, `create_api`, `update_api`, `update_collection`, `delete_collection_item`, `move_api` | 集合/接口 CRUD |
 | environment | `get_environments`, `save_environment`, `delete_environment`, `switch_environment`, `get_active_variables` | 环境变量 |
-| memory | `get_expanded_collections`, `save_expanded_collections` | 集合展开状态 |
+| memory | `get_expanded_collections`, `save_expanded_collections`, `get_open_tabs`, `save_open_tabs` | 集合展开状态、打开的标签页 |
 | http | `send_http_request` | 发送 HTTP 请求（支持变量替换） |
 
 ## 添加新 Tauri Command
