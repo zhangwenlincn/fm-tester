@@ -1,0 +1,237 @@
+<script setup>
+import { useHistoryDetailSetup } from './index.js'
+import Icon from '../Icon/index.vue'
+
+const props = defineProps({
+  entry: Object
+})
+
+const {
+  requestTab,
+  responseTab,
+  responseFormat,
+  formattedBody,
+  formatResponseTime,
+  formatSize,
+  getStatusClass,
+  getMethodClass,
+  formatTime
+} = useHistoryDetailSetup(props)
+
+const requestTabs = [
+  { key: 'params', name: '参数' },
+  { key: 'headers', name: 'Headers' },
+  { key: 'body', name: 'Body' }
+]
+
+const responseTabs = [
+  { key: 'body', name: '响应体' },
+  { key: 'headers', name: '响应头' }
+]
+
+// 解析 URL 参数
+const parseUrlParams = (url) => {
+  if (!url || !url.includes('?')) return []
+  const queryString = url.split('?')[1].split('#')[0]
+  const params = []
+  const pairs = queryString.split('&')
+  for (const pair of pairs) {
+    const [key, value] = pair.split('=')
+    params.push({
+      key: key || '',
+      value: value || ''
+    })
+  }
+  return params
+}
+</script>
+
+<template>
+  <div class="history-detail" v-if="entry">
+    <!-- 请求区 -->
+    <div class="request-area">
+      <!-- URL 输入行 -->
+      <div class="url-bar">
+        <div class="method-selector">
+          <span class="method-display" :class="getMethodClass(entry.method)">{{ entry.method }}</span>
+        </div>
+        <div class="url-display-wrapper">
+          <span class="url-display">{{ entry.url }}</span>
+        </div>
+        <span class="history-time">{{ formatTime(entry.created_at) }}</span>
+      </div>
+      
+      <!-- 请求配置标签页 -->
+      <div class="request-tabs">
+        <div 
+          v-for="tab in requestTabs" 
+          :key="tab.key"
+          class="tab-item"
+          :class="{ active: requestTab === tab.key }"
+          @click="requestTab = tab.key"
+        >
+          {{ tab.name }}
+        </div>
+      </div>
+      
+      <!-- 标签页内容 -->
+      <div class="tab-content">
+        <!-- 参数（URL Query） -->
+        <div v-show="requestTab === 'params'" class="params-panel">
+          <div class="params-list">
+            <div class="params-header">
+              <span class="col-check"></span>
+              <span class="col-key">参数名</span>
+              <span class="col-value">参数值</span>
+              <span class="col-desc">描述</span>
+            </div>
+            <div v-if="!entry.url.includes('?')" class="empty-params">
+              无 URL 参数
+            </div>
+            <div 
+              v-for="(param, index) in parseUrlParams(entry.url)" 
+              :key="index"
+              class="param-row"
+            >
+              <span class="col-check">
+                <input type="checkbox" checked disabled />
+              </span>
+              <span class="col-key">
+                <span class="readonly-value">{{ param.key }}</span>
+              </span>
+              <span class="col-value">
+                <span class="readonly-value">{{ param.value }}</span>
+              </span>
+              <span class="col-desc">
+                <span class="readonly-value"></span>
+              </span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 请求头 -->
+        <div v-show="requestTab === 'headers'" class="headers-panel">
+          <div class="params-list">
+            <div class="params-header">
+              <span class="col-check"></span>
+              <span class="col-key">Header 名</span>
+              <span class="col-value">Header 值</span>
+              <span class="col-desc">描述</span>
+            </div>
+            <div v-if="!entry.headers || entry.headers.length === 0" class="empty-params">
+              无请求头
+            </div>
+            <div 
+              v-for="(header, index) in entry.headers" 
+              :key="index"
+              class="param-row"
+            >
+              <span class="col-check">
+                <input type="checkbox" :checked="header.enabled" disabled />
+              </span>
+              <span class="col-key">
+                <span class="readonly-value">{{ header.key }}</span>
+              </span>
+              <span class="col-value">
+                <span class="readonly-value">{{ header.value }}</span>
+              </span>
+              <span class="col-desc">
+                <span class="readonly-value">{{ header.description || '' }}</span>
+              </span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 请求体 -->
+        <div v-show="requestTab === 'body'" class="body-panel">
+          <div class="body-toolbar">
+            <div class="body-type-display">
+              Body 类型: <span class="type-value">{{ entry.body_type || 'none' }}</span>
+            </div>
+          </div>
+          <div v-if="!entry.body" class="body-empty">
+            <span class="empty-text">无请求体</span>
+          </div>
+          <div v-else class="editor-wrapper">
+            <div class="monaco-editor-container readonly">
+              <pre class="readonly-editor">{{ entry.body }}</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 响应区 -->
+    <div class="response-area">
+      <!-- 响应状态栏 -->
+      <div class="response-status">
+        <div class="status-info">
+          <div class="status-item">
+            <span class="status-label">状态:</span>
+            <span class="status-value" :class="getStatusClass(entry.status)">{{ entry.status }} {{ entry.status_text }}</span>
+          </div>
+          <div class="status-item">
+            <span class="status-label">时间:</span>
+            <span class="status-value">{{ formatResponseTime(entry.time) }}</span>
+          </div>
+          <div class="status-item">
+            <span class="status-label">大小:</span>
+            <span class="status-value">{{ formatSize(entry.size) }}</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 响应标签页 -->
+      <div class="response-tabs">
+        <div 
+          v-for="tab in responseTabs" 
+          :key="tab.key"
+          class="tab-item"
+          :class="{ active: responseTab === tab.key }"
+          @click="responseTab = tab.key"
+        >
+          {{ tab.name }}
+        </div>
+        <div class="format-toggle" v-show="responseTab === 'body'">
+          <span :class="{ active: responseFormat === 'pretty' }" @click="responseFormat = 'pretty'">格式化</span>
+          <span :class="{ active: responseFormat === 'raw' }" @click="responseFormat = 'raw'">原始</span>
+        </div>
+      </div>
+      
+      <!-- 响应内容 -->
+      <div class="response-content">
+        <!-- 响应体 -->
+        <div v-show="responseTab === 'body'" class="body-content">
+          <div class="monaco-editor-container readonly">
+            <pre class="readonly-editor" v-if="responseFormat === 'pretty'">{{ formattedBody }}</pre>
+            <pre class="readonly-editor" v-else>{{ entry.response_body }}</pre>
+          </div>
+        </div>
+        
+        <!-- 响应头 -->
+        <div v-show="responseTab === 'headers'" class="headers-content">
+          <div class="headers-list" v-if="entry.response_headers">
+            <div 
+              v-for="(value, key) in entry.response_headers" 
+              :key="key"
+              class="header-row"
+            >
+              <span class="header-key">{{ key }}</span>
+              <span class="header-value">{{ value }}</span>
+            </div>
+          </div>
+          <div v-else class="empty-state">无响应头</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 无数据提示 -->
+  <div class="history-empty" v-else>
+    <span class="empty-icon"><Icon name="history" :size="48" /></span>
+    <p class="empty-text">请从历史列表中选择一条记录</p>
+    <p class="empty-hint">点击左侧历史列表查看请求详情</p>
+  </div>
+</template>
+
+<style scoped src="./style.css"></style>

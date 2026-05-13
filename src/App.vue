@@ -10,6 +10,7 @@ import WorkspaceDialog from './components/WorkspaceDialog/index.vue'
 import EnvironmentPanel from './components/EnvironmentPanel/index.vue'
 import CookiePanel from './components/CookiePanel/index.vue'
 import SaveResponseDialog from './components/SaveResponseDialog/index.vue'
+import HistoryDetailPanel from './components/HistoryDetailPanel/index.vue'
 
 // 使用 composable
 const {
@@ -51,8 +52,13 @@ const {
   handleSaveResponse,
   // 已保存响应查看
   onSelectSavedResponse,
+  // 历史选择
+  onSelectHistory,
+  selectedHistoryEntry,
   // 导航相关
+  currentNavKey,
   showRequestResponse,
+  showHistoryDetail,
   showWorkspaceInfo,
   showEnvironmentInfo,
   onSwitchEnvironment,
@@ -113,6 +119,7 @@ const {
         @environment-updated="loadEnvironments"
         @workspace-deleted="onWorkspaceDeleted"
         @select-saved-response="onSelectSavedResponse"
+        @select-history="onSelectHistory"
       />
       
       <!-- 中间内容区 -->
@@ -139,6 +146,11 @@ const {
             @save-response="onSaveResponse"
           />
         </div>
+      </div>
+      
+      <!-- 历史详情面板 -->
+      <div class="content-area" v-else-if="showHistoryDetail">
+        <HistoryDetailPanel :entry="selectedHistoryEntry" />
       </div>
       
       <!-- 工作区信息面板 -->

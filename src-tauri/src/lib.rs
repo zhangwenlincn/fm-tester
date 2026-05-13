@@ -1,6 +1,7 @@
 mod collection;
 mod cookie;
 mod environment;
+mod history;
 mod http;
 mod memory;
 mod models;
@@ -10,6 +11,7 @@ mod workspace;
 pub use collection::*;
 pub use cookie::*;
 pub use environment::*;
+pub use history::*;
 pub use http::*;
 pub use memory::*;
 pub use models::*;
@@ -64,7 +66,14 @@ pub fn run() {
             get_saved_responses,
             get_saved_response,
             delete_saved_response,
-            get_api_saved_responses
+            get_api_saved_responses,
+            // History
+            get_history_dates,
+            get_history_by_date,
+            get_history_entry,
+            delete_history_entry,
+            clear_history_by_date,
+            clear_all_history
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

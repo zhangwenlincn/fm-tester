@@ -5,6 +5,7 @@ export const navItems = [
   { icon: "collection", name: "集合", key: "collection" },
   { icon: "environment", name: "环境", key: "environment" },
   { icon: "workspace", name: "工作区", key: "workspace" },
+  { icon: "history", name: "历史", key: "history" },
   { icon: "function", name: "功能", key: "function" },
   { icon: "performance", name: "性能", key: "performance" },
   { icon: "toolbox", name: "工具箱", key: "toolbox" },

@@ -1,5 +1,5 @@
 mod commands;
-pub mod config;
+pub mod saved_response_config;
 
 pub use commands::*;
-pub use config::*;
+pub use saved_response_config::*;

@@ -3,7 +3,7 @@ use crate::collection::utils::{
     find_api_in_collections, find_collection_item, get_collection_depth, remove_collection_item,
 };
 use crate::models::{Collection, FormField, Header};
-use crate::saved_response::config::get_api_saved_responses_index;
+use crate::saved_response::saved_response_config::get_api_saved_responses_index;
 
 /// 递归加载 API 的保存响应索引
 fn load_saved_responses_for_apis(collections: &mut [Collection], workspace_path: &str) {

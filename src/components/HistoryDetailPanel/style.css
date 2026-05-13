@@ -1,0 +1,405 @@
+/* 整体布局 - 复制 RequestPanel + ResponsePanel */
+
+.history-detail {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #f5f5f5;
+}
+
+/* 请求区 - 复制 RequestPanel 样式 */
+.request-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border-bottom: 1px solid #e8e8e8;
+  min-height: 0;
+}
+
+.url-bar {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  gap: 8px;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.method-selector {
+  flex-shrink: 0;
+}
+
+.method-display {
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 4px;
+  min-width: 90px;
+  text-align: center;
+}
+
+.method-display.get {
+  color: #52c416;
+  background: #f6ffed;
+}
+
+.method-display.post {
+  color: #fa8c16;
+  background: #fff7e6;
+}
+
+.method-display.put {
+  color: #1890ff;
+  background: #e6f7ff;
+}
+
+.method-display.delete {
+  color: #f5222d;
+  background: #fff1f0;
+}
+
+.method-display.patch {
+  color: #722ed1;
+  background: #f9f0ff;
+}
+
+.url-display-wrapper {
+  flex: 1;
+  padding: 8px 12px;
+  font-size: 13px;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  background: #fafafa;
+}
+
+.url-display {
+  color: #262626;
+}
+
+.history-time {
+  font-size: 12px;
+  color: #8c8c8c;
+  padding: 6px 12px;
+}
+
+.request-tabs {
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  border-bottom: 1px solid #e8e8e8;
+  background: #fafafa;
+}
+
+.tab-item {
+  padding: 10px 16px;
+  font-size: 13px;
+  color: #595959;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+
+.tab-item:hover {
+  color: #1890ff;
+}
+
+.tab-item.active {
+  color: #1890ff;
+  border-bottom-color: #1890ff;
+}
+
+.tab-content {
+  flex: 1;
+  overflow: auto;
+  position: relative;
+  min-height: 0;
+}
+
+.params-panel,
+.headers-panel {
+  padding: 16px;
+}
+
+.params-list {
+  border: 1px solid #e8e8e8;
+  border-radius: 4px;
+}
+
+.params-header {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  background: #fafafa;
+  border-bottom: 1px solid #e8e8e8;
+  font-size: 12px;
+  color: #8c8c8c;
+}
+
+.param-row {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.param-row:last-child {
+  border-bottom: none;
+}
+
+.param-row:hover {
+  background: #fafafa;
+}
+
+.col-check {
+  width: 32px;
+  flex-shrink: 0;
+}
+
+.col-key,
+.col-value {
+  flex: 1;
+  min-width: 0;
+}
+
+.col-desc {
+  flex: 1;
+  min-width: 0;
+}
+
+.readonly-value {
+  display: block;
+  width: 100%;
+  padding: 4px 8px;
+  font-size: 13px;
+  color: #262626;
+  background: transparent;
+}
+
+.empty-params {
+  padding: 24px;
+  text-align: center;
+  color: #8c8c8c;
+  font-size: 13px;
+}
+
+.body-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.body-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e8e8e8;
+  min-height: 44px;
+}
+
+.body-type-display {
+  font-size: 13px;
+  color: #262626;
+}
+
+.type-value {
+  color: #1890ff;
+  font-weight: 500;
+}
+
+.body-empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #8c8c8c;
+  background: #fafafa;
+}
+
+.body-empty .empty-text {
+  font-size: 14px;
+}
+
+.editor-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+  position: relative;
+}
+
+/* 只读编辑器容器 */
+.monaco-editor-container.readonly {
+  flex: 1;
+  height: 100%;
+  overflow: auto;
+  border: 1px solid #e8e8e8;
+  border-radius: 4px;
+  background: #fafafa;
+}
+
+.readonly-editor {
+  padding: 12px;
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #262626;
+  white-space: pre-wrap;
+  word-break: break-all;
+  margin: 0;
+}
+
+/* 响应区 - 复制 ResponsePanel 样式 */
+.response-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border-top: 1px solid #e8e8e8;
+  min-height: 0;
+}
+
+.response-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background: #fafafa;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.status-info {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.status-label {
+  font-size: 12px;
+  color: #8c8c8c;
+}
+
+.status-value {
+  font-size: 13px;
+  font-weight: 500;
+  color: #262626;
+}
+
+.status-value.success { color: #52c416; }
+.status-value.redirect { color: #1890ff; }
+.status-value.client-error { color: #fa8c16; }
+.status-value.server-error { color: #f5222d; }
+
+.response-tabs {
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  border-bottom: 1px solid #e8e8e8;
+  background: #fafafa;
+}
+
+.format-toggle {
+  display: flex;
+  gap: 8px;
+  margin-left: 16px;
+  font-size: 12px;
+  color: #8c8c8c;
+}
+
+.format-toggle span {
+  cursor: pointer;
+}
+
+.format-toggle span.active {
+  color: #1890ff;
+  font-weight: 500;
+}
+
+.response-content {
+  flex: 1;
+  overflow: auto;
+  min-height: 0;
+}
+
+.body-content {
+  height: 100%;
+}
+
+.headers-content {
+  padding: 16px;
+}
+
+.headers-list {
+  border: 1px solid #e8e8e8;
+  border-radius: 4px;
+}
+
+.header-row {
+  display: flex;
+  padding: 8px 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.header-row:last-child {
+  border-bottom: none;
+}
+
+.header-row:hover {
+  background: #fafafa;
+}
+
+.header-key {
+  width: 200px;
+  font-weight: 500;
+  color: #1890ff;
+  font-size: 13px;
+}
+
+.header-value {
+  flex: 1;
+  font-size: 13px;
+  color: #262626;
+}
+
+.empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #8c8c8c;
+  font-size: 13px;
+}
+
+/* 无数据提示 */
+.history-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #8c8c8c;
+  background: #fff;
+}
+
+.empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.empty-text {
+  font-size: 16px;
+  color: #262626;
+  margin-bottom: 8px;
+}
+
+.empty-hint {
+  font-size: 13px;
+  color: #bfbfbf;
+}

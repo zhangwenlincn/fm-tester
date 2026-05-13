@@ -4,6 +4,7 @@ import IconNav from './IconNav/index.vue'
 import CollectionPanel from './CollectionPanel/index.vue'
 import EnvironmentPanel from './EnvironmentPanel/index.vue'
 import WorkspacePanel from './WorkspacePanel/index.vue'
+import HistoryPanel from './HistoryPanel/index.vue'
 
 
 const props = defineProps({
@@ -19,7 +20,8 @@ const emit = defineEmits([
   'navChange',
   'environmentUpdated',
   'workspaceDeleted',
-  'selectSavedResponse'
+  'selectSavedResponse',
+  'selectHistory'
 ])
 
 // 使用 composable
@@ -29,6 +31,7 @@ const {
   collectionPanelRef,
   environmentPanelRef,
   workspacePanelRef,
+  historyPanelRef,
   handleNavChange,
   handleSelectApi,
   handleDeleteApis,
@@ -39,9 +42,11 @@ const {
   handleCreateWorkspace,
   handleWorkspaceDeleted,
   handleSelectSavedResponse,
+  handleSelectHistory,
   loadWorkspaces,
   loadCollections,
   loadEnvironments,
+  loadHistory,
   setSelectedApi
 } = useSidebarSetup(props, emit)
 
@@ -50,6 +55,7 @@ defineExpose({
   loadWorkspaces,
   loadCollections,
   loadEnvironments,
+  loadHistory,
   setSelectedApi
 })
 </script>
@@ -94,11 +100,20 @@ defineExpose({
         @workspace-deleted="handleWorkspaceDeleted"
       />
       
+      <!-- 历史面板 -->
+      <HistoryPanel 
+        v-if="navItems[activeNav]?.key === 'history'"
+        ref="historyPanelRef"
+        :workspace="props.workspace"
+        @select-history="handleSelectHistory"
+      />
+      
       <!-- 其他面板（功能、性能、工具箱） -->
       <div 
         v-if="navItems[activeNav]?.key !== 'collection' && 
               navItems[activeNav]?.key !== 'workspace' && 
-              navItems[activeNav]?.key !== 'environment'"
+              navItems[activeNav]?.key !== 'environment' &&
+              navItems[activeNav]?.key !== 'history'"
         class="other-panel"
       >
         <div class="panel-header">

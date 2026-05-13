@@ -1,7 +1,7 @@
 use crate::models::{
     Cookie, SavedRequest, SavedResponse, SavedResponseData, SavedResponseIndexEntry,
 };
-use crate::saved_response::config::*;
+use crate::saved_response::saved_response_config::*;
 use chrono::Utc;
 use uuid::Uuid;
 

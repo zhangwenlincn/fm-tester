@@ -1,5 +1,6 @@
 use crate::cookie::{get_cookies_config, save_cookies_config};
 use crate::environment::{get_active_variables, replace_variables};
+use crate::history::record_history;
 use crate::models::{Cookie, CookiesConfig, FormField, Header, HttpResponse};
 use chrono::Utc;
 use std::collections::HashMap;
@@ -19,6 +20,8 @@ pub fn send_http_request(
     form_fields: Option<Vec<FormField>>,
     binary_file_path: Option<String>,
     workspace_path: String,
+    api_id: Option<String>,
+    api_name: Option<String>,
 ) -> Result<HttpResponse, String> {
     let start_time = Instant::now();
 
@@ -72,7 +75,7 @@ pub fn send_http_request(
     }
 
     // 处理请求体类型
-    let actual_body_type = body_type.unwrap_or_else(|| "raw".to_string());
+    let actual_body_type = body_type.clone().unwrap_or_else(|| "raw".to_string());
 
     // 发送 form-data 时，排除手动设置的 Content-Type（让 reqwest 自动生成带 boundary 的）
     let should_skip_content_type = actual_body_type == "form-data";
@@ -93,7 +96,7 @@ pub fn send_http_request(
         match actual_body_type.as_str() {
             "form-data" => {
                 // multipart/form-data
-                if let Some(fields) = form_fields {
+                if let Some(ref fields) = form_fields {
                     let mut form = reqwest::blocking::multipart::Form::new();
 
                     for field in fields {
@@ -109,7 +112,7 @@ pub fn send_http_request(
                             }
                             "file" => {
                                 // 文件字段
-                                if let Some(files) = field.files {
+                                if let Some(ref files) = field.files {
                                     for file_info in files {
                                         let file_path = Path::new(&file_info.path);
                                         if file_path.exists() {
@@ -144,7 +147,7 @@ pub fn send_http_request(
             }
             "binary" => {
                 // binary 文件上传
-                if let Some(file_path) = binary_file_path {
+                if let Some(ref file_path) = binary_file_path {
                     let path = Path::new(&file_path);
                     if path.exists() {
                         let file_content = fs::read(path)
@@ -209,14 +212,34 @@ pub fn send_http_request(
         .map_err(|e| format!("读取响应体失败: {}", e))?;
     let size = body.len() as u64;
 
-    Ok(HttpResponse {
+    let http_response = HttpResponse {
         status,
         status_text,
         headers: response_headers,
         body,
         time: elapsed,
         size,
-    })
+    };
+
+    // 记录请求历史
+    if let Err(e) = record_history(
+        workspace_path.clone(),
+        method.clone(),
+        url.clone(),           // 原始 URL
+        replaced_url.clone(),  // 替换变量后的 URL
+        headers.clone(),
+        Some(http_response.body.clone()),
+        body_type,
+        form_fields,
+        binary_file_path,
+        &http_response,
+        api_id,
+        api_name,
+    ) {
+        eprintln!("记录历史失败: {}", e);
+    }
+
+    Ok(http_response)
 }
 
 /// 解析 Set-Cookie header

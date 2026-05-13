@@ -430,6 +430,11 @@ export function useAppSetup() {
     return currentNavKey.value === 'collection' && tabs.value.length > 0
   })
 
+  // 是否显示历史详情面板
+  const showHistoryDetail = computed(() => {
+    return currentNavKey.value === 'history'
+  })
+
   // 是否显示工作区信息面板
   const showWorkspaceInfo = computed(() => {
     return currentNavKey.value === 'workspace' && currentWorkspace.value
@@ -653,6 +658,10 @@ export function useAppSetup() {
       const binaryFilePath = request.binaryFile?.path || null
       
       // 使用 Rust 后端发送请求（绕过 CORS，支持环境变量替换）
+      const currentTab = tabs.value[activeTab.value]
+      const apiId = currentTab?.id?.startsWith('saved_') ? null : currentTab?.id || null
+      const apiName = currentTab?.name || null
+      
       const result = await invoke('send_http_request', {
         method: request.method,
         url: request.url,
@@ -661,7 +670,9 @@ export function useAppSetup() {
         bodyType: request.bodyType,
         formFields: formFields,
         binaryFilePath: binaryFilePath,
-        workspacePath: currentWorkspace.value?.path || ''
+        workspacePath: currentWorkspace.value?.path || '',
+        apiId: apiId,
+        apiName: apiName
       })
       
       response.value = {
@@ -674,7 +685,6 @@ export function useAppSetup() {
       }
       
       // 保存响应到当前 tab（切换时恢复）
-      const currentTab = tabs.value[activeTab.value]
       if (currentTab && !currentTab.id.startsWith('saved_')) {
         currentTab.lastResponseData = response.value
       }
@@ -925,6 +935,13 @@ export function useAppSetup() {
     }
   }
 
+  // 选择历史记录（直接显示历史详情面板）
+  const selectedHistoryEntry = ref(null)
+  
+  const onSelectHistory = (historyEntry) => {
+    selectedHistoryEntry.value = historyEntry
+  }
+
   return {
     currentWorkspace,
     workspaces,
@@ -962,14 +979,18 @@ export function useAppSetup() {
     saveResponseDefaultName,
     onSaveResponse,
     handleSaveResponse,
-    // 已保存响应查看
+// 已保存响应查看
     onSelectSavedResponse,
+    // 历史选择
+    onSelectHistory,
+    selectedHistoryEntry,
     // 导航相关
     currentNavKey,
     onNavChange,
     onSwitchEnvironment,
     onSelectEnvironment,
     showRequestResponse,
+    showHistoryDetail,
     showWorkspaceInfo,
     showEnvironmentInfo,
     openCreateWorkspace,

@@ -13,6 +13,7 @@ export function useSidebarSetup(props, emit) {
   const collectionPanelRef = ref(null)
   const environmentPanelRef = ref(null)
   const workspacePanelRef = ref(null)
+  const historyPanelRef = ref(null)
   
   // 处理导航切换
   const handleNavChange = (key) => {
@@ -36,6 +37,9 @@ export function useSidebarSetup(props, emit) {
   // 处理已保存响应事件
   const handleSelectSavedResponse = (item) => emit('selectSavedResponse', item)
   
+  // 处理历史选择事件
+  const handleSelectHistory = (entry) => emit('selectHistory', entry)
+  
   // 加载方法（暴露给父组件）
   const loadWorkspaces = async () => {
     if (workspacePanelRef.value) {
@@ -52,6 +56,12 @@ export function useSidebarSetup(props, emit) {
   const loadEnvironments = async () => {
     if (environmentPanelRef.value) {
       await environmentPanelRef.value.loadEnvironments()
+    }
+  }
+  
+  const loadHistory = async () => {
+    if (historyPanelRef.value) {
+      await historyPanelRef.value.loadHistoryDates()
     }
   }
   
@@ -84,6 +94,8 @@ export function useSidebarSetup(props, emit) {
       await loadCollections()
     } else if (key === 'environment') {
       await loadEnvironments()
+    } else if (key === 'history') {
+      await loadHistory()
     }
   })
   
@@ -96,6 +108,7 @@ export function useSidebarSetup(props, emit) {
     collectionPanelRef,
     environmentPanelRef,
     workspacePanelRef,
+    historyPanelRef,
     
     // 事件处理
     handleNavChange,
@@ -108,11 +121,13 @@ export function useSidebarSetup(props, emit) {
     handleCreateWorkspace,
     handleWorkspaceDeleted,
     handleSelectSavedResponse,
+    handleSelectHistory,
     
     // 暴露给父组件的方法
     loadWorkspaces,
     loadCollections,
     loadEnvironments,
+    loadHistory,
     setSelectedApi
   }
 }

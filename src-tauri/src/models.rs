@@ -212,3 +212,35 @@ pub struct SavedResponseIndexEntry {
 pub struct SavedResponsesIndex {
     pub responses: Vec<SavedResponseIndexEntry>,
 }
+
+/// 历史记录条目（每次请求的完整记录）
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct HistoryEntry {
+    pub id: String,
+    pub method: String,
+    pub url: String,           // 原始 URL（带变量）
+    pub resolved_url: String,  // 替换变量后的实际 URL
+    pub headers: Vec<Header>,
+    pub body: Option<String>,
+    pub body_type: Option<String>,
+    pub form_fields: Option<Vec<FormField>>,
+    pub binary_file_path: Option<String>,
+    // 响应数据
+    pub status: u16,
+    pub status_text: String,
+    pub response_headers: std::collections::HashMap<String, String>,
+    pub response_body: String,
+    pub time: u64,           // 响应时间（毫秒）
+    pub size: u64,           // 响应大小（字节）
+    pub created_at: String,  // 请求时间
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub api_id: Option<String>,  // 关联的接口 ID
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub api_name: Option<String>, // 关联的接口名称
+}
+
+/// 历史记录存储结构
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct HistoryConfig {
+    pub entries: Vec<HistoryEntry>,
+}
