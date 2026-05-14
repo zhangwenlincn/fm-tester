@@ -1,4 +1,4 @@
-use crate::memory::config::{read_memory, write_memory};
+use crate::memory::memory_config::{read_memory, write_memory};
 use std::collections::HashMap;
 
 /// 获取展开的集合ID列表

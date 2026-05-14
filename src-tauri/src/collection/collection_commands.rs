@@ -1,5 +1,5 @@
-use crate::collection::config::{read_collections, write_collections};
-use crate::collection::utils::{
+use crate::collection::collection_config::{read_collections, write_collections};
+use crate::collection::collection_utils::{
     find_api_in_collections, find_collection_item, get_collection_depth, remove_collection_item,
 };
 use crate::models::{Collection, FormField, Header};

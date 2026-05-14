@@ -1,4 +1,4 @@
-use crate::environment::config::{read_environments_config, write_environments_config};
+use crate::environment::environment_config::{read_environments_config, write_environments_config};
 use crate::models::{Environment, EnvironmentsConfig};
 use std::collections::HashMap;
 

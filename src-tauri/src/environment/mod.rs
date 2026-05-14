@@ -1,12 +1,12 @@
-mod commands;
-mod config;
-mod utils;
+mod environment_commands;
+mod environment_config;
+mod environment_utils;
 
-pub use commands::{
+pub use environment_commands::{
     delete_environment, get_active_variables, get_environments, save_environment,
     switch_environment,
 };
-pub use config::{
+pub use environment_config::{
     get_environments_config_path, read_environments_config, write_environments_config,
 };
-pub use utils::replace_variables;
+pub use environment_utils::replace_variables;

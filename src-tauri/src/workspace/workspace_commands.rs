@@ -1,6 +1,6 @@
 use crate::collection::{find_api_in_collections, read_collections};
 use crate::models::{Collection, Workspace};
-use crate::workspace::config::{read_config, write_config};
+use crate::workspace::workspace_config::{read_config, write_config};
 use std::fs;
 use std::path::PathBuf;
 

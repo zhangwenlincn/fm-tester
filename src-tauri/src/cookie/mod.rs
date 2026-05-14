@@ -1,5 +1,5 @@
-mod commands;
-mod config;
+mod cookie_commands;
+mod cookie_config;
 
-pub use commands::*;
-pub use config::*;
+pub use cookie_commands::*;
+pub use cookie_config::*;

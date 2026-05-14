@@ -1,3 +1,3 @@
-mod commands;
+mod http_commands;
 
-pub use commands::send_http_request;
+pub use http_commands::send_http_request;

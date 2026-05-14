@@ -1,4 +1,4 @@
-use crate::cookie::config::{get_cookies_config, save_cookies_config};
+use crate::cookie::cookie_config::{get_cookies_config, save_cookies_config};
 use crate::models::{Cookie, CookiesConfig};
 
 #[tauri::command]
