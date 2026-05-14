@@ -34,7 +34,7 @@ fn emit_log(app: &AppHandle, log: HttpLog) {
 
 /// 发送 HTTP 请求（支持环境变量替换、multipart/form-data、binary 文件）
 #[tauri::command]
-pub fn send_http_request(
+pub async fn send_http_request(
     app: AppHandle,
     method: String,
     url: String,
@@ -116,11 +116,11 @@ pub fn send_http_request(
     let settings = read_settings();
     let timeout_seconds = settings.request_timeout;
 
-    // 创建带超时配置的客户端
-    let client = reqwest::blocking::Client::builder()
+    // 创建带超时配置的异步客户端
+    let client = reqwest::Client::builder()
         .timeout(Duration::from_secs(timeout_seconds))
         .build()
-        .unwrap_or_else(|_| reqwest::blocking::Client::new());
+        .unwrap_or_else(|_| reqwest::Client::new());
 
     let mut request = match method.to_uppercase().as_str() {
         "GET" => client.get(&replaced_url),
@@ -183,7 +183,7 @@ pub fn send_http_request(
             "form-data" => {
                 // multipart/form-data
                 if let Some(ref fields) = form_fields {
-                    let mut form = reqwest::blocking::multipart::Form::new();
+                    let mut form = reqwest::multipart::Form::new();
 
                     for field in fields {
                         if !field.enabled || field.key.is_empty() {
@@ -214,7 +214,7 @@ pub fn send_http_request(
 
                                             form = form.part(
                                                 field.key.clone(),
-                                                reqwest::blocking::multipart::Part::bytes(
+                                                reqwest::multipart::Part::bytes(
                                                     file_content,
                                                 )
                                                 .file_name(file_info.name.clone()),
@@ -254,7 +254,7 @@ pub fn send_http_request(
         }
     }
 
-    let response = match request.send() {
+    let response = match request.send().await {
         Ok(r) => r,
         Err(e) => {
             let err_log = HttpLog {
@@ -309,6 +309,7 @@ pub fn send_http_request(
 
     let response_body = response
         .text()
+        .await
         .map_err(|e| format!("读取响应体失败: {}", e))?;
     let size = response_body.len() as u64;
 
