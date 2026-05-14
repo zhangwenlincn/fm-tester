@@ -44,7 +44,6 @@ export function useCollectionPanelSetup(props, emit) {
     try {
       const data = await invoke('get_collections', { workspacePath: props.workspace.path })
       collections.value = data || []
-      console.log('加载集合数据:', data)
       
       // 恢复展开状态
       const expandedIds = await invoke('get_expanded_collections', { workspacePath: props.workspace.path })
@@ -295,8 +294,6 @@ export function useCollectionPanelSetup(props, emit) {
   const onDrop = async (e, collection) => {
     e.preventDefault()
     const apiId = e.dataTransfer.getData('text/plain')
-    
-    console.log('Drop event:', apiId, 'to', collection?.name || 'root')
     
     if (!apiId || !props.workspace?.path) {
       draggingApiId.value = null

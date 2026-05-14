@@ -47,6 +47,11 @@ export function useAppSetup() {
   const cookies = ref([])
   const showCookiePanel = ref(false)
 
+  // 控制台数据
+  const showConsolePanel = ref(false)
+  const consoleLogs = ref([])
+  const maxConsoleLogs = 100  // 最大日志数量
+
   // 保存响应对话框
   const showSaveResponseDialog = ref(false)
   const saveResponseDefaultName = ref('')
@@ -132,6 +137,32 @@ export function useAppSetup() {
   // 关闭 Cookie 管理面板
   const closeCookiePanel = () => {
     showCookiePanel.value = false
+  }
+
+  // 打开控制台面板
+  const openConsolePanel = () => {
+    showConsolePanel.value = !showConsolePanel.value
+  }
+
+  // 关闭控制台面板
+  const closeConsolePanel = () => {
+    showConsolePanel.value = false
+  }
+
+  // 清空控制台日志
+  const clearConsoleLogs = () => {
+    consoleLogs.value = []
+  }
+
+  // 添加日志
+  const addConsoleLog = (type, message) => {
+    const now = new Date()
+    const time = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+    consoleLogs.value.push({ type, message, time })
+    // 超过最大数量时删除最早的日志
+    if (consoleLogs.value.length > maxConsoleLogs) {
+      consoleLogs.value.shift()
+    }
   }
 
   // 切换环境（来自 MenuBar 下拉，调用后端，更新 MenuBar 显示）
@@ -235,6 +266,46 @@ export function useAppSetup() {
       e.preventDefault()
     })
     
+    // 拦截 console 方法，记录到控制台面板
+    const originalConsole = {
+      log: console.log,
+      warn: console.warn,
+      error: console.error,
+      info: console.info
+    }
+    
+    // 需要过滤的警告（Monaco Editor worker 警告）
+    const filteredWarnings = [
+      'Could not create web worker',
+      'MonacoEnvironment.getWorkerUrl',
+      'MonacoEnvironment.getWorker'
+    ]
+    
+    console.log = (...args) => {
+      addConsoleLog('log', args.map(a => typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a)).join(' '))
+      originalConsole.log(...args)
+    }
+    
+    console.warn = (...args) => {
+      // 过滤 Monaco Editor 的 worker 警告（不显示也不记录）
+      const message = args.join(' ')
+      if (filteredWarnings.some(w => message.includes(w))) {
+        return // 完全忽略这些警告
+      }
+      addConsoleLog('warn', args.map(a => typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a)).join(' '))
+      originalConsole.warn(...args)
+    }
+    
+    console.error = (...args) => {
+      addConsoleLog('error', args.map(a => typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a)).join(' '))
+      originalConsole.error(...args)
+    }
+    
+    console.info = (...args) => {
+      addConsoleLog('info', args.map(a => typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a)).join(' '))
+      originalConsole.info(...args)
+    }
+    
     // 加载最近打开的工作区
     await loadLastWorkspace()
   })
@@ -275,14 +346,12 @@ export function useAppSetup() {
   const loadOpenTabs = async (workspacePath) => {
     try {
       const [openTabIds, activeIndex, savedRequestTabs] = await invoke('get_open_tabs', { workspacePath })
-      console.log('加载标签页:', openTabIds, activeIndex, savedRequestTabs)
       // 恢复 requestTabs
       requestTabs.value = savedRequestTabs || {}
       if (openTabIds.length > 0) {
         // 从集合中找到这些接口并打开
         const collections = await invoke('get_collections', { workspacePath })
         const apis = findApisInCollections(collections || [], openTabIds)
-        console.log('找到的接口:', apis.length)
         // 按保存的顺序打开标签页
         for (const apiId of openTabIds) {
           const api = apis.find(a => a.id === apiId)
@@ -770,8 +839,6 @@ export function useAppSetup() {
       
       // 刷新集合列表
       sidebarRef.value?.loadCollections()
-      
-      console.log('保存成功')
     } catch (e) {
       console.error('保存失败:', e)
     }
@@ -870,8 +937,6 @@ export function useAppSetup() {
       
       // 刷新集合列表（响应会保存到当前接口下）
       sidebarRef.value?.loadCollections()
-      
-      console.log('保存响应成功')
     } catch (e) {
       console.error('保存响应失败:', e)
     }
@@ -984,6 +1049,12 @@ export function useAppSetup() {
     loadCookies,
     openCookiePanel,
     closeCookiePanel,
+    // 控制台相关
+    showConsolePanel,
+    consoleLogs,
+    openConsolePanel,
+    closeConsolePanel,
+    clearConsoleLogs,
     // 保存响应相关
     showSaveResponseDialog,
     saveResponseDefaultName,

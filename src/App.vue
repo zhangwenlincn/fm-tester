@@ -9,6 +9,7 @@ import StatusBar from './components/StatusBar/index.vue'
 import WorkspaceDialog from './components/WorkspaceDialog/index.vue'
 import EnvironmentPanel from './components/EnvironmentPanel/index.vue'
 import CookiePanel from './components/CookiePanel/index.vue'
+import ConsolePanel from './components/ConsolePanel/index.vue'
 import SaveResponseDialog from './components/SaveResponseDialog/index.vue'
 import HistoryDetailPanel from './components/HistoryDetailPanel/index.vue'
 
@@ -46,6 +47,12 @@ const {
   loadCookies,
   openCookiePanel,
   closeCookiePanel,
+  // 控制台相关
+  showConsolePanel,
+  consoleLogs,
+  openConsolePanel,
+  closeConsolePanel,
+  clearConsoleLogs,
   // 保存响应相关
   showSaveResponseDialog,
   saveResponseDefaultName,
@@ -175,9 +182,18 @@ const {
       </div>
     </div>
     
+    <!-- 控制台面板 -->
+    <ConsolePanel 
+      :visible="showConsolePanel"
+      :logs="consoleLogs"
+      @close="closeConsolePanel"
+      @clear="clearConsoleLogs"
+    />
+    
     <!-- 底部状态栏 -->
     <StatusBar 
       @open-cookie-panel="openCookiePanel"
+      @open-console-panel="openConsolePanel"
     />
     
     <!-- Cookie 管理面板 -->

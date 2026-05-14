@@ -1,7 +1,7 @@
 <script setup>
 const version = 'v1.0.0'
 
-const emit = defineEmits(['open-cookie-panel'])
+const emit = defineEmits(['open-cookie-panel', 'open-console-panel'])
 </script>
 
 <template>
@@ -13,7 +13,7 @@ const emit = defineEmits(['open-cookie-panel'])
       <div class="status-icon" title="Cookies" @click="$emit('open-cookie-panel')">
         <span>🍪</span>
       </div>
-      <div class="status-icon" title="控制台">
+      <div class="status-icon" title="控制台" @click="$emit('open-console-panel')">
         <span>🖥️</span>
       </div>
     </div>

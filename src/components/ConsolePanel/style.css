@@ -1,0 +1,136 @@
+.console-panel {
+  display: flex;
+  flex-direction: column;
+  height: 200px;
+  background: #fafafa;
+  border-top: 1px solid #e8e8e8;
+  flex-shrink: 0;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+  background: #ffffff;
+  border-bottom: 1px solid #e8e8e8;
+  height: 32px;
+  flex-shrink: 0;
+}
+
+.panel-header h3 {
+  font-size: 13px;
+  font-weight: 500;
+  color: #262626;
+  margin: 0;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.clear-btn {
+  background: #ffffff;
+  color: #262626;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  padding: 4px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.clear-btn:hover {
+  border-color: #1890ff;
+  color: #1890ff;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: #8c8c8c;
+  cursor: pointer;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+}
+
+.close-btn:hover {
+  background: #e6f7ff;
+  color: #1890ff;
+}
+
+.panel-content {
+  flex: 1;
+  overflow-y: auto;
+  background: #ffffff;
+}
+
+.empty-message {
+  color: #8c8c8c;
+  text-align: center;
+  padding: 40px 20px;
+  font-size: 13px;
+}
+
+.log-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.log-item {
+  padding: 6px 16px;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.log-item:hover {
+  background: #fafafa;
+}
+
+.log-time {
+  color: #8c8c8c;
+  margin-right: 12px;
+  font-size: 12px;
+}
+
+.log-type {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-right: 12px;
+}
+
+.log-item.log .log-type {
+  background: #f0f0f0;
+  color: #8c8c8c;
+}
+
+.log-item.warn .log-type {
+  background: #fff7e6;
+  color: #fa8c16;
+}
+
+.log-item.error .log-type {
+  background: #fff1f0;
+  color: #ff4d4f;
+}
+
+.log-item.info .log-type {
+  background: #e6f7ff;
+  color: #1890ff;
+}
+
+.log-message {
+  color: #262626;
+  word-break: break-all;
+}
