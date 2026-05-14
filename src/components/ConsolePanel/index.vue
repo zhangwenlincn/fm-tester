@@ -1,6 +1,7 @@
 <script setup>
-import { ref, watch, nextTick } from 'vue'
+import { ref, watch, nextTick, onUnmounted } from 'vue'
 import * as monaco from 'monaco-editor'
+import Icon from '../Icon/index.vue'
 
 const props = defineProps({
   visible: Boolean,
@@ -15,12 +16,12 @@ const minHeight = 100
 const maxHeight = 400
 const isDragging = ref(false)
 
-// 当前选中日志索引
-const selectedIndex = ref(-1)
+// 展开的日志索引
+const expandedIndex = ref(-1)
 
 // Monaco Editor 引用
-const editorContainer = ref(null)
-let monacoEditor = null
+const editorContainers = ref({})
+let monacoEditors = {}
 
 // 拖拽逻辑
 const startDrag = (e) => {
@@ -33,7 +34,12 @@ const startDrag = (e) => {
 const onDrag = (e) => {
   if (!isDragging.value) return
   const newHeight = panelHeight.value - e.movementY
-  panelHeight.value = Math.min(maxHeight, Math.max(minHeight, newHeight))
+  panelHeight.value = Math.min(Math.max(minHeight, newHeight), maxHeight)
+  
+  // 拖动时实时更新编辑器高度
+  if (expandedIndex.value >= 0) {
+    updateEditorHeight(expandedIndex.value)
+  }
 }
 
 const stopDrag = () => {
@@ -58,11 +64,10 @@ const deepParseJson = (obj) => {
   if (obj === null || obj === undefined) return obj
   
   if (typeof obj === 'string') {
-    // 尝试解析字符串为 JSON
     try {
       const parsed = JSON.parse(obj)
       if (typeof parsed === 'object') {
-        return deepParseJson(parsed) // 递归解析
+        return deepParseJson(parsed)
       }
     } catch {}
     return obj
@@ -93,80 +98,136 @@ const getSummary = (log) => {
     if (data.error) return data.error
     return JSON.stringify(data)
   }
-  return log.message.length > 50 ? log.message.substring(0, 50) + '...' : log.message
+  return log.message.length > 60 ? log.message.substring(0, 60) + '...' : log.message
 }
 
-// 选择日志，显示详细内容
-const selectLog = async (index) => {
-  selectedIndex.value = index
+// 切换展开
+const toggleExpand = async (index) => {
+  if (expandedIndex.value === index) {
+    expandedIndex.value = -1
+  } else {
+    expandedIndex.value = index
+    await nextTick()
+    initEditor(index)
+  }
+}
+
+// 初始化 Monaco Editor
+const initEditor = (index) => {
+  const container = editorContainers.value[index]
+  if (!container) return
   
-  await nextTick()
-  
-  if (!editorContainer.value) return
+  // 销毁旧的编辑器
+  if (monacoEditors[index]) {
+    monacoEditors[index].dispose()
+    delete monacoEditors[index]
+  }
   
   const log = props.logs[index]
   const parsed = parseMessage(log.message)
   
   let content = ''
+  let language = 'plaintext'
+  
   if (parsed.type === 'object') {
-    // 深度解析嵌套的 JSON 字符串
     const deepParsed = deepParseJson(parsed.data)
     content = JSON.stringify(deepParsed, null, 2)
+    language = 'json'
   } else {
     content = log.message
   }
   
-  // 初始化或更新编辑器
-  if (!monacoEditor) {
-    monacoEditor = monaco.editor.create(editorContainer.value, {
-      value: content,
-      language: parsed.type === 'object' ? 'json' : 'plaintext',
-      theme: 'vs',
-      fontSize: 12,
-      fontFamily: 'Consolas, Monaco, monospace',
-      lineNumbers: 'off',
-      minimap: { enabled: false },
-      scrollBeyondLastLine: false,
-      automaticLayout: true,
-      tabSize: 2,
-      wordWrap: 'on',
-      folding: true,
-      foldingStrategy: 'indentation',
-      showFoldingControls: 'always',
-      glyphMargin: true,
-      readOnly: true,
-      domReadOnly: true,
-      scrollbar: {
-        vertical: 'auto',
-        horizontal: 'auto',
-        verticalScrollbarSize: 8,
-        horizontalScrollbarSize: 8
-      },
-      padding: { top: 8, bottom: 8 }
-    })
-  } else {
-    monacoEditor.setValue(content)
-    const model = monacoEditor.getModel()
-    if (model) {
-      monaco.editor.setModelLanguage(model, parsed.type === 'object' ? 'json' : 'plaintext')
-    }
-    monacoEditor.layout()
-  }
+  monacoEditors[index] = monaco.editor.create(container, {
+    value: content,
+    language: language,
+    theme: 'vs',
+    fontSize: 12,
+    fontFamily: 'Consolas, Monaco, monospace',
+    lineNumbers: 'off',
+    minimap: { enabled: false },
+    scrollBeyondLastLine: false,
+    automaticLayout: true,
+    tabSize: 2,
+    wordWrap: 'on',
+    folding: true,
+    foldingStrategy: 'indentation',
+    showFoldingControls: 'always',
+    glyphMargin: true,
+    readOnly: true,
+    domReadOnly: true,
+    scrollbar: {
+      vertical: 'hidden',
+      horizontal: 'auto',
+      verticalScrollbarSize: 0,
+      horizontalScrollbarSize: 8
+    },
+    padding: { top: 8, bottom: 8 }
+  })
+  
+  // 根据内容自适应高度
+  updateEditorHeight(index)
 }
 
-// 监听可见性变化
+// 更新编辑器高度 - 根据面板剩余空间计算
+const updateEditorHeight = (index) => {
+  const editor = monacoEditors[index]
+  const container = editorContainers.value[index]
+  if (!editor || !container) return
+  
+  const panel = container.closest('.console-panel')
+  const content = container.closest('.panel-content')
+  if (!panel || !content) return
+  
+  // 获取面板总高度
+  const panelHeight = parseInt(panel.style.height) || 200
+  
+  // 获取所有日志摘要的高度
+  const logItems = content.querySelectorAll('.log-item')
+  let totalSummaryHeight = 0
+  logItems.forEach(item => {
+    totalSummaryHeight += item.offsetHeight || 30
+  })
+  
+  // 计算剩余可用高度 = 面板高度 - header(28px) - 所有摘要高度
+  const headerHeight = 28
+  const availableHeight = panelHeight - headerHeight - totalSummaryHeight
+  
+  // 设置最小高度 60px
+  const finalHeight = Math.max(availableHeight, 60)
+  
+  // 设置容器高度
+  container.style.height = finalHeight + 'px'
+  
+  // 重新布局编辑器
+  setTimeout(() => {
+    editor.layout()
+  }, 0)
+}
+
+// 清理编辑器
+onUnmounted(() => {
+  for (const key in monacoEditors) {
+    monacoEditors[key]?.dispose()
+  }
+})
+
+// 监听可见性
 watch(() => props.visible, (visible) => {
-  if (!visible && monacoEditor) {
-    monacoEditor.dispose()
-    monacoEditor = null
+  if (!visible) {
+    expandedIndex.value = -1
+    for (const key in monacoEditors) {
+      monacoEditors[key]?.dispose()
+      delete monacoEditors[key]
+    }
   }
 })
 
 // 监听日志变化
 watch(() => props.logs, () => {
-  selectedIndex.value = -1
-  if (monacoEditor) {
-    monacoEditor.setValue('')
+  expandedIndex.value = -1
+  for (const key in monacoEditors) {
+    monacoEditors[key]?.dispose()
+    delete monacoEditors[key]
   }
 })
 </script>
@@ -183,34 +244,26 @@ watch(() => props.logs, () => {
       </div>
     </div>
     
-    <div class="panel-body">
-      <!-- 左侧日志列表 -->
-      <div class="log-list-panel">
-        <div v-if="logs.length === 0" class="empty-state">
-          <span>暂无日志</span>
-        </div>
-        <div v-else class="log-list">
-          <div 
-            class="log-item" 
-            :class="{ selected: selectedIndex === index }"
-            v-for="(log, index) in logs" 
-            :key="index"
-            @click="selectLog(index)"
-          >
+    <div class="panel-content">
+      <div v-if="logs.length === 0" class="empty-state">
+        <span>暂无日志</span>
+      </div>
+      <div v-else class="log-list">
+        <div class="log-item-wrapper" v-for="(log, index) in logs" :key="index">
+          <!-- 摘要行 -->
+          <div class="log-item" :class="{ expanded: expandedIndex === index }" @click="toggleExpand(index)">
+            <span class="expand-arrow" :class="{ expanded: expandedIndex === index }">
+              <Icon name="arrow-right" :size="12" />
+            </span>
             <span class="log-time">{{ log.time }}</span>
             <span class="log-type" :class="log.type">{{ log.type.toUpperCase() }}</span>
             <span class="log-summary">{{ getSummary(log) }}</span>
           </div>
-        </div>
-      </div>
-      
-      <!-- 右侧详情面板 -->
-      <div class="log-detail-panel" v-if="selectedIndex >= 0">
-        <div class="detail-header">
-          <span class="detail-title">详情</span>
-        </div>
-        <div class="detail-content">
-          <div ref="editorContainer" class="monaco-editor-container"></div>
+          
+          <!-- 详情内容 -->
+          <div class="log-detail" v-if="expandedIndex === index">
+            <div class="detail-container" :ref="el => editorContainers[index] = el"></div>
+          </div>
         </div>
       </div>
     </div>
