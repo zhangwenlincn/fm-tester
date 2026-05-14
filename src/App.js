@@ -721,12 +721,17 @@ watch(activeTab, async () => {
     const sendTabId = tabs.value[sendTabIndex]?.id
     sendingTabId.value = sendTabId
     
+    // 清空发送请求 tab 的旧响应数据
+    const sendTab = tabs.value[sendTabIndex]
+    if (sendTab && sendTab.tabType === 'api') {
+      sendTab.lastResponseData = null
+    }
+    
     try {
       let bodyToSend = request.body
       
       // 获取当前 tab 的 commonHeaders
-      const currentTab = tabs.value[sendTabIndex]
-      const commonHeaders = currentTab?.commonHeaders || []
+      const commonHeaders = sendTab?.commonHeaders || []
       
       // 合并 headers：集合级别 + 接口级别（接口级别覆盖集合级别同名 header）
       const headersMap = new Map()
@@ -773,9 +778,9 @@ watch(activeTab, async () => {
       
       const binaryFilePath = request.binaryFile?.path || null
       
-      // 使用前面已声明的 currentTab
-      const apiId = currentTab?.tabType === 'api' ? currentTab?.id : null
-      const apiName = currentTab?.tabType === 'api' ? currentTab?.name : null
+      // 使用发送请求时的 tab
+      const apiId = sendTab?.tabType === 'api' ? sendTab?.id : null
+      const apiName = sendTab?.tabType === 'api' ? sendTab?.name : null
       
       const result = await invoke('send_http_request', {
         method: request.method,
