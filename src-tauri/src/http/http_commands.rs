@@ -2,16 +2,39 @@ use crate::cookie::{get_cookies_config, save_cookies_config};
 use crate::environment::{get_active_variables, replace_variables};
 use crate::history::record_history;
 use crate::models::{Cookie, CookiesConfig, FormField, Header, HttpResponse};
-use chrono::Utc;
-use std::collections::HashMap;
+use chrono::{Local, Utc};
+use serde::Serialize;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::Path;
 use std::time::Instant;
+use tauri::{AppHandle, Emitter};
 use url::Url;
+
+/// HTTP 日志结构
+#[derive(Clone, Serialize)]
+struct HttpLog {
+    #[serde(rename = "logType")]
+    log_type: String,   // "request" | "response" | "error"
+    timestamp: String,
+    message: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    data: Option<serde_json::Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    error: Option<String>,
+}
+
+/// 发送日志事件
+fn emit_log(app: &AppHandle, log: HttpLog) {
+    if let Err(e) = app.emit("http-log", log) {
+        eprintln!("发送日志事件失败: {}", e);
+    }
+}
 
 /// 发送 HTTP 请求（支持环境变量替换、multipart/form-data、binary 文件）
 #[tauri::command]
 pub fn send_http_request(
+    app: AppHandle,
     method: String,
     url: String,
     headers: Vec<Header>,
@@ -27,23 +50,66 @@ pub fn send_http_request(
 
     // 获取当前激活环境的变量
     let variables = get_active_variables(workspace_path.clone());
+    
+    // 收集所有未定义变量
+    let mut all_undefined_vars: HashSet<String> = HashSet::new();
 
     // 替换 URL 中的变量
-    let replaced_url = replace_variables(&url, &variables);
+    let url_result = replace_variables(&url, &variables);
+    let replaced_url = url_result.text;
+    all_undefined_vars.extend(url_result.undefined_variables);
 
     // 替换 Headers 中的变量
     let replaced_headers: Vec<Header> = headers
         .iter()
-        .map(|h| Header {
-            key: h.key.clone(),
-            value: replace_variables(&h.value, &variables),
-            enabled: h.enabled,
-            description: h.description.clone(),
+        .map(|h| {
+            let value_result = replace_variables(&h.value, &variables);
+            all_undefined_vars.extend(value_result.undefined_variables);
+            Header {
+                key: h.key.clone(),
+                value: value_result.text,
+                enabled: h.enabled,
+                description: h.description.clone(),
+            }
         })
         .collect();
 
     // 替换 Body 中的变量（仅用于 raw 类型）
-    let replaced_body = body.as_ref().map(|b| replace_variables(b, &variables));
+    let replaced_body = body.as_ref().map(|b| {
+        let body_result = replace_variables(b, &variables);
+        all_undefined_vars.extend(body_result.undefined_variables);
+        body_result.text
+    });
+    
+    // 如果有未定义变量，发送警告日志
+    if !all_undefined_vars.is_empty() {
+        let undefined_list: Vec<String> = all_undefined_vars.clone().into_iter().collect();
+        let warning_log = HttpLog {
+            log_type: "warning".to_string(),
+            timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+            message: format!("未定义变量: {}", undefined_list.join(", ")),
+            data: Some(serde_json::json!({ "undefinedVariables": undefined_list })),
+            error: None,
+        };
+        emit_log(&app, warning_log);
+    }
+
+    // 发送请求日志
+    let request_data = serde_json::json!({
+        "method": method.to_uppercase(),
+        "url": replaced_url.clone(),
+        "headers": replaced_headers,
+        "body": replaced_body,
+        "bodyType": body_type
+    });
+    let request_log = HttpLog {
+        log_type: "request".to_string(),
+        timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+        message: format!("{} {}", method.to_uppercase(), replaced_url),
+        data: Some(request_data),
+        error: None,
+    };
+    emit_log(&app, request_log);
 
     let client = reqwest::blocking::Client::new();
 
@@ -55,7 +121,17 @@ pub fn send_http_request(
         "PATCH" => client.patch(&replaced_url),
         "HEAD" => client.head(&replaced_url),
         "OPTIONS" => client.request(reqwest::Method::OPTIONS, &replaced_url),
-        _ => return Err(format!("不支持的 HTTP 方法: {}", method)),
+        _ => {
+            let err_log = HttpLog {
+                log_type: "error".to_string(),
+                timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+                message: format!("不支持的 HTTP 方法: {}", method),
+                data: None,
+                error: Some(format!("不支持的 HTTP 方法: {}", method)),
+            };
+            emit_log(&app, err_log);
+            return Err(format!("不支持的 HTTP 方法: {}", method));
+        }
     };
 
     // 获取 URL 的 domain
@@ -82,7 +158,7 @@ pub fn send_http_request(
     let should_skip_content_type = actual_body_type == "form-data";
 
     // 添加 Headers（排除 form-data 的 Content-Type）
-    for header in replaced_headers {
+    for header in &replaced_headers {
         if header.enabled {
             // 跳过 form-data 类型时手动设置的 Content-Type
             if should_skip_content_type && header.key.to_lowercase() == "content-type" {
@@ -109,7 +185,8 @@ pub fn send_http_request(
                             "text" => {
                                 // 文本字段，替换变量
                                 let replaced_value = replace_variables(&field.value, &variables);
-                                form = form.text(field.key.clone(), replaced_value);
+                                all_undefined_vars.extend(replaced_value.undefined_variables);
+                                form = form.text(field.key.clone(), replaced_value.text);
                             }
                             "file" => {
                                 // 文件字段
@@ -161,14 +238,27 @@ pub fn send_http_request(
             }
             _ => {
                 // raw 或其他类型，使用字符串 body
-                if let Some(b) = replaced_body {
-                    request = request.body(b);
+                if let Some(ref b) = replaced_body {
+                    request = request.body(b.clone());
                 }
             }
         }
     }
 
-    let response = request.send().map_err(|e| format!("请求失败: {}", e))?;
+    let response = match request.send() {
+        Ok(r) => r,
+        Err(e) => {
+            let err_log = HttpLog {
+                log_type: "error".to_string(),
+                timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+                message: format!("请求失败: {}", e),
+                data: None,
+                error: Some(format!("请求失败: {}", e)),
+            };
+            emit_log(&app, err_log);
+            return Err(format!("请求失败: {}", e));
+        }
+    };
 
     let elapsed = start_time.elapsed().as_millis() as u64;
 
@@ -212,6 +302,30 @@ pub fn send_http_request(
         .text()
         .map_err(|e| format!("读取响应体失败: {}", e))?;
     let size = response_body.len() as u64;
+
+    // 尝试解析 body 为 JSON
+    let body_json: serde_json::Value = serde_json::from_str(&response_body)
+        .unwrap_or_else(|_| serde_json::Value::String(response_body.clone()));
+
+    // 发送响应日志
+    let response_data = serde_json::json!({
+        "status": status,
+        "statusText": status_text,
+        "time": elapsed,
+        "size": size,
+        "headers": response_headers,
+        "body": body_json,
+        "method": method.to_uppercase(),
+        "url": replaced_url
+    });
+    let response_log = HttpLog {
+        log_type: "response".to_string(),
+        timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+        message: format!("{} {} {} {} ({}ms, {} bytes)", method.to_uppercase(), replaced_url, status, status_text, elapsed, size),
+        data: Some(response_data),
+        error: None,
+    };
+    emit_log(&app, response_log);
 
     let http_response = HttpResponse {
         status,

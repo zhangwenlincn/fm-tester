@@ -10,6 +10,16 @@
   border-radius: 3px;
 }
 
+/* 未定义变量错误样式 - 红色波浪线 */
+.var-undefined {
+  color: #ff4d4f;
+  background: rgba(255, 77, 79, 0.1);
+  text-decoration: underline;
+  text-decoration-style: wavy;
+  text-decoration-color: #ff4d4f;
+  cursor: help;
+}
+
 /* 占位符样式 */
 .var-placeholder {
   color: #bfbfbf;

@@ -998,6 +998,7 @@ version = "0.1.0"
 dependencies = [
  "chrono",
  "dirs",
+ "regex",
  "reqwest 0.11.27",
  "serde",
  "serde_json",

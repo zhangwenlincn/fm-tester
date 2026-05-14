@@ -79,10 +79,33 @@ export function useCollectionPanelSetup(props, emit) {
   
   const isExpanded = (id) => expandedItems.value[id]
   
+  // 查找 API 所属的父集合（获取 common_headers）
+  const findParentCollection = (apiId) => {
+    const search = (items, parentCollection = null) => {
+      for (const item of items) {
+        if (item.type === 'api' && item.id === apiId) {
+          return parentCollection
+        }
+        if (item.type === 'collection' && item.children) {
+          const found = search(item.children, item)
+          if (found) return found
+        }
+      }
+      return null
+    }
+    return search(collections.value)
+  }
+  
   // 选择 API
   const selectApiItem = (api) => {
     selectedApi.value = api.id
-    emit('selectApi', api)
+    // 查找父集合，附带 common_headers
+    const parentCollection = findParentCollection(api.id)
+    const apiWithHeaders = {
+      ...api,
+      commonHeaders: parentCollection?.common_headers || []
+    }
+    emit('selectApi', apiWithHeaders)
   }
   
   // 选择集合（打开设置页面）

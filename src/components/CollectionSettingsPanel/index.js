@@ -1,4 +1,4 @@
-import { ref, reactive, watch, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, watch, onUnmounted } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 
 const tabs = [
@@ -24,6 +24,9 @@ export function useCollectionSettingsSetup(props, emit) {
   
   // 保存中状态
   const saving = ref(false)
+  
+  // 跳过下一次保存的标记（添加空项后使用）
+  let skipNextSave = false
   
   // 初始化数据
   const initSettings = () => {
@@ -70,6 +73,10 @@ export function useCollectionSettingsSetup(props, emit) {
   // 防抖保存（500ms 后保存）
   const debouncedSave = () => {
     if (!initialized) return
+    if (skipNextSave) {
+      skipNextSave = false
+      return
+    }
     if (saveTimer) {
       clearTimeout(saveTimer)
     }
@@ -106,6 +113,7 @@ export function useCollectionSettingsSetup(props, emit) {
   
   // 添加请求头
   const addHeader = () => {
+    skipNextSave = true // 添加空项后跳过下一次保存触发
     localSettings.commonHeaders.push({
       key: '',
       value: '',
@@ -121,6 +129,7 @@ export function useCollectionSettingsSetup(props, emit) {
   
   // 添加变量
   const addVariable = () => {
+    skipNextSave = true // 添加空项后跳过下一次保存触发
     localSettings.collectionVariables.push({
       key: '',
       value: '',
@@ -137,6 +146,16 @@ export function useCollectionSettingsSetup(props, emit) {
   // 保存设置
   const saveSettings = async () => {
     if (saving.value) return // 防止重复保存
+    
+    // 检查是否有空项（key 为空），如果有则不保存
+    const hasEmptyHeaders = localSettings.commonHeaders.some(h => !h.key.trim())
+    const hasEmptyVariables = localSettings.collectionVariables.some(v => !v.key.trim())
+    
+    if (hasEmptyHeaders || hasEmptyVariables) {
+      // 有空项时不保存，等用户填写后再保存
+      return
+    }
+    
     saving.value = true
     try {
       // 过滤非空的请求头

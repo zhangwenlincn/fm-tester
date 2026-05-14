@@ -6,7 +6,7 @@ import { computed, ref } from 'vue'
  */
 export function useVariableHighlight() {
   // 匹配 {{变量名}} 的正则表达式
-  const variablePattern = /\{\{[^}]+\}\}/g
+  const variablePattern = /\{\{([^}]+)\}\}/g
 
   /**
    * 检测文本中是否包含变量引用
@@ -21,10 +21,14 @@ export function useVariableHighlight() {
   /**
    * 将文本分割为高亮片段
    * @param {string} text - 要处理的文本
-   * @returns {Array<{text: string, isVariable: boolean}>} 文本片段数组
+   * @param {Array<{key: string}>} variables - 可用变量列表，用于校验变量是否存在
+   * @returns {Array<{text: string, isVariable: boolean, isUndefined: boolean}>} 文本片段数组
    */
-  const splitByVariables = (text) => {
+  const splitByVariables = (text, variables = []) => {
     if (!text) return []
+    
+    // 创建变量名集合，用于快速查找
+    const variableKeys = new Set(variables.map(v => v.key?.trim()))
     
     const result = []
     let lastIndex = 0
@@ -38,13 +42,18 @@ export function useVariableHighlight() {
       if (match.index > lastIndex) {
         result.push({
           text: text.slice(lastIndex, match.index),
-          isVariable: false
+          isVariable: false,
+          isUndefined: false
         })
       }
-      // 添加变量文本
+      // 添加变量文本，检查是否未定义
+      const varName = match[1].trim() // 提取变量名（去掉 {{ 和 }}）
+      const isUndefined = !variableKeys.has(varName)
       result.push({
         text: match[0],
-        isVariable: true
+        isVariable: true,
+        isUndefined,
+        varName
       })
       lastIndex = match.index + match[0].length
     }
@@ -53,7 +62,8 @@ export function useVariableHighlight() {
     if (lastIndex < text.length) {
       result.push({
         text: text.slice(lastIndex),
-        isVariable: false
+        isVariable: false,
+        isUndefined: false
       })
     }
     
@@ -63,14 +73,20 @@ export function useVariableHighlight() {
   /**
    * 生成高亮后的 HTML 字符串
    * @param {string} text - 要处理的文本
+   * @param {Array<{key: string}>} variables - 可用变量列表，用于校验变量是否存在
    * @returns {string} 高亮后的 HTML
    */
-  const highlightVariables = (text) => {
+  const highlightVariables = (text, variables = []) => {
     if (!text) return ''
     
-    const segments = splitByVariables(text)
+    const segments = splitByVariables(text, variables)
     return segments.map(seg => {
       if (seg.isVariable) {
+        if (seg.isUndefined) {
+          // 未定义变量：红色错误样式
+          return `<span class="var-ref var-undefined" title="未定义变量: ${seg.varName}">${escapeHtml(seg.text)}</span>`
+        }
+        // 已定义变量：蓝色高亮样式
         return `<span class="var-ref">${escapeHtml(seg.text)}</span>`
       }
       return escapeHtml(seg.text)
@@ -88,11 +104,24 @@ export function useVariableHighlight() {
     return div.innerHTML
   }
 
+  /**
+   * 检查文本中是否有未定义的变量
+   * @param {string} text - 要检查的文本
+   * @param {Array<{key: string}>} variables - 可用变量列表
+   * @returns {boolean} 是否有未定义变量
+   */
+  const hasUndefinedVariables = (text, variables = []) => {
+    if (!text) return false
+    const segments = splitByVariables(text, variables)
+    return segments.some(seg => seg.isVariable && seg.isUndefined)
+  }
+
   return {
     variablePattern,
     hasVariables,
     splitByVariables,
-    highlightVariables
+    highlightVariables,
+    hasUndefinedVariables
   }
 }
 

@@ -9,4 +9,4 @@ pub use environment_commands::{
 pub use environment_config::{
     get_environments_config_path, read_environments_config, write_environments_config,
 };
-pub use environment_utils::replace_variables;
+pub use environment_utils::{replace_variables, ReplaceResult};

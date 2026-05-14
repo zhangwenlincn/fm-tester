@@ -1,5 +1,6 @@
-import { ref, reactive, onMounted, watch, computed, nextTick } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, watch, computed, nextTick } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
+import { listen } from '@tauri-apps/api/event'
 import JSON5 from 'json5'
 
 // 导出 composable 函数
@@ -229,49 +230,35 @@ export function useAppSetup() {
     }
   }
 
+  // 监听 HTTP 日志事件
+  let unlistenHttpLog = null
+  
   onMounted(async () => {
     document.addEventListener('contextmenu', (e) => {
       e.preventDefault()
     })
     
-    const originalConsole = {
-      log: console.log,
-      warn: console.warn,
-      error: console.error,
-      info: console.info
-    }
-    
-    const filteredWarnings = [
-      'Could not create web worker',
-      'MonacoEnvironment.getWorkerUrl',
-      'MonacoEnvironment.getWorker'
-    ]
-    
-    console.log = (...args) => {
-      addConsoleLog('log', args.map(a => typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a)).join(' '))
-      originalConsole.log(...args)
-    }
-    
-    console.warn = (...args) => {
-      const message = args.join(' ')
-      if (filteredWarnings.some(w => message.includes(w))) {
-        return
+    // 监听后端发送的 HTTP 日志事件
+    unlistenHttpLog = await listen('http-log', (event) => {
+      const log = event.payload
+      // 将后端日志转换为前端日志格式
+      const logType = log.log_type === 'error' ? 'error' : 
+                      log.log_type === 'response' ? 'info' : 'log'
+      const message = JSON.stringify(log, null, 2)
+      const timestamp = log.timestamp
+      consoleLogs.value.push({ type: logType, message, time: timestamp })
+      if (consoleLogs.value.length > maxConsoleLogs) {
+        consoleLogs.value.shift()
       }
-      addConsoleLog('warn', args.map(a => typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a)).join(' '))
-      originalConsole.warn(...args)
-    }
-    
-    console.error = (...args) => {
-      addConsoleLog('error', args.map(a => typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a)).join(' '))
-      originalConsole.error(...args)
-    }
-    
-    console.info = (...args) => {
-      addConsoleLog('info', args.map(a => typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a)).join(' '))
-      originalConsole.info(...args)
-    }
+    })
     
     await loadLastWorkspace()
+  })
+  
+  onUnmounted(() => {
+    if (unlistenHttpLog) {
+      unlistenHttpLog()
+    }
   })
 
   const loadWorkspaces = async () => {
@@ -477,7 +464,33 @@ export function useAppSetup() {
   }
   
   const onCollectionSettingsSaved = async () => {
+    // 重新加载侧边栏集合列表
     sidebarRef.value?.loadCollections()
+    
+    // 更新当前打开的集合标签页数据
+    const currentTab = tabs.value[activeTab.value]
+    if (currentTab?.tabType === 'collection' && currentWorkspace.value?.path) {
+      try {
+        const collections = await invoke('get_collections', { workspacePath: currentWorkspace.value.path })
+        // 递归查找当前集合
+        const findCollection = (items, id) => {
+          for (const item of items) {
+            if (item.id === id) return item
+            if (item.children?.length > 0) {
+              const found = findCollection(item.children, id)
+              if (found) return found
+            }
+          }
+          return null
+        }
+        const updatedCollection = findCollection(collections, currentTab.id)
+        if (updatedCollection) {
+          collectionTabsData.value[currentTab.id] = updatedCollection
+        }
+      } catch (e) {
+        console.error('更新集合标签页数据失败:', e)
+      }
+    }
   }
 
   const selectedHistoryEntry = ref(null)
@@ -578,6 +591,8 @@ export function useAppSetup() {
     const existingIndex = tabs.value.findIndex(t => t.id === api.id && t.tabType === 'api')
     
     if (existingIndex >= 0) {
+      // 更新已存在 tab 的 commonHeaders（集合设置可能已修改）
+      tabs.value[existingIndex].commonHeaders = api.commonHeaders || []
       activeTab.value = existingIndex
     } else {
       tabs.value.push({
@@ -590,7 +605,8 @@ export function useAppSetup() {
         bodyType: api.body_type || 'raw',
         formData: api.form_fields || [],
         binaryFile: api.binary_file_path ? { path: api.binary_file_path, name: api.binary_file_path.split(/[/\\]/).pop() } : null,
-        tabType: 'api'
+        tabType: 'api',
+        commonHeaders: api.commonHeaders || []
       })
       activeTab.value = tabs.value.length - 1
     }
@@ -670,17 +686,31 @@ export function useAppSetup() {
     loading.value = true
     response.value = null
     
-    const requestLogData = {
-      method: request.method,
-      url: request.url,
-      headers: request.headers?.filter(h => h.enabled).map(h => ({ key: h.key, value: h.value })) || [],
-      body: request.method !== 'GET' ? request.body : null
-    }
-    addConsoleLog('info', JSON.stringify({ request: requestLogData }))
-    
     try {
       let bodyToSend = request.body
-      const headersToSend = request.headers || []
+      
+      // 获取当前 tab 的 commonHeaders
+      const currentTab = tabs.value[activeTab.value]
+      const commonHeaders = currentTab?.commonHeaders || []
+      
+      // 合并 headers：集合级别 + 接口级别（接口级别覆盖集合级别同名 header）
+      const headersMap = new Map()
+      
+      // 先添加集合通用 headers
+      for (const h of commonHeaders) {
+        if (h.enabled && h.key.trim()) {
+          headersMap.set(h.key.toLowerCase(), h)
+        }
+      }
+      
+      // 然后添加接口 headers（覆盖同名）
+      for (const h of (request.headers || [])) {
+        if (h.enabled && h.key.trim()) {
+          headersMap.set(h.key.toLowerCase(), h)
+        }
+      }
+      
+      const headersToSend = Array.from(headersMap.values())
       
       const contentTypeHeader = headersToSend.find(
         h => h.key.toLowerCase() === 'content-type'
@@ -708,7 +738,7 @@ export function useAppSetup() {
       
       const binaryFilePath = request.binaryFile?.path || null
       
-      const currentTab = tabs.value[activeTab.value]
+      // 使用前面已声明的 currentTab
       const apiId = currentTab?.tabType === 'api' ? currentTab?.id : null
       const apiName = currentTab?.tabType === 'api' ? currentTab?.name : null
       
@@ -734,22 +764,10 @@ export function useAppSetup() {
         size: result.size
       }
       
-      const responseLogData = {
-        status: result.status,
-        statusText: result.status_text,
-        time: result.time,
-        size: result.size,
-        headers: result.headers,
-        body: result.body?.substring(0, 1000) || ''
-      }
-      addConsoleLog('info', JSON.stringify({ response: responseLogData }))
-      
       if (currentTab && currentTab.tabType === 'api') {
         currentTab.lastResponseData = response.value
       }
     } catch (error) {
-      addConsoleLog('error', JSON.stringify({ error: String(error) }))
-      
       response.value = {
         status: 0,
         statusText: '请求失败',

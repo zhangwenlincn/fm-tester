@@ -47,7 +47,7 @@ const {
 
 // 文本模式：计算高亮片段
 const segments = computed(() => {
-  return splitByVariables(props.text)
+  return splitByVariables(props.text, props.variables)
 })
 
 // 输入框模式
@@ -66,7 +66,7 @@ const inputValue = computed({
 
 // 高亮后的 HTML
 const highlightedHtml = computed(() => {
-  return highlightVariables(inputValue.value)
+  return highlightVariables(inputValue.value, props.variables)
 })
 
 // 处理输入事件
@@ -114,7 +114,7 @@ defineExpose({
   <!-- 文本模式：纯文本高亮显示 -->
   <span v-if="mode === 'text'" class="var-highlight-text">
     <template v-for="(seg, index) in segments" :key="index">
-      <span v-if="seg.isVariable" class="var-ref">{{ seg.text }}</span>
+      <span v-if="seg.isVariable" :class="['var-ref', { 'var-undefined': seg.isUndefined }]" :title="seg.isUndefined ? `未定义变量: ${seg.varName}` : ''">{{ seg.text }}</span>
       <span v-else>{{ seg.text }}</span>
     </template>
     <span v-if="!text" class="var-placeholder">{{ placeholder }}</span>

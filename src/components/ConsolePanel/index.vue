@@ -92,13 +92,9 @@ const deepParseJson = (obj) => {
 const getSummary = (log) => {
   const parsed = parseMessage(log.message)
   if (parsed.type === 'object') {
-    const data = parsed.data
-    if (data.request) return `${data.request.method} ${data.request.url}`
-    if (data.response) return `${data.response.status} ${data.response.statusText} (${data.response.time}ms)`
-    if (data.error) return data.error
-    return JSON.stringify(data)
+    return parsed.data.message || JSON.stringify(parsed.data)
   }
-  return log.message.length > 60 ? log.message.substring(0, 60) + '...' : log.message
+  return log.message
 }
 
 // 切换展开
@@ -130,7 +126,9 @@ const initEditor = (index) => {
   let language = 'plaintext'
   
   if (parsed.type === 'object') {
-    const deepParsed = deepParseJson(parsed.data)
+    // 只显示 data 字段的内容
+    const dataContent = parsed.data.data || parsed.data
+    const deepParsed = deepParseJson(dataContent)
     content = JSON.stringify(deepParsed, null, 2)
     language = 'json'
   } else {
