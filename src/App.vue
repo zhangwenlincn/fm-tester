@@ -13,6 +13,7 @@ import ConsolePanel from './components/ConsolePanel/index.vue'
 import SaveResponseDialog from './components/SaveResponseDialog/index.vue'
 import HistoryDetailPanel from './components/HistoryDetailPanel/index.vue'
 import CollectionSettingsPanel from './components/CollectionSettingsPanel/index.vue'
+import SettingsPanel from './components/SettingsPanel/index.vue'
 
 // 使用 composable
 const {
@@ -93,7 +94,10 @@ const {
   onRenameApi,
   onDeleteApis,
   onDeleteCollection,
-  onUpdateRequestTab
+  onUpdateRequestTab,
+  showSettingsPanel,
+  openSettings,
+  closeSettings
 } = useAppSetup()
 </script>
 
@@ -109,6 +113,7 @@ const {
         :active-environment="activeEnvironment"
         @switch-workspace="onSwitchWorkspace"
         @switch-environment="onSwitchEnvironment"
+        @open-settings="openSettings"
       />
       <TabsBar 
         :tabs="tabs"
@@ -238,6 +243,12 @@ const {
       :default-name="saveResponseDefaultName"
       @save="handleSaveResponse"
       @cancel="showSaveResponseDialog = false"
+    />
+    
+    <!-- 全局设置面板 -->
+    <SettingsPanel 
+      :visible="showSettingsPanel"
+      @close="closeSettings"
     />
     
     </div>

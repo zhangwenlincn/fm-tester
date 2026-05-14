@@ -1,5 +1,25 @@
 use serde::{Deserialize, Serialize};
 
+/// 全局应用设置
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AppSettings {
+    /// HTTP 请求超时时间（秒）
+    #[serde(default = "default_timeout")]
+    pub request_timeout: u64,
+}
+
+fn default_timeout() -> u64 {
+    60
+}
+
+impl Default for AppSettings {
+    fn default() -> Self {
+        Self {
+            request_timeout: 60,
+        }
+    }
+}
+
 /// 工作区信息
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Workspace {

@@ -20,7 +20,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['switchWorkspace', 'switchEnvironment'])
+const emit = defineEmits(['switchWorkspace', 'switchEnvironment', 'openSettings'])
 
 const menus = [
   { name: '文件', items: ['新建请求', '新建集合', '打开文件', '保存', '另存为', '导入', '导出'] },
@@ -82,6 +82,15 @@ const handleSwitchEnvironment = (env) => {
   showEnvironmentDropdown.value = false
 }
 
+// 处理菜单项点击
+const handleMenuItemClick = (menuName, item) => {
+  closeMenu()
+  // 设置菜单 - 偏好设置
+  if (menuName === '设置' && item === '偏好设置') {
+    emit('openSettings')
+  }
+}
+
 // 点击外部关闭下拉菜单
 const handleClickOutside = (event) => {
   if (workspaceWrapperRef.value && !workspaceWrapperRef.value.contains(event.target)) {
@@ -118,7 +127,7 @@ onUnmounted(() => {
             v-for="item in menu.items" 
             :key="item" 
             class="dropdown-item"
-            @click.stop="closeMenu"
+            @click.stop="handleMenuItemClick(menu.name, item)"
           >
             {{ item }}
           </div>

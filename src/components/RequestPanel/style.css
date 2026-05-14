@@ -698,3 +698,53 @@
   color: #8c8c8c;
   margin-left: 4px;
 }
+
+/* 设置标签页样式 */
+.settings-panel {
+  padding: 16px 24px;
+}
+
+.settings-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 0;
+}
+
+.settings-label {
+  font-size: 14px;
+  color: #262626;
+  min-width: 120px;
+  padding-top: 8px;
+}
+
+.settings-input-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.settings-input {
+  width: 120px;
+  padding: 8px 12px;
+  font-size: 14px;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  outline: none;
+}
+
+.settings-input:focus {
+  border-color: #1890ff;
+}
+
+.settings-unit {
+  font-size: 14px;
+  color: #8c8c8c;
+}
+
+.settings-hint {
+  font-size: 12px;
+  color: #8c8c8c;
+  margin-top: 4px;
+  margin-left: 132px;
+}

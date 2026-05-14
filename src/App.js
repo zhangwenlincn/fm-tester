@@ -32,7 +32,8 @@ export function useAppSetup() {
     body: '',
     bodyType: 'raw',
     formData: [],
-    binaryFile: null
+    binaryFile: null,
+    timeout: null  // 请求超时时间（秒），null 表示使用默认值
   })
 
   // 响应数据
@@ -55,6 +56,17 @@ export function useAppSetup() {
   const showConsolePanel = ref(false)
   const consoleLogs = ref([])
   const maxConsoleLogs = 100
+
+  // 全局设置面板
+  const showSettingsPanel = ref(false)
+
+  const openSettings = () => {
+    showSettingsPanel.value = true
+  }
+
+  const closeSettings = () => {
+    showSettingsPanel.value = false
+  }
 
   // 保存响应对话框
   const showSaveResponseDialog = ref(false)
@@ -305,7 +317,9 @@ export function useAppSetup() {
               bodyType: api.body_type || 'raw',
               formData: api.form_fields || [],
               binaryFile: api.binary_file_path ? { path: api.binary_file_path, name: api.binary_file_path.split(/[/\\]/).pop() } : null,
-              tabType: 'api'
+              tabType: 'api',
+              commonHeaders: api.commonHeaders || [],
+              timeout: api.timeout
             })
           }
         }
@@ -591,8 +605,9 @@ export function useAppSetup() {
     const existingIndex = tabs.value.findIndex(t => t.id === api.id && t.tabType === 'api')
     
     if (existingIndex >= 0) {
-      // 更新已存在 tab 的 commonHeaders（集合设置可能已修改）
+      // 更新已存在 tab 的 commonHeaders 和 timeout（集合设置可能已修改）
       tabs.value[existingIndex].commonHeaders = api.commonHeaders || []
+      tabs.value[existingIndex].timeout = api.timeout
       activeTab.value = existingIndex
     } else {
       tabs.value.push({
@@ -606,7 +621,8 @@ export function useAppSetup() {
         formData: api.form_fields || [],
         binaryFile: api.binary_file_path ? { path: api.binary_file_path, name: api.binary_file_path.split(/[/\\]/).pop() } : null,
         tabType: 'api',
-        commonHeaders: api.commonHeaders || []
+        commonHeaders: api.commonHeaders || [],
+        timeout: api.timeout  // 接口级别的超时配置
       })
       activeTab.value = tabs.value.length - 1
     }
@@ -660,6 +676,7 @@ export function useAppSetup() {
       currentRequest.bodyType = currentTab.bodyType || 'raw'
       currentRequest.formData = currentTab.formData || []
       currentRequest.binaryFile = currentTab.binaryFile || null
+      currentRequest.timeout = currentTab.timeout
       
       if (currentTab.savedResponseData) {
         response.value = currentTab.savedResponseData
@@ -680,6 +697,7 @@ export function useAppSetup() {
     currentRequest.bodyType = newRequest.bodyType
     currentRequest.formData = newRequest.formData
     currentRequest.binaryFile = newRequest.binaryFile
+    currentRequest.timeout = newRequest.timeout
   }
 
   const sendRequest = async (request) => {
@@ -752,7 +770,8 @@ export function useAppSetup() {
         binaryFilePath: binaryFilePath,
         workspacePath: currentWorkspace.value?.path || '',
         apiId: apiId,
-        apiName: apiName
+        apiName: apiName,
+        timeout: request.timeout  // 请求超时时间（秒）
       })
       
       response.value = {
@@ -1021,6 +1040,9 @@ export function useAppSetup() {
     onRenameApi,
     onDeleteApis,
     onDeleteCollection,
-    onUpdateRequestTab
+    onUpdateRequestTab,
+    showSettingsPanel,
+    openSettings,
+    closeSettings
   }
 }

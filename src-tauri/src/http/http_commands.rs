@@ -2,12 +2,13 @@ use crate::cookie::{get_cookies_config, save_cookies_config};
 use crate::environment::{get_active_variables, replace_variables};
 use crate::history::record_history;
 use crate::models::{Cookie, CookiesConfig, FormField, Header, HttpResponse};
+use crate::settings::read_settings;
 use chrono::{Local, Utc};
 use serde::Serialize;
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::Path;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 use tauri::{AppHandle, Emitter};
 use url::Url;
 
@@ -111,7 +112,15 @@ pub fn send_http_request(
     };
     emit_log(&app, request_log);
 
-    let client = reqwest::blocking::Client::new();
+    // 读取全局超时设置
+    let settings = read_settings();
+    let timeout_seconds = settings.request_timeout;
+
+    // 创建带超时配置的客户端
+    let client = reqwest::blocking::Client::builder()
+        .timeout(Duration::from_secs(timeout_seconds))
+        .build()
+        .unwrap_or_else(|_| reqwest::blocking::Client::new());
 
     let mut request = match method.to_uppercase().as_str() {
         "GET" => client.get(&replaced_url),

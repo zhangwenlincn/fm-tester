@@ -6,6 +6,7 @@ mod http;
 mod memory;
 mod models;
 mod saved_response;
+mod settings;
 mod workspace;
 
 pub use collection::*;
@@ -16,6 +17,7 @@ pub use http::*;
 pub use memory::*;
 pub use models::*;
 pub use saved_response::*;
+pub use settings::*;
 pub use workspace::*;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -74,7 +76,10 @@ pub fn run() {
             get_history_entry,
             delete_history_entry,
             clear_history_by_date,
-            clear_all_history
+            clear_all_history,
+            // Settings
+            get_settings,
+            update_settings
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
