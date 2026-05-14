@@ -1,29 +1,30 @@
-import { ref, reactive, onMounted, onUnmounted, watch, computed, nextTick } from 'vue'
-import { invoke } from '@tauri-apps/api/core'
-import { listen } from '@tauri-apps/api/event'
-import JSON5 from 'json5'
+import { ref, reactive, onMounted, onUnmounted } from 'vue'
+import { useWorkspace } from './composables/useWorkspace.js'
+import { useEnvironment } from './composables/useEnvironment.js'
+import { useTabs } from './composables/useTabs.js'
+import { useRequest } from './composables/useRequest.js'
+import { useResponse } from './composables/useResponse.js'
+import { useSettings } from './composables/useSettings.js'
 
 // 导出 composable 函数
 export function useAppSetup() {
-  // 工作区数据
-  const currentWorkspace = ref(null)
-  const workspaces = ref([])
-  const showWorkspaceDialog = ref(false)
-  const workspaceDialogMode = ref('create')
+  // 侧边栏引用（需要在组件中设置）
   const sidebarRef = ref(null)
 
-  // 标签页数据（统一管理 API 和集合 tabs）
-  const tabs = ref([])
-  const activeTab = ref(0)
-  
-  // 集合数据缓存
-  const collectionTabsData = ref({})
-  
-  // 每个接口的子标签页状态
+  // 当前导航项
+  const currentNavKey = ref('collection')
+
+  // 请求子标签页状态
   const requestTabs = ref({})
+
+  // 当前请求子标签页
   const currentRequestTab = ref('params')
 
-  // 当前请求
+  // 标签页列表
+  const tabs = ref([])
+  const activeTab = ref(0)
+
+  // 当前请求状态
   const currentRequest = reactive({
     method: 'GET',
     url: '',
@@ -33,1052 +34,203 @@ export function useAppSetup() {
     bodyType: 'raw',
     formData: [],
     binaryFile: null,
-    timeout: null  // 请求超时时间（秒），null 表示使用默认值
+    timeout: null
   })
 
   // 响应数据
   const response = ref(null)
   const loading = ref(false)
-  
-  // 发送请求时的 tab ID（用于响应匹配）
-  const sendingTabId = ref(null)
 
-  // 环境数据
-  const environments = ref([])
-  const activeEnvironmentId = ref(null)
-  const activeEnvironment = ref(null)
-  const selectedEnvironment = ref(null)
-  const selectedEnvVariables = ref([])
-  const activeVariables = ref([])
+  // 初始化各个模块
+  const workspace = useWorkspace()
+  const settings = useSettings()
 
-  // Cookie 数据
-  const cookies = ref([])
-  const showCookiePanel = ref(false)
+  // 标签页管理模块
+  const tabsModule = useTabs(
+    workspace.currentWorkspace,
+    currentNavKey,
+    sidebarRef,
+    currentRequest,
+    response,
+    loading,
+    requestTabs,
+    tabs,
+    activeTab,
+    currentRequestTab
+  )
 
-  // 控制台数据
-  const showConsolePanel = ref(false)
-  const consoleLogs = ref([])
-  const maxConsoleLogs = 100
+  // 请求管理模块
+  const requestModule = useRequest(
+    workspace.currentWorkspace,
+    tabs,
+    activeTab,
+    sidebarRef,
+    requestTabs,
+    currentRequestTab,
+    tabsModule.updateCurrentRequest,
+    tabsModule.saveOpenTabs,
+    currentRequest,
+    response,
+    loading
+  )
 
-  // 全局设置面板
-  const showSettingsPanel = ref(false)
+  // 响应管理模块
+  const responseModule = useResponse(
+    workspace.currentWorkspace,
+    tabs,
+    activeTab,
+    currentNavKey,
+    sidebarRef,
+    response,
+    currentRequest,
+    tabsModule.updateCurrentRequest
+  )
 
-  const openSettings = () => {
-    showSettingsPanel.value = true
-  }
+  // 环境管理模块
+  const environment = useEnvironment(workspace.currentWorkspace, currentNavKey)
 
-  const closeSettings = () => {
-    showSettingsPanel.value = false
-  }
+  // 设置 activeTab watcher
+  requestModule.setupActiveTabWatcher()
 
-  // 保存响应对话框
-  const showSaveResponseDialog = ref(false)
-  const saveResponseDefaultName = ref('')
-
-  // 当前侧边栏导航项
-  const currentNavKey = ref('collection')
-
-  // 加载环境配置
-  const loadEnvironments = async () => {
-    if (!currentWorkspace.value?.path) {
-      environments.value = []
-      activeEnvironmentId.value = null
-      activeEnvironment.value = null
-      selectedEnvironment.value = null
-      selectedEnvVariables.value = []
-      activeVariables.value = []
-      return
-    }
-    try {
-      const config = await invoke('get_environments', { workspacePath: currentWorkspace.value.path })
-      environments.value = config.environments || []
-      activeEnvironmentId.value = config.active_environment_id || null
-      if (activeEnvironmentId.value) {
-        activeEnvironment.value = environments.value.find(e => e.id === activeEnvironmentId.value) || null
-      } else {
-        activeEnvironment.value = null
-      }
-      selectedEnvironment.value = null
-      selectedEnvVariables.value = []
-      await loadActiveVariables()
-    } catch (e) {
-      console.error('加载环境失败:', e)
-    }
-  }
-
-  const loadActiveVariables = async () => {
-    if (!currentWorkspace.value?.path) {
-      activeVariables.value = []
-      return
-    }
-    try {
-      const variablesMap = await invoke('get_active_variables', { workspacePath: currentWorkspace.value.path })
-      activeVariables.value = Object.entries(variablesMap).map(([key, value]) => ({ key, value }))
-    } catch (e) {
-      console.error('加载激活变量失败:', e)
-    }
-  }
-
-  const loadCookies = async () => {
-    if (!currentWorkspace.value?.path) {
-      cookies.value = []
-      return
-    }
-    try {
-      const cookieList = await invoke('get_cookies', { workspacePath: currentWorkspace.value.path })
-      cookies.value = cookieList || []
-    } catch (e) {
-      console.error('加载 Cookies 失败:', e)
-    }
-  }
-
-  const openCookiePanel = async () => {
-    await loadCookies()
-    showCookiePanel.value = true
-  }
-
-  const closeCookiePanel = () => {
-    showCookiePanel.value = false
-  }
-
-  const openConsolePanel = () => {
-    showConsolePanel.value = !showConsolePanel.value
-  }
-
-  const closeConsolePanel = () => {
-    showConsolePanel.value = false
-  }
-
-  const clearConsoleLogs = () => {
-    consoleLogs.value = []
-  }
-
-  const addConsoleLog = (type, message) => {
-    const now = new Date()
-    const time = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
-    consoleLogs.value.push({ type, message, time })
-    if (consoleLogs.value.length > maxConsoleLogs) {
-      consoleLogs.value.shift()
-    }
-  }
-
-  const switchEnvironment = async (environmentId) => {
-    if (!currentWorkspace.value?.path) return
-    try {
-      await invoke('switch_environment', {
-        workspacePath: currentWorkspace.value.path,
-        environmentId
-      })
-      activeEnvironmentId.value = environmentId
-      activeEnvironment.value = environments.value.find(e => e.id === environmentId) || null
-    } catch (e) {
-      console.error('切换环境失败:', e)
-    }
-  }
-  
-  const selectEnvironment = (environmentId) => {
-    selectedEnvironment.value = environments.value.find(e => e.id === environmentId) || null
-    selectedEnvVariables.value = selectedEnvironment.value?.variables?.length > 0 
-      ? [...selectedEnvironment.value.variables] 
-      : [{ key: '', value: '', enabled: true }]
-  }
-
-  const saveEnvironment = async (environment) => {
-    if (!currentWorkspace.value?.path) return
-    try {
-      const result = await invoke('save_environment', {
-        workspacePath: currentWorkspace.value.path,
-        environment
-      })
-      const existingIndex = environments.value.findIndex(e => e.id === result.id)
-      if (existingIndex >= 0) {
-        environments.value[existingIndex] = result
-      } else {
-        environments.value.push(result)
-      }
-      return result
-    } catch (e) {
-      console.error('保存环境失败:', e)
-      throw e
-    }
-  }
-
-  const deleteEnvironment = async (environmentId) => {
-    if (!currentWorkspace.value?.path) return
-    try {
-      await invoke('delete_environment', {
-        workspacePath: currentWorkspace.value.path,
-        environmentId
-      })
-      environments.value = environments.value.filter(e => e.id !== environmentId)
-      if (activeEnvironmentId.value === environmentId) {
-        const firstEnv = environments.value[0]
-        if (firstEnv) {
-          await switchEnvironment(firstEnv.id)
-        } else {
-          activeEnvironmentId.value = null
-          activeEnvironment.value = null
-        }
-      }
-      if (selectedEnvironment.value?.id === environmentId) {
-        selectedEnvironment.value = null
-        selectedEnvVariables.value = []
-      }
-    } catch (e) {
-      console.error('删除环境失败:', e)
-    }
-  }
-
-  const saveEnvVariables = async () => {
-    if (!currentWorkspace.value?.path || !selectedEnvironment.value) return
-    const nonEmptyVars = selectedEnvVariables.value.filter(v => v.key.trim())
-    const environment = {
-      ...selectedEnvironment.value,
-      variables: nonEmptyVars
-    }
-    try {
-      const result = await saveEnvironment(environment)
-      selectedEnvironment.value = result
-      selectedEnvVariables.value = [...result.variables, { key: '', value: '', enabled: true }]
-    } catch (e) {
-      console.error('保存环境变量失败:', e)
-    }
-  }
-
-  // 监听 HTTP 日志事件
-  let unlistenHttpLog = null
-  
+  // 生命周期钩子
   onMounted(async () => {
     document.addEventListener('contextmenu', (e) => {
       e.preventDefault()
     })
-    
-    // 监听后端发送的 HTTP 日志事件
-    unlistenHttpLog = await listen('http-log', (event) => {
-      const log = event.payload
-      // 将后端日志转换为前端日志格式
-      const logType = log.log_type === 'error' ? 'error' : 
-                      log.log_type === 'response' ? 'info' : 'log'
-      const message = JSON.stringify(log, null, 2)
-      const timestamp = log.timestamp
-      consoleLogs.value.push({ type: logType, message, time: timestamp })
-      if (consoleLogs.value.length > maxConsoleLogs) {
-        consoleLogs.value.shift()
-      }
-    })
-    
-    await loadLastWorkspace()
+
+    await requestModule.setupHttpLogListener()
+    const lastWorkspace = await workspace.loadLastWorkspace()
+
+    if (lastWorkspace?.path) {
+      await environment.loadEnvironments()
+      await responseModule.loadCookies()
+      await tabsModule.loadOpenTabs(lastWorkspace.path)
+    }
   })
-  
+
   onUnmounted(() => {
-    if (unlistenHttpLog) {
-      unlistenHttpLog()
-    }
+    requestModule.cleanupHttpLogListener()
   })
 
-  const loadWorkspaces = async () => {
-    try {
-      const list = await invoke('get_workspaces')
-      workspaces.value = list || []
-    } catch (e) {
-      console.error('加载工作区列表失败:', e)
-    }
-  }
-
-  const loadLastWorkspace = async () => {
-    try {
-      await loadWorkspaces()
-      const workspace = await invoke('get_last_workspace')
-      if (workspace) {
-        currentWorkspace.value = workspace
-        await loadEnvironments()
-        await loadCookies()
-        await loadOpenTabs(workspace.path)
-      }
-    } catch (e) {
-      console.error('加载工作区失败:', e)
-    }
-  }
-
-  const loadOpenTabs = async (workspacePath) => {
-    try {
-      const [openTabIds, activeIndex, savedRequestTabs] = await invoke('get_open_tabs', { workspacePath })
-      requestTabs.value = savedRequestTabs || {}
-      if (openTabIds.length > 0) {
-        const collections = await invoke('get_collections', { workspacePath })
-        const apis = findApisInCollections(collections || [], openTabIds)
-        for (const apiId of openTabIds) {
-          const api = apis.find(a => a.id === apiId)
-          if (api) {
-            tabs.value.push({
-              id: api.id,
-              name: api.name,
-              method: api.method || 'GET',
-              url: api.url || '',
-              headers: api.headers || [],
-              body: api.body || '',
-              bodyType: api.body_type || 'raw',
-              formData: api.form_fields || [],
-              binaryFile: api.binary_file_path ? { path: api.binary_file_path, name: api.binary_file_path.split(/[/\\]/).pop() } : null,
-              tabType: 'api',
-              commonHeaders: api.commonHeaders || [],
-              timeout: api.timeout
-            })
-          }
-        }
-        if (tabs.value.length > 0 && activeIndex < tabs.value.length) {
-          activeTab.value = activeIndex
-          const activeApiId = tabs.value[activeIndex].id
-          currentRequestTab.value = requestTabs.value[activeApiId] || 'params'
-          updateCurrentRequest()
-          await nextTick()
-          if (sidebarRef.value) {
-            sidebarRef.value.setSelectedApi(activeApiId)
-          }
-        }
-      }
-    } catch (e) {
-      console.error('加载标签页失败:', e)
-    }
-  }
-  
-  const findApisInCollections = (collections, apiIds) => {
-    const apis = []
-    for (const item of collections) {
-      if (item.type === 'api' && apiIds.includes(item.id)) {
-        apis.push(item)
-      }
-      if (item.children && item.children.length > 0) {
-        apis.push(...findApisInCollections(item.children, apiIds))
-      }
-    }
-    return apis
-  }
-  
-  const saveOpenTabs = async () => {
-    if (!currentWorkspace.value?.path) return
-    try {
-      // 只保存 API tabs（不保存集合 tabs）
-      const apiTabIds = tabs.value.filter(t => t.tabType === 'api').map(t => t.id)
-      await invoke('save_open_tabs', {
-        workspacePath: currentWorkspace.value.path,
-        openTabs: apiTabIds,
-        activeTabIndex: activeTab.value,
-        requestTabs: requestTabs.value
-      })
-    } catch (e) {
-      console.error('保存标签页失败:', e)
-    }
-  }
-
-  const openCreateWorkspace = () => {
-    workspaceDialogMode.value = 'create'
-    showWorkspaceDialog.value = true
-  }
-
-  const onWorkspaceCreated = async (workspace) => {
-    showWorkspaceDialog.value = false
-    await loadWorkspaces()
-    sidebarRef.value?.loadWorkspaces()
-  }
-
-  const onWorkspaceDeleted = async (deletedId) => {
-    await loadWorkspaces()
-    if (currentWorkspace.value?.id === deletedId) {
-      currentWorkspace.value = null
-      tabs.value = []
-      activeTab.value = 0
-      collectionTabsData.value = {}
-      activeEnvironmentId.value = null
-      activeEnvironment.value = null
-      selectedEnvironment.value = null
-      selectedEnvVariables.value = []
-    }
-  }
-
-  const onSwitchWorkspace = async (workspace) => {
-    currentWorkspace.value = workspace
-    tabs.value = []
-    activeTab.value = 0
-    collectionTabsData.value = {}
-    await loadEnvironments()
-    await loadCookies()
-    if (workspace?.path) {
-      await sidebarRef.value?.loadCollections()
-      await sidebarRef.value?.loadEnvironments()
-      await loadOpenTabs(workspace.path)
-      try {
-        await invoke('set_last_workspace', { workspaceId: workspace.id })
-      } catch (e) {
-        console.error('保存工作区失败:', e)
-      }
-    }
-  }
-
+  // 导航切换处理
   const onNavChange = async (navKey) => {
     currentNavKey.value = navKey
     if (navKey !== 'history') {
-      selectedHistoryEntry.value = null
+      responseModule.selectedHistoryEntry.value = null
     }
     if (navKey === 'environment') {
-      await loadEnvironments()
+      await environment.loadEnvironments()
     }
   }
 
-  const onSwitchEnvironment = async (envId) => {
-    await switchEnvironment(envId)
-  }
-  
-  const onSelectEnvironment = (envId) => {
-    selectEnvironment(envId)
-  }
-
-  const displayTabs = computed(() => {
-    if (currentNavKey.value !== 'collection') return []
-    return tabs.value
-  })
-
-  // 计算当前选中的集合
-  const selectedCollection = computed(() => {
-    const currentTab = tabs.value[activeTab.value]
-    if (currentTab?.tabType === 'collection') {
-      return collectionTabsData.value[currentTab.id]
-    }
-    return null
-  })
-
-  // 是否显示请求/响应面板
-  const showRequestResponse = computed(() => {
-    const currentTab = tabs.value[activeTab.value]
-    return currentNavKey.value === 'collection' && currentTab?.tabType === 'api'
-  })
-  
-  // 是否显示集合设置面板
-  const showCollectionSettings = computed(() => {
-    const currentTab = tabs.value[activeTab.value]
-    return currentNavKey.value === 'collection' && currentTab?.tabType === 'collection'
-  })
-
-  // 选择集合（打开设置页面）
-  const selectCollection = (collection) => {
-    const existingIndex = tabs.value.findIndex(t => t.id === collection.id && t.tabType === 'collection')
-    
-    if (existingIndex >= 0) {
-      activeTab.value = existingIndex
-    } else {
-      collectionTabsData.value[collection.id] = collection
-      tabs.value.push({
-        id: collection.id,
-        name: collection.name,
-        tabType: 'collection'
-      })
-      activeTab.value = tabs.value.length - 1
-    }
-    
-    if (sidebarRef.value) {
-      sidebarRef.value.setSelectedApi(null)
-    }
-  }
-  
-  const onCollectionSettingsSaved = async () => {
-    // 重新加载侧边栏集合列表
-    sidebarRef.value?.loadCollections()
-    
-    // 更新当前打开的集合标签页数据
-    const currentTab = tabs.value[activeTab.value]
-    if (currentTab?.tabType === 'collection' && currentWorkspace.value?.path) {
-      try {
-        const collections = await invoke('get_collections', { workspacePath: currentWorkspace.value.path })
-        // 递归查找当前集合
-        const findCollection = (items, id) => {
-          for (const item of items) {
-            if (item.id === id) return item
-            if (item.children?.length > 0) {
-              const found = findCollection(item.children, id)
-              if (found) return found
-            }
-          }
-          return null
-        }
-        const updatedCollection = findCollection(collections, currentTab.id)
-        if (updatedCollection) {
-          collectionTabsData.value[currentTab.id] = updatedCollection
-        }
-      } catch (e) {
-        console.error('更新集合标签页数据失败:', e)
-      }
+  // 工作区切换后的额外处理
+  const handleWorkspaceSwitch = async (ws) => {
+    await workspace.onSwitchWorkspace(ws)
+    tabs.value = []
+    activeTab.value = 0
+    tabsModule.collectionTabsData.value = {}
+    await environment.loadEnvironments()
+    await responseModule.loadCookies()
+    if (ws?.path) {
+      await sidebarRef.value?.loadCollections()
+      await sidebarRef.value?.loadEnvironments()
+      await tabsModule.loadOpenTabs(ws.path)
     }
   }
 
-  const selectedHistoryEntry = ref(null)
-  
-  const onSelectHistory = (historyEntry) => {
-    selectedHistoryEntry.value = historyEntry
-  }
-
-  const showHistoryDetail = computed(() => {
-    return currentNavKey.value === 'history'
-  })
-
-  const showWorkspaceInfo = computed(() => {
-    return currentNavKey.value === 'workspace' && currentWorkspace.value
-  })
-
-  const showEnvironmentInfo = computed(() => {
-    return currentNavKey.value === 'environment' && currentWorkspace.value
-  })
-
-  const closeWorkspaceDialog = () => {
-    showWorkspaceDialog.value = false
-  }
-
-  const closeTab = async (index) => {
-    // 关闭 tab 时重置加载状态
-    loading.value = false
-    
-    const wasActive = index === activeTab.value
-    const closedTab = tabs.value[index]
-    tabs.value.splice(index, 1)
-    
-    // 清理集合数据
-    if (closedTab?.tabType === 'collection') {
-      delete collectionTabsData.value[closedTab.id]
-    }
-    
-    if (tabs.value.length === 0) {
-      activeTab.value = 0
-      currentRequest.method = 'GET'
-      currentRequest.url = ''
-      currentRequest.headers = []
-      currentRequest.body = ''
-      currentRequest.bodyType = 'raw'
-      if (sidebarRef.value) {
-        sidebarRef.value.setSelectedApi(null)
-      }
-    } else if (activeTab.value >= tabs.value.length) {
-      activeTab.value = tabs.value.length - 1
-    } else if (wasActive) {
-      // 如果关闭的是当前激活的 tab，同步选中状态
-      const currentTab = tabs.value[activeTab.value]
-      if (currentTab?.tabType === 'api' && sidebarRef.value) {
-        sidebarRef.value.setSelectedApi(currentTab.id)
-      }
-    }
-    
-    // 只保存 API tabs
-    await saveOpenTabs()
-  }
-
-  const onDeleteApis = (apiIds) => {
-    for (const apiId of apiIds) {
-      const index = tabs.value.findIndex(t => t.id === apiId && t.tabType === 'api')
-      if (index >= 0) {
-        tabs.value.splice(index, 1)
-      }
-    }
-    if (tabs.value.length === 0) {
-      activeTab.value = 0
-      currentRequest.method = 'GET'
-      currentRequest.url = ''
-      currentRequest.headers = []
-      currentRequest.body = ''
-      currentRequest.bodyType = 'raw'
-    } else if (activeTab.value >= tabs.value.length) {
-      activeTab.value = tabs.value.length - 1
-    }
-  }
-
-  // 删除集合时关闭对应的设置 tab
-  const onDeleteCollection = (collectionId) => {
-    const index = tabs.value.findIndex(t => t.id === collectionId && t.tabType === 'collection')
-    if (index >= 0) {
-      // 清理集合数据
-      delete collectionTabsData.value[collectionId]
-      tabs.value.splice(index, 1)
-      
-      if (tabs.value.length === 0) {
-        activeTab.value = 0
-      } else if (activeTab.value >= tabs.value.length) {
-        activeTab.value = tabs.value.length - 1
-      } else if (index === activeTab.value) {
-        // 关闭的是当前激活的 tab
-        // activeTab 值不变但指向新内容，需要更新显示
-      }
-    }
-  }
-
-const selectApi = async (api) => {
-      // 切换接口时重置加载状态
-      loading.value = false
-      
-      const existingIndex = tabs.value.findIndex(t => t.id === api.id && t.tabType === 'api')
-      
-      if (existingIndex >= 0) {
-      // 更新已存在 tab 的 commonHeaders 和 timeout（集合设置可能已修改）
-      tabs.value[existingIndex].commonHeaders = api.commonHeaders || []
-      tabs.value[existingIndex].timeout = api.timeout
-      activeTab.value = existingIndex
-    } else {
-      tabs.value.push({
-        id: api.id,
-        name: api.name,
-        method: api.method || 'GET',
-        url: api.url || '',
-        headers: api.headers || [],
-        body: api.body || '',
-        bodyType: api.body_type || 'raw',
-        formData: api.form_fields || [],
-        binaryFile: api.binary_file_path ? { path: api.binary_file_path, name: api.binary_file_path.split(/[/\\]/).pop() } : null,
-        tabType: 'api',
-        commonHeaders: api.commonHeaders || [],
-        timeout: api.timeout  // 接口级别的超时配置
-      })
-      activeTab.value = tabs.value.length - 1
-    }
-    
-    updateCurrentRequest()
-    await saveOpenTabs()
-  }
-
-watch(activeTab, async () => {
-      // 切换 tab 时重置加载状态
-      loading.value = false
-      
-      updateCurrentRequest()
-      const currentTab = tabs.value[activeTab.value]
-      if (currentTab?.id) {
-        if (currentTab.tabType === 'api' && sidebarRef.value) {
-          sidebarRef.value.setSelectedApi(currentTab.id)
-        }
-        currentRequestTab.value = requestTabs.value[currentTab.id] || 'params'
-      }
-      await saveOpenTabs()
-    })
-  
-  const onUpdateRequestTab = async (tabKey) => {
-    currentRequestTab.value = tabKey
-    const currentTab = tabs.value[activeTab.value]
-    if (currentTab?.id && currentTab.tabType === 'api') {
-      requestTabs.value[currentTab.id] = tabKey
-      await saveOpenTabs()
-    }
-  }
-
-  const updateCurrentRequest = () => {
-    if (tabs.value.length === 0) {
-      currentRequest.method = 'GET'
-      currentRequest.url = ''
-      currentRequest.headers = []
-      currentRequest.body = ''
-      currentRequest.bodyType = 'raw'
-      currentRequest.formData = []
-      currentRequest.binaryFile = null
-      response.value = null
-      return
-    }
-    
-    const currentTab = tabs.value[activeTab.value]
-    if (currentTab && currentTab.tabType === 'api') {
-      currentRequest.method = currentTab.method
-      currentRequest.url = currentTab.url
-      currentRequest.headers = currentTab.headers && currentTab.headers.length > 0 
-        ? currentTab.headers 
-        : [{ key: 'Content-Type', value: 'application/json', enabled: true }]
-      currentRequest.body = currentTab.body || ''
-      currentRequest.bodyType = currentTab.bodyType || 'raw'
-      currentRequest.formData = currentTab.formData || []
-      currentRequest.binaryFile = currentTab.binaryFile || null
-      currentRequest.timeout = currentTab.timeout
-      
-      if (currentTab.savedResponseData) {
-        response.value = currentTab.savedResponseData
-      } else if (currentTab.lastResponseData) {
-        response.value = currentTab.lastResponseData
-      } else {
-        response.value = null
-      }
-    }
-  }
-
-  const updateRequest = (newRequest) => {
-    currentRequest.method = newRequest.method
-    currentRequest.url = newRequest.url
-    currentRequest.params = newRequest.params
-    currentRequest.headers = newRequest.headers
-    currentRequest.body = newRequest.body
-    currentRequest.bodyType = newRequest.bodyType
-    currentRequest.formData = newRequest.formData
-    currentRequest.binaryFile = newRequest.binaryFile
-    currentRequest.timeout = newRequest.timeout
-  }
-
-  const sendRequest = async (request) => {
-    loading.value = true
-    response.value = null
-    
-    // 记录发送请求时的 tab ID
-    const sendTabIndex = activeTab.value
-    const sendTabId = tabs.value[sendTabIndex]?.id
-    sendingTabId.value = sendTabId
-    
-    // 清空发送请求 tab 的旧响应数据
-    const sendTab = tabs.value[sendTabIndex]
-    if (sendTab && sendTab.tabType === 'api') {
-      sendTab.lastResponseData = null
-    }
-    
-    try {
-      let bodyToSend = request.body
-      
-      // 获取当前 tab 的 commonHeaders
-      const commonHeaders = sendTab?.commonHeaders || []
-      
-      // 合并 headers：集合级别 + 接口级别（接口级别覆盖集合级别同名 header）
-      const headersMap = new Map()
-      
-      // 先添加集合通用 headers
-      for (const h of commonHeaders) {
-        if (h.enabled && h.key.trim()) {
-          headersMap.set(h.key.toLowerCase(), h)
-        }
-      }
-      
-      // 然后添加接口 headers（覆盖同名）
-      for (const h of (request.headers || [])) {
-        if (h.enabled && h.key.trim()) {
-          headersMap.set(h.key.toLowerCase(), h)
-        }
-      }
-      
-      const headersToSend = Array.from(headersMap.values())
-      
-      const contentTypeHeader = headersToSend.find(
-        h => h.key.toLowerCase() === 'content-type'
-      )
-      
-      if (contentTypeHeader?.value?.includes('json') && request.body) {
-        try {
-          const parsed = JSON5.parse(request.body)
-          bodyToSend = JSON.stringify(parsed)
-        } catch {
-          try {
-            const parsed = JSON.parse(request.body)
-            bodyToSend = JSON.stringify(parsed)
-          } catch {}
-        }
-      }
-      
-      const formFields = request.formData?.map(field => ({
-        key: field.key,
-        value: field.value,
-        type: field.type,
-        enabled: field.enabled,
-        files: field.files
-      })) || null
-      
-      const binaryFilePath = request.binaryFile?.path || null
-      
-      // 使用发送请求时的 tab
-      const apiId = sendTab?.tabType === 'api' ? sendTab?.id : null
-      const apiName = sendTab?.tabType === 'api' ? sendTab?.name : null
-      
-      const result = await invoke('send_http_request', {
-        method: request.method,
-        url: request.url,
-        headers: headersToSend,
-        body: request.method !== 'GET' ? bodyToSend : null,
-        bodyType: request.bodyType,
-        formFields: formFields,
-        binaryFilePath: binaryFilePath,
-        workspacePath: currentWorkspace.value?.path || '',
-        apiId: apiId,
-        apiName: apiName,
-        timeout: request.timeout  // 请求超时时间（秒）
-      })
-      
-      const responseData = {
-        status: result.status,
-        statusText: result.status_text,
-        headers: result.headers,
-        body: result.body,
-        time: result.time,
-        size: result.size
-      }
-      
-      // 找到发送请求时的 tab，存储响应
-      const targetTab = tabs.value.find(t => t.id === sendingTabId.value)
-      if (targetTab && targetTab.tabType === 'api') {
-        targetTab.lastResponseData = responseData
-      }
-      
-      // 只有当前 tab 与发送时的 tab 匹配时才更新全局 response
-      if (sendingTabId.value === tabs.value[activeTab.value]?.id) {
-        response.value = responseData
-      }
-    } catch (error) {
-      const errorResponse = {
-        status: 0,
-        statusText: '请求失败',
-        headers: {},
-        body: `错误: ${error}`,
-        time: 0,
-        size: 0
-      }
-      
-      // 找到发送请求时的 tab，存储错误响应
-      const targetTab = tabs.value.find(t => t.id === sendingTabId.value)
-      if (targetTab && targetTab.tabType === 'api') {
-        targetTab.lastResponseData = errorResponse
-      }
-      
-      // 只有当前 tab 与发送时的 tab 匹配时才更新全局 response
-      if (sendingTabId.value === tabs.value[activeTab.value]?.id) {
-        response.value = errorResponse
-      }
-    } finally {
-      loading.value = false
-      sendingTabId.value = null
-    }
-  }
-
-  const saveRequest = async (request) => {
-    if (!currentWorkspace.value?.path) return
-    if (tabs.value.length === 0) return
-    
-    const currentTab = tabs.value[activeTab.value]
-    if (!currentTab?.id || currentTab.tabType !== 'api') return
-    
-    const formFields = request.formData?.map(field => ({
-      key: field.key,
-      value: field.value,
-      type: field.type,
-      enabled: field.enabled,
-      files: field.files
-    })) || null
-    
-    const binaryFilePath = request.binaryFile?.path || null
-    
-    try {
-      await invoke('update_api', {
-        workspacePath: currentWorkspace.value.path,
-        id: currentTab.id,
-        name: currentTab.name,
-        method: request.method,
-        url: request.url,
-        headers: request.headers,
-        body: request.body,
-        bodyType: request.bodyType,
-        formFields: formFields,
-        binaryFilePath: binaryFilePath
-      })
-      
-      currentTab.method = request.method
-      currentTab.url = request.url
-      currentTab.headers = request.headers
-      currentTab.body = request.body
-      currentTab.bodyType = request.bodyType
-      
-      sidebarRef.value?.loadCollections()
-    } catch (e) {
-      console.error('保存失败:', e)
-    }
-  }
-
-  const onRenameApi = ({ id, name }) => {
-    const tab = tabs.value.find(t => t.id === id)
-    if (tab) {
-      tab.name = name
-    }
-  }
-
-  const onSaveResponse = () => {
-    if (!response.value) return
-    const now = new Date()
-    const dateStr = now.toLocaleDateString('zh-CN')
-    const timeStr = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
-    saveResponseDefaultName.value = `响应 - ${dateStr} ${timeStr}`
-    showSaveResponseDialog.value = true
-  }
-
-  const handleSaveResponse = async (name) => {
-    if (!currentWorkspace.value?.path || !response.value || tabs.value.length === 0) return
-    
-    const currentTab = tabs.value[activeTab.value]
-    if (!currentTab?.id || currentTab.tabType !== 'api') return
-    
-    const formFields = currentRequest.formData?.map(field => ({
-      key: field.key,
-      value: field.value,
-      type: field.type,
-      enabled: field.enabled,
-      files: field.files
-    })) || null
-    
-    const binaryFilePath = currentRequest.binaryFile?.path || null
-    
-    const request = {
-      method: currentRequest.method,
-      url: currentRequest.url,
-      resolved_url: currentRequest.url,
-      headers: currentRequest.headers || [],
-      body: currentRequest.body || null,
-      body_type: currentRequest.bodyType || null,
-      form_fields: formFields,
-      binary_file_path: binaryFilePath
-    }
-    
-    const responseData = {
-      status: response.value.status,
-      status_text: response.value.statusText,
-      headers: response.value.headers || {},
-      body: response.value.body || '',
-      time: response.value.time || 0,
-      size: response.value.size || 0
-    }
-    
-    try {
-      await invoke('save_response', {
-        workspacePath: currentWorkspace.value.path,
-        name: name,
-        apiId: currentTab.id,
-        request: request,
-        response: responseData,
-        cookies: cookies.value
-      })
-      
-      showSaveResponseDialog.value = false
-      sidebarRef.value?.loadCollections()
-    } catch (e) {
-      console.error('保存响应失败:', e)
-    }
-  }
-
-  const onSelectSavedResponse = async (responseItem) => {
-    if (!currentWorkspace.value?.path) return
-    
-    try {
-      const fullResponse = await invoke('get_saved_response', {
-        workspacePath: currentWorkspace.value.path,
-        id: responseItem.id
-      })
-      
-      const savedTabId = `saved_${responseItem.id}`
-      
-      const existingIndex = tabs.value.findIndex(t => t.id === savedTabId)
-      
-      const apiId = responseItem.api_id
-      const apiTab = tabs.value.find(t => t.id === apiId)
-      const apiName = apiTab?.name || '接口'
-      const fullTabName = `[${apiName}] ${fullResponse.name}`
-      
-      if (existingIndex >= 0) {
-        activeTab.value = existingIndex
-      } else {
-        tabs.value.push({
-          id: savedTabId,
-          name: fullTabName,
-          fullName: fullTabName,
-          method: fullResponse.request.method,
-          url: fullResponse.request.url,
-          headers: fullResponse.request.headers || [],
-          body: fullResponse.request.body || '',
-          bodyType: fullResponse.request.body_type || 'raw',
-          formData: fullResponse.request.form_fields || [],
-          binaryFile: fullResponse.request.binary_file_path ? { path: fullResponse.request.binary_file_path, name: fullResponse.request.binary_file_path.split(/[/\\]/).pop() } : null,
-          tabType: 'api',
-          savedResponseData: {
-            status: fullResponse.response.status,
-            statusText: fullResponse.response.status_text,
-            headers: fullResponse.response.headers || {},
-            body: fullResponse.response.body || '',
-            time: fullResponse.response.time || 0,
-            size: fullResponse.response.size || 0
-          }
-        })
-        activeTab.value = tabs.value.length - 1
-      }
-      
-      updateCurrentRequest()
-      response.value = tabs.value[activeTab.value]?.savedResponseData || null
-      
-    } catch (e) {
-      console.error('获取保存响应失败:', e)
-    }
-  }
-
+  // 返回所有需要的状态和方法
   return {
-    currentWorkspace,
-    workspaces,
-    showWorkspaceDialog,
-    workspaceDialogMode,
+    // 工作区
+    currentWorkspace: workspace.currentWorkspace,
+    workspaces: workspace.workspaces,
+    showWorkspaceDialog: workspace.showWorkspaceDialog,
+    workspaceDialogMode: workspace.workspaceDialogMode,
     sidebarRef,
+    loadWorkspaces: workspace.loadWorkspaces,
+    openCreateWorkspace: workspace.openCreateWorkspace,
+    closeWorkspaceDialog: workspace.closeWorkspaceDialog,
+    onWorkspaceCreated: workspace.onWorkspaceCreated,
+    onWorkspaceDeleted: workspace.onWorkspaceDeleted,
+    onSwitchWorkspace: handleWorkspaceSwitch,
+    showWorkspaceInfo: responseModule.showWorkspaceInfo,
+
+    // 标签页
     tabs,
-    displayTabs,
+    displayTabs: tabsModule.displayTabs,
     activeTab,
+    collectionTabsData: tabsModule.collectionTabsData,
+    selectedCollection: tabsModule.selectedCollection,
+    selectCollection: tabsModule.selectCollection,
+    showCollectionSettings: tabsModule.showCollectionSettings,
+    onCollectionSettingsSaved: tabsModule.onCollectionSettingsSaved,
+    closeTab: tabsModule.closeTab,
+    onDeleteApis: tabsModule.onDeleteApis,
+    onDeleteCollection: tabsModule.onDeleteCollection,
+
+    // 请求
     currentRequest,
     currentRequestTab,
     response,
     loading,
-    environments,
-    activeEnvironmentId,
-    activeEnvironment,
-    selectedEnvironment,
-    selectedEnvVariables,
-    activeVariables,
-    loadEnvironments,
-    loadActiveVariables,
-    switchEnvironment,
-    selectEnvironment,
-    saveEnvironment,
-    deleteEnvironment,
-    saveEnvVariables,
-    cookies,
-    showCookiePanel,
-    loadCookies,
-    openCookiePanel,
-    closeCookiePanel,
-    showConsolePanel,
-    consoleLogs,
-    openConsolePanel,
-    closeConsolePanel,
-    clearConsoleLogs,
-    showSaveResponseDialog,
-    saveResponseDefaultName,
-    onSaveResponse,
-    handleSaveResponse,
-    onSelectSavedResponse,
-    onSelectHistory,
-    selectedHistoryEntry,
-    collectionTabsData,
-    selectedCollection,
-    selectCollection,
-    showCollectionSettings,
-    onCollectionSettingsSaved,
+    selectApi: requestModule.selectApi,
+    sendRequest: requestModule.sendRequest,
+    saveRequest: requestModule.saveRequest,
+    updateRequest: requestModule.updateRequest,
+    onRenameApi: requestModule.onRenameApi,
+    onUpdateRequestTab: tabsModule.onUpdateRequestTab,
+    showRequestResponse: tabsModule.showRequestResponse,
+
+    // 环境
+    environments: environment.environments,
+    activeEnvironmentId: environment.activeEnvironmentId,
+    activeEnvironment: environment.activeEnvironment,
+    selectedEnvironment: environment.selectedEnvironment,
+    selectedEnvVariables: environment.selectedEnvVariables,
+    activeVariables: environment.activeVariables,
+    loadEnvironments: environment.loadEnvironments,
+    loadActiveVariables: environment.loadActiveVariables,
+    switchEnvironment: environment.switchEnvironment,
+    selectEnvironment: environment.selectEnvironment,
+    saveEnvironment: environment.saveEnvironment,
+    deleteEnvironment: environment.deleteEnvironment,
+    saveEnvVariables: environment.saveEnvVariables,
+    onSwitchEnvironment: environment.onSwitchEnvironment,
+    onSelectEnvironment: environment.onSelectEnvironment,
+    showEnvironmentInfo: environment.showEnvironmentInfo,
+
+    // Cookie
+    cookies: responseModule.cookies,
+    showCookiePanel: responseModule.showCookiePanel,
+    loadCookies: responseModule.loadCookies,
+    openCookiePanel: responseModule.openCookiePanel,
+    closeCookiePanel: responseModule.closeCookiePanel,
+
+    // Console
+    showConsolePanel: requestModule.showConsolePanel,
+    consoleLogs: requestModule.consoleLogs,
+    openConsolePanel: requestModule.openConsolePanel,
+    closeConsolePanel: requestModule.closeConsolePanel,
+    clearConsoleLogs: requestModule.clearConsoleLogs,
+
+    // 保存响应
+    showSaveResponseDialog: responseModule.showSaveResponseDialog,
+    saveResponseDefaultName: responseModule.saveResponseDefaultName,
+    onSaveResponse: responseModule.onSaveResponse,
+    handleSaveResponse: responseModule.handleSaveResponse,
+    onSelectSavedResponse: responseModule.onSelectSavedResponse,
+
+    // 历史
+    selectedHistoryEntry: responseModule.selectedHistoryEntry,
+    onSelectHistory: responseModule.onSelectHistory,
+    showHistoryDetail: responseModule.showHistoryDetail,
+
+    // 导航
     currentNavKey,
     onNavChange,
-    onSwitchEnvironment,
-    onSelectEnvironment,
-    showRequestResponse,
-    showHistoryDetail,
-    showWorkspaceInfo,
-    showEnvironmentInfo,
-    openCreateWorkspace,
-    onWorkspaceCreated,
-    onWorkspaceDeleted,
-    onSwitchWorkspace,
-    loadWorkspaces,
-    closeWorkspaceDialog,
-    closeTab,
-    selectApi,
-    sendRequest,
-    saveRequest,
-    updateRequest,
-    onRenameApi,
-    onDeleteApis,
-    onDeleteCollection,
-    onUpdateRequestTab,
-    showSettingsPanel,
-    openSettings,
-    closeSettings
+
+    // 设置
+    showSettingsPanel: settings.showSettingsPanel,
+    openSettings: settings.openSettings,
+    closeSettings: settings.closeSettings
   }
 }
