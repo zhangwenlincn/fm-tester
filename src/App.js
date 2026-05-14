@@ -698,6 +698,15 @@ export function useAppSetup() {
     loading.value = true
     response.value = null
     
+    // 记录请求信息到控制台
+    const requestLogData = {
+      method: request.method,
+      url: request.url,
+      headers: request.headers?.filter(h => h.enabled).map(h => ({ key: h.key, value: h.value })) || [],
+      body: request.method !== 'GET' ? request.body : null
+    }
+    addConsoleLog('info', JSON.stringify({ request: requestLogData }))
+    
     try {
       // 处理请求体
       let bodyToSend = request.body
@@ -762,11 +771,25 @@ export function useAppSetup() {
         size: result.size
       }
       
+      // 记录响应信息到控制台
+      const responseLogData = {
+        status: result.status,
+        statusText: result.status_text,
+        time: result.time,
+        size: result.size,
+        headers: result.headers,
+        body: result.body?.substring(0, 1000) || ''
+      }
+      addConsoleLog('info', JSON.stringify({ response: responseLogData }))
+      
       // 保存响应到当前 tab（切换时恢复）
       if (currentTab && !currentTab.id.startsWith('saved_')) {
         currentTab.lastResponseData = response.value
       }
     } catch (error) {
+      // 记录错误信息到控制台
+      addConsoleLog('error', JSON.stringify({ error: String(error) }))
+      
       response.value = {
         status: 0,
         statusText: '请求失败',
