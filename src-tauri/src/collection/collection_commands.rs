@@ -97,6 +97,7 @@ pub fn create_api(
             key: "Content-Type".to_string(),
             value: "application/json".to_string(),
             enabled: true,
+            description: None,
         }]),
         body: Some(String::new()),
         body_type: Some("raw".to_string()),

@@ -35,6 +35,8 @@ pub struct Header {
     pub key: String,
     pub value: String,
     pub enabled: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
 }
 
 /// Form 表单字段（支持文本和文件）
@@ -100,6 +102,8 @@ pub struct Variable {
     pub key: String,
     pub value: String,
     pub enabled: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
 }
 
 /// 环境配置

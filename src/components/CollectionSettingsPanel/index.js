@@ -1,4 +1,4 @@
-import { ref, reactive, watch, onMounted } from 'vue'
+import { ref, reactive, watch, onMounted, onUnmounted } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 
 const tabs = [
@@ -19,29 +19,90 @@ export function useCollectionSettingsSetup(props, emit) {
     collectionVariables: []
   })
   
+  // 防抖保存定时器
+  let saveTimer = null
+  
+  // 保存中状态
+  const saving = ref(false)
+  
   // 初始化数据
   const initSettings = () => {
     localSettings.name = props.collection?.name || ''
     
     // 通用请求头
     if (props.collection?.common_headers && props.collection.common_headers.length > 0) {
-      localSettings.commonHeaders = [...props.collection.common_headers]
+      localSettings.commonHeaders = props.collection.common_headers.map(h => ({
+        key: h.key || '',
+        value: h.value || '',
+        enabled: h.enabled ?? true,
+        description: h.description || ''
+      }))
     } else {
       localSettings.commonHeaders = []
     }
     
     // 集合变量
     if (props.collection?.collection_variables && props.collection.collection_variables.length > 0) {
-      localSettings.collectionVariables = [...props.collection.collection_variables]
+      localSettings.collectionVariables = props.collection.collection_variables.map(v => ({
+        key: v.key || '',
+        value: v.value || '',
+        enabled: v.enabled ?? true,
+        description: v.description || ''
+      }))
     } else {
       localSettings.collectionVariables = []
     }
   }
   
+  // 初始化标记（避免初始化时触发保存）
+  let initialized = false
+  
   // 监听 collection 变化
   watch(() => props.collection, () => {
+    initialized = false
     initSettings()
+    // 延迟标记为已初始化，避免初始化触发保存
+    setTimeout(() => {
+      initialized = true
+    }, 100)
   }, { immediate: true })
+  
+  // 防抖保存（500ms 后保存）
+  const debouncedSave = () => {
+    if (!initialized) return
+    if (saveTimer) {
+      clearTimeout(saveTimer)
+    }
+    saveTimer = setTimeout(() => {
+      saveSettings()
+    }, 500)
+  }
+  
+  // 监听请求头变化
+  watch(
+    () => localSettings.commonHeaders,
+    () => {
+      debouncedSave()
+    },
+    { deep: true }
+  )
+  
+  // 监听变量变化
+  watch(
+    () => localSettings.collectionVariables,
+    () => {
+      debouncedSave()
+    },
+    { deep: true }
+  )
+  
+  // 组件卸载时清理定时器并强制保存
+  onUnmounted(() => {
+    if (saveTimer) {
+      clearTimeout(saveTimer)
+      saveSettings() // 立即保存未完成的变更
+    }
+  })
   
   // 添加请求头
   const addHeader = () => {
@@ -75,6 +136,8 @@ export function useCollectionSettingsSetup(props, emit) {
   
   // 保存设置
   const saveSettings = async () => {
+    if (saving.value) return // 防止重复保存
+    saving.value = true
     try {
       // 过滤非空的请求头
       const validHeaders = localSettings.commonHeaders
@@ -83,7 +146,7 @@ export function useCollectionSettingsSetup(props, emit) {
           key: h.key,
           value: h.value,
           enabled: h.enabled,
-          description: h.description
+          description: h.description?.trim() || null
         }))
       
       // 过滤非空的变量
@@ -93,7 +156,7 @@ export function useCollectionSettingsSetup(props, emit) {
           key: v.key,
           value: v.value,
           enabled: v.enabled,
-          description: v.description
+          description: v.description?.trim() || null
         }))
       
       await invoke('update_collection_settings', {
@@ -106,6 +169,8 @@ export function useCollectionSettingsSetup(props, emit) {
       emit('save')
     } catch (e) {
       console.error('保存集合设置失败:', e)
+    } finally {
+      saving.value = false
     }
   }
   
@@ -113,6 +178,7 @@ export function useCollectionSettingsSetup(props, emit) {
     activeTab,
     tabs,
     localSettings,
+    saving,
     addHeader,
     removeHeader,
     addVariable,

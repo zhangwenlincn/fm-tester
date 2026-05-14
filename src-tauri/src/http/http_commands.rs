@@ -38,6 +38,7 @@ pub fn send_http_request(
             key: h.key.clone(),
             value: replace_variables(&h.value, &variables),
             enabled: h.enabled,
+            description: h.description.clone(),
         })
         .collect();
 

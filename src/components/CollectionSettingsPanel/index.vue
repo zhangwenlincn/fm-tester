@@ -19,12 +19,12 @@ const {
   activeTab,
   tabs,
   localSettings,
+  saving,
   addHeader,
   removeHeader,
   addVariable,
   removeVariable,
-  saveSettings,
-  methodClass
+  saveSettings
 } = useCollectionSettingsSetup(props, emit)
 </script>
 
