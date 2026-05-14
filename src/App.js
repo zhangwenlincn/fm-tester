@@ -806,9 +806,9 @@ watch(activeTab, async () => {
       }
       
       // 找到发送请求时的 tab，存储响应
-      const sendTab = tabs.value.find(t => t.id === sendingTabId.value)
-      if (sendTab && sendTab.tabType === 'api') {
-        sendTab.lastResponseData = responseData
+      const targetTab = tabs.value.find(t => t.id === sendingTabId.value)
+      if (targetTab && targetTab.tabType === 'api') {
+        targetTab.lastResponseData = responseData
       }
       
       // 只有当前 tab 与发送时的 tab 匹配时才更新全局 response
@@ -826,9 +826,9 @@ watch(activeTab, async () => {
       }
       
       // 找到发送请求时的 tab，存储错误响应
-      const sendTab = tabs.value.find(t => t.id === sendingTabId.value)
-      if (sendTab && sendTab.tabType === 'api') {
-        sendTab.lastResponseData = errorResponse
+      const targetTab = tabs.value.find(t => t.id === sendingTabId.value)
+      if (targetTab && targetTab.tabType === 'api') {
+        targetTab.lastResponseData = errorResponse
       }
       
       // 只有当前 tab 与发送时的 tab 匹配时才更新全局 response
