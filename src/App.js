@@ -39,6 +39,9 @@ export function useAppSetup() {
   // 响应数据
   const response = ref(null)
   const loading = ref(false)
+  
+  // 发送请求时的 tab ID（用于响应匹配）
+  const sendingTabId = ref(null)
 
   // 环境数据
   const environments = ref([])
@@ -530,6 +533,9 @@ export function useAppSetup() {
   }
 
   const closeTab = async (index) => {
+    // 关闭 tab 时重置加载状态
+    loading.value = false
+    
     const wasActive = index === activeTab.value
     const closedTab = tabs.value[index]
     tabs.value.splice(index, 1)
@@ -601,10 +607,13 @@ export function useAppSetup() {
     }
   }
 
-  const selectApi = async (api) => {
-    const existingIndex = tabs.value.findIndex(t => t.id === api.id && t.tabType === 'api')
-    
-    if (existingIndex >= 0) {
+const selectApi = async (api) => {
+      // 切换接口时重置加载状态
+      loading.value = false
+      
+      const existingIndex = tabs.value.findIndex(t => t.id === api.id && t.tabType === 'api')
+      
+      if (existingIndex >= 0) {
       // 更新已存在 tab 的 commonHeaders 和 timeout（集合设置可能已修改）
       tabs.value[existingIndex].commonHeaders = api.commonHeaders || []
       tabs.value[existingIndex].timeout = api.timeout
@@ -631,17 +640,20 @@ export function useAppSetup() {
     await saveOpenTabs()
   }
 
-  watch(activeTab, async () => {
-    updateCurrentRequest()
-    const currentTab = tabs.value[activeTab.value]
-    if (currentTab?.id) {
-      if (currentTab.tabType === 'api' && sidebarRef.value) {
-        sidebarRef.value.setSelectedApi(currentTab.id)
+watch(activeTab, async () => {
+      // 切换 tab 时重置加载状态
+      loading.value = false
+      
+      updateCurrentRequest()
+      const currentTab = tabs.value[activeTab.value]
+      if (currentTab?.id) {
+        if (currentTab.tabType === 'api' && sidebarRef.value) {
+          sidebarRef.value.setSelectedApi(currentTab.id)
+        }
+        currentRequestTab.value = requestTabs.value[currentTab.id] || 'params'
       }
-      currentRequestTab.value = requestTabs.value[currentTab.id] || 'params'
-    }
-    await saveOpenTabs()
-  })
+      await saveOpenTabs()
+    })
   
   const onUpdateRequestTab = async (tabKey) => {
     currentRequestTab.value = tabKey
@@ -704,11 +716,16 @@ export function useAppSetup() {
     loading.value = true
     response.value = null
     
+    // 记录发送请求时的 tab ID
+    const sendTabIndex = activeTab.value
+    const sendTabId = tabs.value[sendTabIndex]?.id
+    sendingTabId.value = sendTabId
+    
     try {
       let bodyToSend = request.body
       
       // 获取当前 tab 的 commonHeaders
-      const currentTab = tabs.value[activeTab.value]
+      const currentTab = tabs.value[sendTabIndex]
       const commonHeaders = currentTab?.commonHeaders || []
       
       // 合并 headers：集合级别 + 接口级别（接口级别覆盖集合级别同名 header）
@@ -774,7 +791,7 @@ export function useAppSetup() {
         timeout: request.timeout  // 请求超时时间（秒）
       })
       
-      response.value = {
+      const responseData = {
         status: result.status,
         statusText: result.status_text,
         headers: result.headers,
@@ -783,11 +800,18 @@ export function useAppSetup() {
         size: result.size
       }
       
-      if (currentTab && currentTab.tabType === 'api') {
-        currentTab.lastResponseData = response.value
+      // 找到发送请求时的 tab，存储响应
+      const sendTab = tabs.value.find(t => t.id === sendingTabId.value)
+      if (sendTab && sendTab.tabType === 'api') {
+        sendTab.lastResponseData = responseData
+      }
+      
+      // 只有当前 tab 与发送时的 tab 匹配时才更新全局 response
+      if (sendingTabId.value === tabs.value[activeTab.value]?.id) {
+        response.value = responseData
       }
     } catch (error) {
-      response.value = {
+      const errorResponse = {
         status: 0,
         statusText: '请求失败',
         headers: {},
@@ -796,12 +820,19 @@ export function useAppSetup() {
         size: 0
       }
       
-      const currentTab = tabs.value[activeTab.value]
-      if (currentTab && currentTab.tabType === 'api') {
-        currentTab.lastResponseData = response.value
+      // 找到发送请求时的 tab，存储错误响应
+      const sendTab = tabs.value.find(t => t.id === sendingTabId.value)
+      if (sendTab && sendTab.tabType === 'api') {
+        sendTab.lastResponseData = errorResponse
+      }
+      
+      // 只有当前 tab 与发送时的 tab 匹配时才更新全局 response
+      if (sendingTabId.value === tabs.value[activeTab.value]?.id) {
+        response.value = errorResponse
       }
     } finally {
       loading.value = false
+      sendingTabId.value = null
     }
   }
 
