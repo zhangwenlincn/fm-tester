@@ -20,6 +20,7 @@ const {
   workspaceDialogMode,
   sidebarRef,
   tabs,
+  displayTabs,
   activeTab,
   currentRequest,
   currentRequestTab,
@@ -95,8 +96,7 @@ const {
         @switch-environment="onSwitchEnvironment"
       />
       <TabsBar 
-        v-if="currentNavKey === 'collection'"
-        :tabs="tabs"
+        :tabs="displayTabs"
         :active-tab="activeTab"
         :workspace="currentWorkspace"
         @update:active-tab="activeTab = $event"

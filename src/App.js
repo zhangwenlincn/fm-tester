@@ -429,6 +429,11 @@ export function useAppSetup() {
     selectEnvironment(envId)
   }
 
+  // 显示的 tabs（切换侧边栏时隐藏，但数据保留）
+  const displayTabs = computed(() => {
+    return currentNavKey.value === 'collection' ? tabs.value : []
+  })
+
   // 是否显示请求/响应面板
   const showRequestResponse = computed(() => {
     return currentNavKey.value === 'collection' && tabs.value.length > 0
@@ -953,6 +958,7 @@ export function useAppSetup() {
     workspaceDialogMode,
     sidebarRef,
     tabs,
+    displayTabs,
     activeTab,
     currentRequest,
     currentRequestTab,
