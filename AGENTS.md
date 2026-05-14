@@ -42,7 +42,7 @@ src-tauri/src/
 └── saved_response/ # 保存的响应快照
 ```
 
-每个模块结构：`mod.rs (入口) + commands.rs + config.rs (+ utils.rs 可选)`
+每个模块结构：`mod.rs (入口) + {module}_commands.rs + {module}_config.rs (+ {module}_utils.rs 可选)`
 
 ## 数据存储
 
@@ -62,7 +62,7 @@ src-tauri/src/
 |------|------|------|
 | workspace | `get_workspaces`, `get_last_workspace`, `create_workspace`, `switch_workspace`, `delete_workspace`, `update_workspace`, `set_last_workspace` | 工作区 CRUD |
 | workspace | `set_last_api`, `get_last_api` | 最后打开的接口 |
-| collection | `get_collections`, `create_collection`, `create_api`, `update_api`, `update_collection`, `delete_collection_item`, `move_api` | 集合/接口 CRUD |
+| collection | `get_collections`, `create_collection`, `create_api`, `update_api`, `update_collection`, `update_collection_settings`, `delete_collection_item`, `move_api` | 集合/接口 CRUD |
 | environment | `get_environments`, `save_environment`, `delete_environment`, `switch_environment`, `get_active_variables` | 环境变量 |
 | memory | `get_expanded_collections`, `save_expanded_collections`, `get_open_tabs`, `save_open_tabs` | 集合展开状态、打开的标签页 |
 | http | `send_http_request` | 发送 HTTP 请求（支持变量替换、form-data、binary、自动记录历史） |
@@ -73,7 +73,7 @@ src-tauri/src/
 ## 添加新 Tauri Command
 
 1. 选择模块：`workspace/`, `collection/`, `http/`, `environment/`, `memory/`
-2. 在模块 `commands.rs` 添加 `#[tauri::command]` 函数
+2. 在模块 `{module}_commands.rs` 添加 `#[tauri::command]` 函数
 3. 在模块 `mod.rs` 导出
 4. 在 `lib.rs` 注册到 `invoke_handler`
 
@@ -133,3 +133,23 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 ## 窗口配置
 
 - 默认: 1280×800, 最小: 800×600 (tauri.conf.json)
+
+## Vite 配置注意
+
+Monaco Editor 必须排除优化依赖，否则会出错：
+```js
+// vite.config.js
+optimizeDeps: { exclude: ['monaco-editor'] }
+```
+
+## HTTP 请求日志事件
+
+`send_http_request` 通过 `app.emit('http-log', log)` 发送日志到前端，前端监听：
+```js
+import { listen } from '@tauri-apps/api/event'
+const unlisten = await listen('http-log', (event) => {
+  // event.payload: { logType, timestamp, message, data, error }
+})
+```
+
+日志类型：`request`, `response`, `error`, `warning`（未定义变量警告）
