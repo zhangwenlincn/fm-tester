@@ -6,7 +6,7 @@ const props = defineProps({
   workspace: Object
 })
 
-const emit = defineEmits(['selectApi', 'deleteApis', 'renameApi', 'selectSavedResponse'])
+const emit = defineEmits(['selectApi', 'deleteApis', 'deleteCollection', 'renameApi', 'selectSavedResponse', 'selectCollection'])
 
 // 使用 composable
 const {
@@ -29,6 +29,7 @@ const {
   toggleExpand,
   isExpanded,
   selectApiItem,
+  selectCollectionItem,
   setSelectedApiId,
   openRootCreateDialog,
   openCreateDialog,
@@ -103,16 +104,18 @@ defineExpose({
           class="tree-folder"
           :class="{ 'drop-target': dropTargetId === row.item.id }"
           :style="{ paddingLeft: (16 + row.depth * 16) + 'px' }"
-          @click.stop="toggleExpand(row.item.id)"
           @contextmenu.prevent="(e) => openContextMenu(e, row.item, row.depth, 'collection')"
           @dragover.prevent.stop="onDragOver(e, row.item)"
           @dragleave.stop="onDragLeave"
           @drop.stop="(e) => onDrop(e, row.item)"
         >
-          <span class="folder-icon">
+          <span class="folder-icon" @click.stop="selectCollectionItem(row.item)">
             <Icon :name="row.expanded ? 'folder-open' : 'folder'" :size="14" />
           </span>
-          <span class="folder-name">{{ row.item.name }}</span>
+          <span class="folder-name" @click.stop="selectCollectionItem(row.item)">{{ row.item.name }}</span>
+          <span class="expand-arrow" :class="{ expanded: row.expanded }" @click.stop="toggleExpand(row.item.id)">
+            <Icon name="arrow-right" :size="12" />
+          </span>
         </div>
         
         <!-- API 项 -->

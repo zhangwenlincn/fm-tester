@@ -26,7 +26,9 @@ export function useSidebarSetup(props, emit) {
   
   // 处理子组件事件转发
   const handleSelectApi = (api) => emit('selectApi', api)
+  const handleSelectCollection = (collection) => emit('selectCollection', collection)
   const handleDeleteApis = (ids) => emit('deleteApis', ids)
+  const handleDeleteCollection = (collectionId) => emit('deleteCollection', collectionId)
   const handleRenameApi = (api) => emit('renameApi', api)
   const handleSelectEnvironment = (envId) => emit('selectEnvironment', envId)
   const handleEnvironmentUpdated = () => emit('environmentUpdated')
@@ -113,7 +115,9 @@ export function useSidebarSetup(props, emit) {
     // 事件处理
     handleNavChange,
     handleSelectApi,
+    handleSelectCollection,
     handleDeleteApis,
+    handleDeleteCollection,
     handleRenameApi,
     handleSelectEnvironment,
     handleEnvironmentUpdated,

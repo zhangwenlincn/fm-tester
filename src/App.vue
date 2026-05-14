@@ -12,6 +12,7 @@ import CookiePanel from './components/CookiePanel/index.vue'
 import ConsolePanel from './components/ConsolePanel/index.vue'
 import SaveResponseDialog from './components/SaveResponseDialog/index.vue'
 import HistoryDetailPanel from './components/HistoryDetailPanel/index.vue'
+import CollectionSettingsPanel from './components/CollectionSettingsPanel/index.vue'
 
 // 使用 composable
 const {
@@ -63,6 +64,12 @@ const {
   // 历史选择
   onSelectHistory,
   selectedHistoryEntry,
+  // 集合设置相关
+  collectionTabsData,
+  selectedCollection,
+  selectCollection,
+  showCollectionSettings,
+  onCollectionSettingsSaved,
   // 导航相关
   currentNavKey,
   showRequestResponse,
@@ -85,6 +92,7 @@ const {
   updateRequest,
   onRenameApi,
   onDeleteApis,
+  onDeleteCollection,
   onUpdateRequestTab
 } = useAppSetup()
 </script>
@@ -103,7 +111,7 @@ const {
         @switch-environment="onSwitchEnvironment"
       />
       <TabsBar 
-        :tabs="displayTabs"
+        :tabs="tabs"
         :active-tab="activeTab"
         :workspace="currentWorkspace"
         @update:active-tab="activeTab = $event"
@@ -118,6 +126,8 @@ const {
         ref="sidebarRef"
         :workspace="currentWorkspace"
         @select-api="selectApi"
+        @select-collection="selectCollection"
+        @delete-collection="onDeleteCollection"
         @switch-workspace="onSwitchWorkspace"
         @create-workspace="openCreateWorkspace"
         @rename-api="onRenameApi"
@@ -154,6 +164,15 @@ const {
             @save-response="onSaveResponse"
           />
         </div>
+      </div>
+      
+      <!-- 集合设置面板 -->
+      <div class="content-area" v-else-if="showCollectionSettings">
+        <CollectionSettingsPanel 
+          :collection="selectedCollection"
+          :workspace-path="currentWorkspace?.path || ''"
+          @save="onCollectionSettingsSaved"
+        />
       </div>
       
       <!-- 历史详情面板 -->

@@ -57,6 +57,13 @@
 .tab-method.delete { background: #fff1f0; color: #ff4d4f; }
 .tab-method.patch { background: #f9f0ff; color: #722ed1; }
 
+/* 集合 tab 文件夹图标 */
+.tab-folder-icon {
+  color: #fa8c16;
+  display: flex;
+  align-items: center;
+}
+
 .tab-name {
   flex: 1;
   overflow: hidden;

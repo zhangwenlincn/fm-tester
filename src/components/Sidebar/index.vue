@@ -13,6 +13,8 @@ const props = defineProps({
 
 const emit = defineEmits([
   'selectApi',
+  'selectCollection',
+  'deleteCollection',
   'selectEnvironment',
   'createWorkspace',
   'renameApi',
@@ -34,6 +36,7 @@ const {
   historyPanelRef,
   handleNavChange,
   handleSelectApi,
+  handleSelectCollection,
   handleDeleteApis,
   handleRenameApi,
   handleSelectEnvironment,
@@ -76,7 +79,9 @@ defineExpose({
         ref="collectionPanelRef"
         :workspace="props.workspace"
         @select-api="handleSelectApi"
+        @select-collection="handleSelectCollection"
         @delete-apis="handleDeleteApis"
+        @delete-collection="handleDeleteCollection"
         @rename-api="handleRenameApi"
         @select-saved-response="handleSelectSavedResponse"
       />

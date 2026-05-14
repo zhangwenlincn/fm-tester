@@ -2,7 +2,7 @@ use crate::collection::collection_config::{read_collections, write_collections};
 use crate::collection::collection_utils::{
     find_api_in_collections, find_collection_item, get_collection_depth, remove_collection_item,
 };
-use crate::models::{Collection, FormField, Header};
+use crate::models::{Collection, FormField, Header, Variable};
 use crate::saved_response::saved_response_config::get_api_saved_responses_index;
 
 /// 递归加载 API 的保存响应索引
@@ -54,6 +54,8 @@ pub fn create_collection(
         form_fields: None,
         binary_file_path: None,
         saved_responses: None,
+        common_headers: None,
+        collection_variables: None,
     };
 
     if let Some(pid) = parent_id {
@@ -101,6 +103,8 @@ pub fn create_api(
         form_fields: None,
         binary_file_path: None,
         saved_responses: None,
+        common_headers: None,
+        collection_variables: None,
     };
 
     if let Some(pid) = parent_id {
@@ -198,6 +202,30 @@ pub fn update_collection(
         }
         col.name = name;
         col.description = description;
+    } else {
+        return Err("集合不存在".to_string());
+    }
+
+    write_collections(&workspace_path, &config)?;
+    Ok(())
+}
+
+/// 更新集合设置（通用请求头、集合变量）
+#[tauri::command]
+pub fn update_collection_settings(
+    workspace_path: String,
+    id: String,
+    common_headers: Option<Vec<Header>>,
+    collection_variables: Option<Vec<Variable>>,
+) -> Result<(), String> {
+    let mut config = read_collections(&workspace_path);
+
+    if let Some(col) = find_collection_item(&mut config.collections, &id) {
+        if col.item_type != "collection" {
+            return Err("该项不是集合".to_string());
+        }
+        col.common_headers = common_headers;
+        col.collection_variables = collection_variables;
     } else {
         return Err("集合不存在".to_string());
     }

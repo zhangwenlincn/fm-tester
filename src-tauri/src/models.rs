@@ -81,6 +81,11 @@ pub struct Collection {
     pub binary_file_path: Option<String>, // binary 文件路径
     #[serde(skip_serializing_if = "Option::is_none")]
     pub saved_responses: Option<Vec<SavedResponseIndexEntry>>, // API 关联的保存响应索引
+    // 集合级别配置
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub common_headers: Option<Vec<Header>>, // 集合通用请求头
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub collection_variables: Option<Vec<Variable>>, // 集合变量
 }
 
 /// 集合配置文件结构

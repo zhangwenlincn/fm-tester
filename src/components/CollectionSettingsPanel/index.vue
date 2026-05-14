@@ -1,0 +1,159 @@
+<script setup>
+import { useCollectionSettingsSetup } from './index.js'
+import Icon from '../Icon/index.vue'
+
+const props = defineProps({
+  collection: {
+    type: Object,
+    required: true
+  },
+  workspacePath: {
+    type: String,
+    required: true
+  }
+})
+
+const emit = defineEmits(['save', 'close'])
+
+const {
+  activeTab,
+  tabs,
+  localSettings,
+  addHeader,
+  removeHeader,
+  addVariable,
+  removeVariable,
+  saveSettings,
+  methodClass
+} = useCollectionSettingsSetup(props, emit)
+</script>
+
+<template>
+  <div class="collection-settings-panel">
+    <!-- 集合名称 -->
+    <div class="settings-header">
+      <span class="folder-icon">
+        <Icon name="folder" :size="16" />
+      </span>
+      <span class="collection-name">{{ localSettings.name }}</span>
+    </div>
+    
+    <!-- 标签页 -->
+    <div class="settings-tabs">
+      <div 
+        v-for="tab in tabs" 
+        :key="tab.key"
+        class="tab-item"
+        :class="{ active: activeTab === tab.key }"
+        @click="activeTab = tab.key"
+      >
+        {{ tab.name }}
+      </div>
+    </div>
+    
+    <!-- 标签页内容 -->
+    <div class="tab-content">
+      <!-- 请求头 -->
+      <div v-show="activeTab === 'headers'" class="headers-panel">
+        <div class="panel-toolbar">
+          <button class="add-btn" @click="addHeader">+ 添加请求头</button>
+          <span class="panel-hint">这些请求头会自动添加到该集合下所有接口的请求中</span>
+        </div>
+        <div class="params-list">
+          <div class="params-header">
+            <span class="col-check"></span>
+            <span class="col-key">Header 名</span>
+            <span class="col-value">Header 值</span>
+            <span class="col-desc">描述</span>
+            <span class="col-action"></span>
+          </div>
+          <div v-if="localSettings.commonHeaders.length === 0" class="empty-params">
+            暂无通用请求头，点击上方按钮添加
+          </div>
+          <div 
+            v-for="(header, index) in localSettings.commonHeaders" 
+            :key="index"
+            class="param-row"
+          >
+            <span class="col-check">
+              <input type="checkbox" v-model="header.enabled" />
+            </span>
+            <span class="col-key">
+              <input type="text" v-model="header.key" placeholder="Header 名" />
+            </span>
+            <span class="col-value">
+              <input type="text" v-model="header.value" placeholder="Header 值" />
+            </span>
+            <span class="col-desc">
+              <input type="text" v-model="header.description" placeholder="描述" />
+            </span>
+            <span class="col-action">
+              <button class="remove-btn" @click="removeHeader(index)">×</button>
+            </span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 变量 -->
+      <div v-show="activeTab === 'variables'" class="variables-panel">
+        <div class="panel-toolbar">
+          <button class="add-btn" @click="addVariable">+ 添加变量</button>
+          <span class="panel-hint">使用 {{变量名}} 在 URL、请求头、请求体中引用这些变量</span>
+        </div>
+        <div class="params-list">
+          <div class="params-header">
+            <span class="col-check"></span>
+            <span class="col-key">变量名</span>
+            <span class="col-value">变量值</span>
+            <span class="col-desc">描述</span>
+            <span class="col-action"></span>
+          </div>
+          <div v-if="localSettings.collectionVariables.length === 0" class="empty-params">
+            暂无集合变量，点击上方按钮添加
+          </div>
+          <div 
+            v-for="(variable, index) in localSettings.collectionVariables" 
+            :key="index"
+            class="param-row"
+          >
+            <span class="col-check">
+              <input type="checkbox" v-model="variable.enabled" />
+            </span>
+            <span class="col-key">
+              <input type="text" v-model="variable.key" placeholder="变量名" />
+            </span>
+            <span class="col-value">
+              <input type="text" v-model="variable.value" placeholder="变量值" />
+            </span>
+            <span class="col-desc">
+              <input type="text" v-model="variable.description" placeholder="描述" />
+            </span>
+            <span class="col-action">
+              <button class="remove-btn" @click="removeVariable(index)">×</button>
+            </span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 脚本 -->
+      <div v-show="activeTab === 'scripts'" class="scripts-panel">
+        <div class="placeholder-content">
+          <span class="placeholder-icon">📝</span>
+          <p>脚本配置</p>
+          <p class="placeholder-hint">此功能正在开发中...</p>
+        </div>
+      </div>
+      
+      <!-- 设置 -->
+      <div v-show="activeTab === 'settings'" class="settings-panel">
+        <div class="placeholder-content">
+          <span class="placeholder-icon">⚙️</span>
+          <p>集合设置</p>
+          <p class="placeholder-hint">此功能正在开发中...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<style scoped src="./style.css"></style>

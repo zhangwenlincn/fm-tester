@@ -79,16 +79,40 @@
   border: 1px dashed #1890ff;
 }
 
+/* 集合项右侧展开箭头 */
+.tree-folder .expand-arrow {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #8c8c8c;
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.tree-folder .expand-arrow:hover {
+  color: #1890ff;
+}
+
+.tree-folder .expand-arrow.expanded {
+  transform: rotate(90deg);
+}
+
 .folder-icon {
   font-size: 14px;
   margin-right: 6px;
   cursor: pointer;
+  flex-shrink: 0;
 }
 
 .folder-name {
   font-size: 13px;
   color: #262626;
   flex: 1;
+  cursor: pointer;
 }
 
 .item-actions {

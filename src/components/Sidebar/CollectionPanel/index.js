@@ -85,6 +85,11 @@ export function useCollectionPanelSetup(props, emit) {
     emit('selectApi', api)
   }
   
+  // 选择集合（打开设置页面）
+  const selectCollectionItem = (collection) => {
+    emit('selectCollection', collection)
+  }
+  
   // 外部设置选中 API（用于标签页联动）
   const setSelectedApiId = (apiId) => {
     selectedApi.value = apiId
@@ -251,6 +256,11 @@ export function useCollectionPanelSetup(props, emit) {
       // 通知 App 关闭所有相关标签页
       if (apiIds.length > 0) {
         emit('deleteApis', apiIds)
+      }
+      
+      // 如果删除的是集合，通知关闭集合设置 tab
+      if (item.type === 'collection') {
+        emit('deleteCollection', item.id)
       }
     } catch (e) {
       console.error('删除失败:', e)
@@ -430,6 +440,7 @@ return {
     toggleExpand,
     isExpanded,
     selectApiItem,
+    selectCollectionItem,
     setSelectedApiId,
     openRootCreateDialog,
     openCreateDialog,

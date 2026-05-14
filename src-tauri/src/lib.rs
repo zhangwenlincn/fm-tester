@@ -42,6 +42,7 @@ pub fn run() {
             update_api,
             delete_collection_item,
             update_collection,
+            update_collection_settings,
             move_api,
             // 环境
             get_environments,

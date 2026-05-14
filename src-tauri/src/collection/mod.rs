@@ -4,7 +4,7 @@ mod collection_utils;
 
 pub use collection_commands::{
     create_api, create_collection, delete_collection_item, get_collections, move_api, update_api,
-    update_collection,
+    update_collection, update_collection_settings,
 };
 pub use collection_config::{get_collections_path, read_collections, write_collections};
 pub use collection_utils::{
