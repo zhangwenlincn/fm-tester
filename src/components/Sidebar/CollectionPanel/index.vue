@@ -102,7 +102,8 @@ defineExpose({
           :class="{
             'dragging': dragState.draggingId === row.item.id,
             'drag-over-before': dragState.dragOverId === row.item.id && dragState.dragPosition === 'before',
-            'drag-over-after': dragState.dragOverId === row.item.id && dragState.dragPosition === 'after'
+            'drag-over-after': dragState.dragOverId === row.item.id && dragState.dragPosition === 'after',
+            'drag-over-into': dragState.dragOverId === row.item.id && dragState.dragPosition === 'into'
           }"
           :style="{ paddingLeft: (16 + row.depth * 16) + 'px' }"
           @mousedown="(e) => onMouseDown(e, row)"
@@ -164,6 +165,13 @@ defineExpose({
           </div>
         </div>
       </template>
+
+      <!-- 根级别拖放区域 -->
+      <div
+        v-if="flatTreeList.length > 0"
+        class="tree-list-footer"
+        :class="{ 'drag-over-root': dragState.dragPosition === 'root' }"
+      ></div>
     </div>
 
     <!-- 创建对话框 -->

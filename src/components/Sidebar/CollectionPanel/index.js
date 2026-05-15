@@ -1,5 +1,6 @@
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
+import { showToast } from '../../../composables/useToast'
 
 // 最大层级深度（集合最多三层）
 const MAX_DEPTH = 2 // depth 0, 1, 2 共三层
@@ -183,9 +184,9 @@ export function useCollectionPanelSetup(props, emit) {
     showCreateDialog.value = true
   }
 
-  // 是否可以创建子集合（层级限制）
+  // 是否可以创建子集合（层级限制：只有根级别可以创建子集合）
   const canCreateSubCollection = (depth) => {
-    return depth < MAX_DEPTH
+    return depth < 1 // depth=0 才能创建子集合，depth=1 的集合不能再创建子集合
   }
 
   // 打开右键菜单
@@ -451,10 +452,19 @@ export function useCollectionPanelSetup(props, emit) {
     // 根据 Y 坐标找到目标行
     const target = findRowAtY(e.clientY)
     if (target) {
-      dragState.value = {
-        ...dragState.value,
-        dragOverId: target.row.item.id,
-        dragPosition: target.position
+      if (target.position === 'root') {
+        // 移动到根级别
+        dragState.value = {
+          ...dragState.value,
+          dragOverId: 'root',
+          dragPosition: 'root'
+        }
+      } else {
+        dragState.value = {
+          ...dragState.value,
+          dragOverId: target.row.item.id,
+          dragPosition: target.position
+        }
       }
     } else {
       dragState.value = {
@@ -467,9 +477,90 @@ export function useCollectionPanelSetup(props, emit) {
 
   const onMouseUp = async (e) => {
     if (isDragging && dragState.value.dragOverId) {
-      await performReorder()
+      const { dragPosition, draggingId, dragOverId } = dragState.value
+
+      if (dragPosition === 'root') {
+        // 移动到根级别
+        await performMoveToRoot()
+      } else {
+        // 判断是移动到集合还是同级排序
+        const targetRow = flatTreeList.value.find(r => r.item.id === dragOverId)
+        const dragRow = flatTreeList.value.find(r => r.item.id === draggingId)
+
+        if (targetRow?.isCollection && dragPosition === 'into') {
+          // 移动到集合内
+          await performMove()
+        } else if (dragRow && targetRow && dragRow.depth === targetRow.depth && dragRow.parentId === targetRow.parentId) {
+          // 同级排序
+          await performReorder()
+        }
+      }
     }
     cleanupDrag()
+  }
+
+  const performMoveToRoot = async () => {
+    const { draggingId } = dragState.value
+    if (!draggingId) return
+
+    const dragRow = flatTreeList.value.find(r => r.item.id === draggingId)
+    if (!dragRow) return
+
+    // 检查是否已经在根级别
+    if (dragRow.depth === 0) return
+
+    try {
+      if (dragRow.isCollection) {
+        // 移动集合到根级别
+        await invoke('move_collection', {
+          workspacePath: props.workspace.path,
+          collectionId: draggingId,
+          targetCollectionId: null
+        })
+      } else {
+        // 移动 API 到根级别
+        await invoke('move_api', {
+          workspacePath: props.workspace.path,
+          apiId: draggingId,
+          targetCollectionId: null
+        })
+      }
+      await loadCollections()
+    } catch (err) {
+      console.error('移动到根级别失败:', err)
+      showToast(err, 'error')
+    }
+  }
+
+  const performMove = async () => {
+    const { draggingId, dragOverId } = dragState.value
+    if (!draggingId || !dragOverId || draggingId === dragOverId) return
+
+    const dragRow = flatTreeList.value.find(r => r.item.id === draggingId)
+    const targetRow = flatTreeList.value.find(r => r.item.id === dragOverId)
+    if (!dragRow || !targetRow || !targetRow.isCollection) return
+
+    try {
+      if (dragRow.isCollection) {
+        // 移动集合
+        await invoke('move_collection', {
+          workspacePath: props.workspace.path,
+          collectionId: draggingId,
+          targetCollectionId: targetRow.item.id
+        })
+      } else {
+        // 移动 API
+        await invoke('move_api', {
+          workspacePath: props.workspace.path,
+          apiId: draggingId,
+          targetCollectionId: targetRow.item.id
+        })
+      }
+      await loadCollections()
+    } catch (err) {
+      console.error('移动失败:', err)
+      showToast(err, 'error')
+    }
   }
 
   const performReorder = async () => {
@@ -520,22 +611,43 @@ export function useCollectionPanelSetup(props, emit) {
     const list = flatTreeList.value
     const dragRow = list.find(r => r.item.id === dragState.value.draggingId)
 
+    // 检查是否在根级别拖放区域（tree-list-footer）
+    const footerEl = treeListRef.value.querySelector('.tree-list-footer')
+    if (footerEl) {
+      const footerRect = footerEl.getBoundingClientRect()
+      if (clientY >= footerRect.top && clientY <= footerRect.bottom) {
+        return { row: null, position: 'root' }
+      }
+    }
+
     for (const row of list) {
       // 跳过自身
       if (row.item.id === dragState.value.draggingId) continue
       // 跳过保存响应区域等非主干行
       if (!row.isCollection && !row.item) continue
-      // 只允许同级
-      if (dragRow && (row.depth !== dragRow.depth || row.parentId !== dragRow.parentId)) continue
 
       const el = getItemEl(row.item.id)
       if (!el) continue
 
       const rect = el.getBoundingClientRect()
       if (clientY >= rect.top && clientY <= rect.bottom) {
-        const midY = rect.top + rect.height / 2
-        const position = clientY < midY ? 'before' : 'after'
-        return { row, position }
+        // 集合项：上半部分 before，下半部分 after，中间区域 into
+        if (row.isCollection) {
+          const topThird = rect.top + rect.height * 0.25
+          const bottomThird = rect.top + rect.height * 0.75
+          if (clientY < topThird) {
+            return { row, position: 'before' }
+          } else if (clientY > bottomThird) {
+            return { row, position: 'after' }
+          } else {
+            return { row, position: 'into' }
+          }
+        } else {
+          // API 项：只有 before/after
+          const midY = rect.top + rect.height / 2
+          const position = clientY < midY ? 'before' : 'after'
+          return { row, position }
+        }
       }
     }
     return null

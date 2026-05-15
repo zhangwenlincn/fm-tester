@@ -78,3 +78,57 @@ pub fn get_collection_depth(items: &[Collection], id: &str, current_depth: usize
     }
     None
 }
+
+/// 获取集合的所有子孙 ID（用于检查是否移动到自己的子集）
+pub fn get_all_descendant_ids(items: &[Collection], id: &str) -> Option<Vec<String>> {
+    // 先找到该集合
+    for item in items {
+        if item.id == id && item.item_type == "collection" {
+            // 收集所有子孙 ID
+            let mut result = Vec::new();
+            collect_descendant_ids(&item.children, &mut result);
+            return Some(result);
+        }
+        if let Some(found) = get_all_descendant_ids(&item.children, id) {
+            return Some(found);
+        }
+    }
+    None
+}
+
+/// 递归收集子孙 ID
+fn collect_descendant_ids(items: &[Collection], result: &mut Vec<String>) {
+    for item in items {
+        result.push(item.id.clone());
+        collect_descendant_ids(&item.children, result);
+    }
+}
+
+/// 获取集合的最大子层级深度（用于检查移动后是否超过层级限制）
+pub fn get_collection_max_child_depth(items: &[Collection], id: &str) -> Option<usize> {
+    // 先找到该集合
+    for item in items {
+        if item.id == id && item.item_type == "collection" {
+            return Some(get_max_depth_in_tree(&item.children, 0));
+        }
+        if let Some(d) = get_collection_max_child_depth(&item.children, id) {
+            return Some(d);
+        }
+    }
+    None
+}
+
+/// 计算树的最大深度
+fn get_max_depth_in_tree(items: &[Collection], current_depth: usize) -> usize {
+    if items.is_empty() {
+        return current_depth;
+    }
+    let mut max = current_depth;
+    for item in items {
+        let child_max = get_max_depth_in_tree(&item.children, current_depth + 1);
+        if child_max > max {
+            max = child_max;
+        }
+    }
+    max
+}

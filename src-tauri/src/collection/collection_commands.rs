@@ -1,7 +1,7 @@
 use crate::collection::collection_config::{read_collections, write_collections};
 use crate::collection::collection_utils::{
-    find_api_in_collections, find_collection_item, find_parent_children, get_collection_depth,
-    remove_collection_item,
+    find_api_in_collections, find_collection_item, find_parent_children, get_all_descendant_ids,
+    get_collection_depth, get_collection_max_child_depth, remove_collection_item,
 };
 use crate::models::{Collection, FormField, Header, Variable};
 use crate::saved_response::saved_response_config::get_api_saved_responses_index;
@@ -60,6 +60,12 @@ pub fn create_collection(
     };
 
     if let Some(pid) = parent_id {
+        // 检查父集合的深度（限制最多三层）
+        let parent_depth = get_collection_depth(&config.collections, &pid, 0).unwrap_or(0);
+        if parent_depth >= 1 {
+            return Err("集合最多两层子集合（总共三层），无法在当前层级创建子集合".to_string());
+        }
+
         if let Some(parent) = find_collection_item(&mut config.collections, &pid) {
             parent.children.push(collection.clone());
         } else {
@@ -316,6 +322,80 @@ pub fn move_api(
     } else {
         // 移动到根级别
         config.collections.push(api);
+    }
+
+    write_collections(&workspace_path, &config)?;
+    Ok(())
+}
+
+/// 移动集合到另一个集合（跨层级移动，子项同步移动）
+#[tauri::command]
+pub fn move_collection(
+    workspace_path: String,
+    collection_id: String,
+    target_collection_id: Option<String>, // None = 移到根级别
+) -> Result<(), String> {
+    let mut config = read_collections(&workspace_path);
+
+    // 检查是否移动到自己的子孙（禁止）
+    if let Some(ref target_id) = target_collection_id {
+        let descendants = get_all_descendant_ids(&config.collections, &collection_id)
+            .unwrap_or_default();
+        if descendants.contains(target_id) {
+            return Err("不能移动到自己的子集合".to_string());
+        }
+    }
+
+    // 不能移动到自己
+    if target_collection_id.as_ref() == Some(&collection_id) {
+        return Err("不能移动到自己".to_string());
+    }
+
+    // 计算移动后的层级深度
+    let source_max_child_depth = get_collection_max_child_depth(&config.collections, &collection_id)
+        .unwrap_or(0); // 集合本身子树的最大深度
+
+    let target_depth = if let Some(ref target_id) = target_collection_id {
+        get_collection_depth(&config.collections, target_id, 0).unwrap_or(0)
+    } else {
+        0 // 根级别
+    };
+
+    // 移动后集合的深度 = 目标深度 + 1
+    // 移动后最大深度 = 目标深度 + 1 + 源子树最大深度
+    let new_max_depth = target_depth + 1 + source_max_child_depth;
+    if new_max_depth > 2 {
+        return Err(format!("移动后层级超过限制（最多三层），当前将达到 {} 层", new_max_depth + 1));
+    }
+
+    // 克隆集合数据（含所有子项）
+    let collection = if let Some(found) = find_collection_item(&mut config.collections, &collection_id) {
+        let cloned = found.clone();
+        // 从原位置移除
+        remove_collection_item(&mut config.collections, &collection_id);
+        cloned
+    } else {
+        return Err("集合不存在".to_string());
+    };
+
+    // 验证集合类型
+    if collection.item_type != "collection" {
+        return Err("只能移动集合".to_string());
+    }
+
+    // 添加到目标位置
+    if let Some(ref target_id) = target_collection_id {
+        if let Some(target) = find_collection_item(&mut config.collections, target_id) {
+            if target.item_type != "collection" {
+                return Err("目标不是集合".to_string());
+            }
+            target.children.push(collection);
+        } else {
+            return Err("目标集合不存在".to_string());
+        }
+    } else {
+        // 移动到根级别
+        config.collections.push(collection);
     }
 
     write_collections(&workspace_path, &config)?;

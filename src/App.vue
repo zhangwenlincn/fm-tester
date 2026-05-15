@@ -14,6 +14,7 @@ import SaveResponseDialog from './components/SaveResponseDialog/index.vue'
 import HistoryDetailPanel from './components/HistoryDetailPanel/index.vue'
 import CollectionSettingsPanel from './components/CollectionSettingsPanel/index.vue'
 import SettingsPanel from './components/SettingsPanel/index.vue'
+import Toast from './components/Toast/index.vue'
 
 // 使用 composable
 const {
@@ -246,12 +247,14 @@ const {
     />
     
     <!-- 全局设置面板 -->
-    <SettingsPanel 
+    <SettingsPanel
       :visible="showSettingsPanel"
       @close="closeSettings"
     />
-    
-    </div>
+
+    <!-- Toast 提示 -->
+    <Toast />
+  </div>
 </template>
 
 <style>
