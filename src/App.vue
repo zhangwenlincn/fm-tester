@@ -34,7 +34,7 @@ const {
   activeEnvironmentId,
   activeEnvironment,
   selectedEnvironment,
-  selectedEnvVariables,
+  
   activeVariables,
   loadEnvironments,
   loadActiveVariables,
@@ -193,7 +193,7 @@ const {
       <div class="content-area" v-else-if="showEnvironmentInfo">
         <EnvironmentPanel 
           :active-environment="selectedEnvironment"
-          :editing-env-variables="selectedEnvVariables"
+          :workspace-path="currentWorkspace?.path || ''"
           @save-variables="saveEnvVariables"
         />
       </div>

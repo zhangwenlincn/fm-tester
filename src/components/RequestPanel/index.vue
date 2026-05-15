@@ -152,6 +152,9 @@ const {
             <span class="col-desc">描述</span>
             <span class="col-action"></span>
           </div>
+          <div v-if="localRequest.headers.length === 0" class="empty-params">
+            暂无请求头，点击上方按钮添加
+          </div>
           <div 
             v-for="(header, index) in localRequest.headers" 
             :key="index"
@@ -163,15 +166,9 @@ const {
             <span class="col-key">
               <input type="text" v-model="header.key" placeholder="Header 名" />
             </span>
-<span class="col-value">
-                <VariableHighlight
-                  mode="input"
-                  v-model="header.value"
-                  :variables="variables"
-                  placeholder="Header 值"
-                  class="header-value-input"
-                />
-              </span>
+            <span class="col-value">
+              <input type="text" v-model="header.value" placeholder="Header 值" />
+            </span>
             <span class="col-desc">
               <input type="text" v-model="header.description" placeholder="描述" />
             </span>

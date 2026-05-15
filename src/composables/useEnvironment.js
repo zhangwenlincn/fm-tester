@@ -101,17 +101,38 @@ export function useEnvironment(currentWorkspace, currentNavKey) {
     }
   }
 
-  const saveEnvVariables = async () => {
+  // 保存环境变量（由 EnvironmentPanel 组件调用）
+  // 接收变量列表作为参数，保存后不重新加载，避免清空选中状态
+  const saveEnvVariables = async (variables) => {
     if (!currentWorkspace.value?.path || !selectedEnvironment.value) return
     try {
       await invoke('save_environment', {
         workspacePath: currentWorkspace.value.path,
         environment: {
           ...selectedEnvironment.value,
-          variables: selectedEnvVariables.value.filter(v => v.key.trim())
+          variables: variables || []
         }
       })
-      await loadEnvironments()
+      // 更新本地状态，不重新加载
+      // 更新 environments 列表中对应环境的 variables
+      const envIndex = environments.value.findIndex(e => e.id === selectedEnvironment.value.id)
+      if (envIndex !== -1) {
+        environments.value[envIndex].variables = variables || []
+      }
+      // 同时更新 selectedEnvironment 的 variables
+      selectedEnvironment.value = {
+        ...selectedEnvironment.value,
+        variables: variables || []
+      }
+      // 如果当前环境是激活环境，也更新 activeEnvironment
+      if (activeEnvironment.value?.id === selectedEnvironment.value.id) {
+        activeEnvironment.value = {
+          ...activeEnvironment.value,
+          variables: variables || []
+        }
+      }
+      // 更新激活变量
+      await loadActiveVariables()
     } catch (e) {
       console.error('保存变量失败:', e)
     }

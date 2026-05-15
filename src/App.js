@@ -185,7 +185,6 @@ export function useAppSetup() {
     activeEnvironmentId: environment.activeEnvironmentId,
     activeEnvironment: environment.activeEnvironment,
     selectedEnvironment: environment.selectedEnvironment,
-    selectedEnvVariables: environment.selectedEnvVariables,
     activeVariables: environment.activeVariables,
     loadEnvironments: environment.loadEnvironments,
     loadActiveVariables: environment.loadActiveVariables,

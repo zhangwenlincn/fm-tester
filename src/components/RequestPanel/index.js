@@ -131,9 +131,17 @@ export function useRequestPanelSetup(props, emit) {
 
   // 标记是否已初始化完成
   let isInitialized = false
+  
+  // 标记是否正在本地更新（防止 watch 循环触发）
+  let isLocalUpdate = false
 
   // 监听 props.request 变化，同步到 localRequest
   watch(() => props.request, (newVal) => {
+    // 如果是本地触发的更新，跳过同步
+    if (isLocalUpdate) {
+      isLocalUpdate = false
+      return
+    }
     if (newVal) {
       // 使用 Object.assign 更新，保持响应式追踪
       Object.assign(localRequest.value, {
@@ -223,6 +231,7 @@ export function useRequestPanelSetup(props, emit) {
       }
     }
     
+    isLocalUpdate = true
     emit('update:request', localRequest.value)
   }
 
@@ -275,6 +284,7 @@ export function useRequestPanelSetup(props, emit) {
     monacoEditor.onDidChangeModelContent(() => {
       const value = monacoEditor.getValue()
       localRequest.value.body = value
+      isLocalUpdate = true
       emit('update:request', localRequest.value)
     })
   }
@@ -343,6 +353,7 @@ export function useRequestPanelSetup(props, emit) {
 
   const updateMethod = (method) => {
     localRequest.value.method = method
+    isLocalUpdate = true
     emit('update:request', localRequest.value)
   }
 
@@ -417,6 +428,7 @@ export function useRequestPanelSetup(props, emit) {
       isUpdatingFromUrl = false
     }
     
+    isLocalUpdate = true
     emit('update:request', localRequest.value)
   }
 
@@ -427,6 +439,7 @@ export function useRequestPanelSetup(props, emit) {
       localRequest.value.url = buildUrlWithParams(localRequest.value.url, localRequest.value.params)
       isUpdatingFromParams = false
     }
+    isLocalUpdate = true
     emit('update:request', localRequest.value)
   }
 
@@ -439,13 +452,18 @@ export function useRequestPanelSetup(props, emit) {
   }
 
   const addParam = () => {
+    if (!localRequest.value.params) {
+      localRequest.value.params = []
+    }
     localRequest.value.params.push({ key: '', value: '', enabled: true })
     updateParams()
   }
 
   const removeParam = (index) => {
-    localRequest.value.params.splice(index, 1)
-    updateParams()
+    if (Array.isArray(localRequest.value.params)) {
+      localRequest.value.params.splice(index, 1)
+      updateParams()
+    }
   }
 
   // 监听 params 变化同步到 URL
@@ -456,33 +474,55 @@ export function useRequestPanelSetup(props, emit) {
   }, { deep: true })
 
   const addHeader = () => {
+    if (!localRequest.value.headers) {
+      localRequest.value.headers = []
+    }
     localRequest.value.headers.push({ key: '', value: '', enabled: true })
   }
 
   const removeHeader = (index) => {
-    localRequest.value.headers.splice(index, 1)
+    if (Array.isArray(localRequest.value.headers)) {
+      localRequest.value.headers.splice(index, 1)
+    }
   }
 
   // form-data 相关
   const addFormField = () => {
+    if (!localRequest.value.formData) {
+      localRequest.value.formData = []
+    }
     localRequest.value.formData.push({ key: '', value: '', type: 'text', enabled: true, files: [] })
+    isLocalUpdate = true
     emit('update:request', localRequest.value)
   }
 
   const removeFormField = (index) => {
-    localRequest.value.formData.splice(index, 1)
-    emit('update:request', localRequest.value)
+    if (Array.isArray(localRequest.value.formData)) {
+      localRequest.value.formData.splice(index, 1)
+      isLocalUpdate = true
+      emit('update:request', localRequest.value)
+    }
   }
 
   // x-www-form-urlencoded 相关
   const addFormUrlField = () => {
+    console.log('addFormUrlField called, current:', localRequest.value.formUrlEncoded)
+    // 确保 formUrlEncoded 是数组
+    if (!localRequest.value.formUrlEncoded) {
+      localRequest.value.formUrlEncoded = []
+    }
     localRequest.value.formUrlEncoded.push({ key: '', value: '', enabled: true })
+    console.log('after add:', localRequest.value.formUrlEncoded)
+    isLocalUpdate = true
     emit('update:request', localRequest.value)
   }
 
   const removeFormUrlField = (index) => {
-    localRequest.value.formUrlEncoded.splice(index, 1)
-    emit('update:request', localRequest.value)
+    if (Array.isArray(localRequest.value.formUrlEncoded)) {
+      localRequest.value.formUrlEncoded.splice(index, 1)
+      isLocalUpdate = true
+      emit('update:request', localRequest.value)
+    }
   }
 
   // 文件选择相关
@@ -497,6 +537,7 @@ export function useRequestPanelSetup(props, emit) {
         const path = selected
         const name = path.split(/[/\\]/).pop() || path
         localRequest.value.binaryFile = { path, name }
+        isLocalUpdate = true
         emit('update:request', localRequest.value)
       }
     } catch (e) {
@@ -525,6 +566,7 @@ export function useRequestPanelSetup(props, emit) {
         
         // 添加文件（保留原有文件）
         localRequest.value.formData[fieldIndex].files.push(...files)
+        isLocalUpdate = true
         emit('update:request', localRequest.value)
       }
     } catch (e) {
@@ -535,6 +577,7 @@ export function useRequestPanelSetup(props, emit) {
   const removeFormFieldFile = (fieldIndex, fileIndex) => {
     if (localRequest.value.formData[fieldIndex]?.files) {
       localRequest.value.formData[fieldIndex].files.splice(fileIndex, 1)
+      isLocalUpdate = true
       emit('update:request', localRequest.value)
     }
   }
@@ -564,6 +607,7 @@ export function useRequestPanelSetup(props, emit) {
     
     monacoEditor.setValue(formatted)
     localRequest.value.body = formatted
+    isLocalUpdate = true
     emit('update:request', localRequest.value)
   }
 
@@ -575,6 +619,7 @@ export function useRequestPanelSetup(props, emit) {
     } else {
       localRequest.value.timeout = null
     }
+    isLocalUpdate = true
     emit('update:request', localRequest.value)
   }
 
