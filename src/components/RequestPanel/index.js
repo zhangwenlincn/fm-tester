@@ -73,8 +73,7 @@ const tabs = [
   { key: 'auth', name: '授权' },
   { key: 'headers', name: '请求头' },
   { key: 'body', name: '请求体' },
-  { key: 'scripts', name: '脚本' },
-  { key: 'settings', name: '设置' }
+  { key: 'scripts', name: '脚本' }
 ]
 
 const bodyTypes = [

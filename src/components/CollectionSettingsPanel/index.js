@@ -4,8 +4,7 @@ import { invoke } from '@tauri-apps/api/core'
 const tabs = [
   { key: 'headers', name: '请求头' },
   { key: 'variables', name: '变量' },
-  { key: 'scripts', name: '脚本' },
-  { key: 'settings', name: '设置' }
+  { key: 'scripts', name: '脚本' }
 ]
 
 // 导出 composable 函数

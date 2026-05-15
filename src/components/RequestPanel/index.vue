@@ -318,28 +318,8 @@ const {
         </div>
       </div>
       
-      <!-- 设置标签页 -->
-      <div v-show="activeTab === 'settings'" class="settings-panel">
-        <div class="settings-item">
-          <label class="settings-label">请求超时时间</label>
-          <div class="settings-input-group">
-            <input
-              type="number"
-              :value="localRequest.timeout || 30"
-              @input="updateTimeout($event.target.value)"
-              min="1"
-              max="600"
-              class="settings-input"
-              placeholder="30"
-            />
-            <span class="settings-unit">秒</span>
-          </div>
-          <p class="settings-hint">留空或设置为 0 使用默认值 30 秒</p>
-        </div>
-      </div>
-
       <!-- 其他标签页（占位符） -->
-      <div v-show="activeTab !== 'params' && activeTab !== 'headers' && activeTab !== 'body' && activeTab !== 'settings'" class="placeholder-panel">
+      <div v-show="activeTab !== 'params' && activeTab !== 'headers' && activeTab !== 'body'" class="placeholder-panel">
         <div class="placeholder-content">
           <span class="placeholder-icon">📝</span>
           <p>{{ tabs.find(t => t.key === activeTab)?.name }}配置</p>
