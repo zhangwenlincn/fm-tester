@@ -1,5 +1,5 @@
 <script setup>
-const version = 'v1.0.0'
+const version = 'v0.0.1'
 
 const emit = defineEmits(['open-cookie-panel', 'open-console-panel'])
 </script>
