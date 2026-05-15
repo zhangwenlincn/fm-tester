@@ -150,6 +150,8 @@ pub struct HttpResponse {
     pub body: String,
     pub time: u64,
     pub size: u64,
+    pub resolved_url: String, // 变量替换后的实际 URL
+    pub resolved_headers: Vec<Header>, // 变量替换后的请求头
 }
 
 /// 工作区记忆配置（集合展开状态、打开的标签页）
@@ -192,7 +194,8 @@ pub struct SavedRequest {
     pub method: String,
     pub url: String,           // 原始 URL（带变量 {{xxx}}）
     pub resolved_url: String,  // 替换变量后的实际 URL
-    pub headers: Vec<Header>,
+    pub headers: Vec<Header>,  // 原始请求头（带变量）
+    pub resolved_headers: Vec<Header>, // 替换变量后的实际请求头
     pub body: Option<String>,
     pub body_type: Option<String>,
     pub form_fields: Option<Vec<FormField>>,

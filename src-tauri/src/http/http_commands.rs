@@ -354,6 +354,8 @@ pub async fn send_http_request(
         body: response_body,
         time: elapsed,
         size,
+        resolved_url: replaced_url.clone(),
+        resolved_headers: replaced_headers.clone(),
     };
 
     // 记录请求历史

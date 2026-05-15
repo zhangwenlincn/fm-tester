@@ -203,6 +203,21 @@ export function useCollectionPanelSetup(props, emit) {
     }
   }
 
+  // 打开保存响应右键菜单
+  const openSavedResponseContextMenu = (event, savedResponse) => {
+    event.preventDefault()
+    event.stopPropagation()
+
+    contextMenu.value = {
+      visible: true,
+      x: event.clientX,
+      y: event.clientY,
+      item: savedResponse,
+      depth: 0,
+      type: 'saved-response'
+    }
+  }
+
   // 关闭右键菜单
   const closeContextMenu = () => {
     contextMenu.value.visible = false
@@ -243,9 +258,25 @@ export function useCollectionPanelSetup(props, emit) {
       showRenameDialog.value = true
     } else if (action === 'delete') {
       deleteItem(item)
+    } else if (action === 'delete-saved-response') {
+      deleteSavedResponse(item)
     }
 
     closeContextMenu()
+  }
+
+  // 删除保存的响应
+  const deleteSavedResponse = async (savedResponse) => {
+    if (!props.workspace?.path) return
+    try {
+      await invoke('delete_saved_response', {
+        workspacePath: props.workspace.path,
+        id: savedResponse.id
+      })
+      await loadCollections()
+    } catch (e) {
+      console.error('删除保存响应失败:', e)
+    }
   }
 
   // 重命名
@@ -583,6 +614,7 @@ return {
     canCreateSubCollection,
     openContextMenu,
     closeContextMenu,
+    openSavedResponseContextMenu,
     handleContextAction,
     handleRename,
     handleCreate,

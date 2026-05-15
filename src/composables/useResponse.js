@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 
 /**
@@ -64,7 +64,10 @@ export function useResponse(currentWorkspace, tabs, activeTab, currentNavKey, si
     const currentTab = tabs.value[activeTab.value]
     if (!currentTab?.name) return
 
-    saveResponseDefaultName.value = `${currentTab.name}-${new Date().toISOString().slice(0, 10)}`
+    const now = new Date()
+    const timestamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`
+
+    saveResponseDefaultName.value = timestamp
     showSaveResponseDialog.value = true
   }
 
@@ -84,11 +87,17 @@ export function useResponse(currentWorkspace, tabs, activeTab, currentNavKey, si
 
     const binaryFilePath = currentRequest.binaryFile?.path || null
 
+    // 获取解析后的 URL（来自上次响应）
+    const resolvedUrl = currentTab?.lastResponseData?.resolvedUrl || currentRequest.url
+    // 获取解析后的 Headers（来自上次响应）
+    const resolvedHeaders = currentTab?.lastResponseData?.resolvedHeaders || currentRequest.headers
+
     const request = {
       method: currentRequest.method,
       url: currentRequest.url,
-      resolved_url: currentRequest.url,
+      resolved_url: resolvedUrl,
       headers: currentRequest.headers || [],
+      resolved_headers: resolvedHeaders || [],
       body: currentRequest.body || null,
       body_type: currentRequest.bodyType || null,
       form_fields: formFields,
@@ -147,8 +156,8 @@ export function useResponse(currentWorkspace, tabs, activeTab, currentNavKey, si
           name: fullTabName,
           fullName: fullTabName,
           method: fullResponse.request.method,
-          url: fullResponse.request.url,
-          headers: fullResponse.request.headers || [],
+          url: fullResponse.request.resolved_url, // 使用解析后的真实 URL
+          headers: fullResponse.request.resolved_headers || [], // 使用解析后的真实 Headers
           body: fullResponse.request.body || '',
           bodyType: fullResponse.request.body_type || 'raw',
           formData: fullResponse.request.form_fields || [],
@@ -166,6 +175,8 @@ export function useResponse(currentWorkspace, tabs, activeTab, currentNavKey, si
         activeTab.value = tabs.value.length - 1
       }
 
+      // 等待 Vue 响应式更新完成
+      await nextTick()
       updateCurrentRequest()
       response.value = tabs.value[activeTab.value]?.savedResponseData || null
 

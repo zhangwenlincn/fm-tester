@@ -199,7 +199,9 @@ export function useRequest(currentWorkspace, tabs, activeTab, sidebarRef, reques
         headers: result.headers,
         body: result.body,
         time: result.time,
-        size: result.size
+        size: result.size,
+        resolvedUrl: result.resolved_url,
+        resolvedHeaders: result.resolved_headers,
       }
 
       const targetTab = tabs.value.find(t => t.id === sendingTabId.value)

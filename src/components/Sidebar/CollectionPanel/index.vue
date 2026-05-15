@@ -34,6 +34,7 @@ const {
   canCreateSubCollection,
   openContextMenu,
   closeContextMenu,
+  openSavedResponseContextMenu,
   handleContextAction,
   handleRename,
   handleCreate,
@@ -155,6 +156,7 @@ defineExpose({
             :key="resp.id"
             class="saved-response-item"
             @click.stop="selectSavedResponse(resp, row.item.name)"
+            @contextmenu.prevent.stop="(e) => openSavedResponseContextMenu(e, resp)"
           >
             <span class="status-tag" :class="getStatusClass(resp.status)">{{ resp.status }}</span>
             <span class="resp-name">{{ resp.name }}</span>
@@ -213,6 +215,13 @@ defineExpose({
       </div>
     </div>
 
+    <!-- 右键菜单遮罩 -->
+    <div
+      v-if="contextMenu.visible"
+      class="context-menu-overlay"
+      @click="closeContextMenu"
+    ></div>
+
     <!-- 右键菜单 -->
     <div
       v-if="contextMenu.visible"
@@ -262,6 +271,13 @@ defineExpose({
         </div>
         <div class="menu-divider"></div>
         <div class="menu-item delete" @click="handleContextAction('delete')">
+          <span>删除</span>
+        </div>
+      </template>
+
+      <!-- 保存响应菜单 -->
+      <template v-if="contextMenu.type === 'saved-response'">
+        <div class="menu-item delete" @click="handleContextAction('delete-saved-response')">
           <span>删除</span>
         </div>
       </template>
