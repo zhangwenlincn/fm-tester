@@ -138,6 +138,12 @@ export function useAppSetup() {
     }
   }
 
+  // 工作区创建后的处理
+  const handleWorkspaceCreated = async (ws) => {
+    await workspace.onWorkspaceCreated(ws)
+    await handleWorkspaceSwitch(ws)
+  }
+
   // 返回所有需要的状态和方法
   return {
     // 工作区
@@ -149,7 +155,7 @@ export function useAppSetup() {
     loadWorkspaces: workspace.loadWorkspaces,
     openCreateWorkspace: workspace.openCreateWorkspace,
     closeWorkspaceDialog: workspace.closeWorkspaceDialog,
-    onWorkspaceCreated: workspace.onWorkspaceCreated,
+    onWorkspaceCreated: handleWorkspaceCreated,
     onWorkspaceDeleted: workspace.onWorkspaceDeleted,
     onSwitchWorkspace: handleWorkspaceSwitch,
     showWorkspaceInfo: responseModule.showWorkspaceInfo,

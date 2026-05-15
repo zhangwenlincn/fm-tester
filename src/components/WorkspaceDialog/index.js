@@ -61,7 +61,7 @@ export function useWorkspaceDialogSetup(props, emit) {
         path: path.value
       })
       emit('created', workspace)
-      resetForm()
+      close() // 创建成功后关闭对话框
     } catch (e) {
       error.value = e
     } finally {
