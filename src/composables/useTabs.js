@@ -194,23 +194,49 @@ export function useTabs(currentWorkspace, currentNavKey, sidebarRef, currentRequ
     }
   }
 
-  const selectCollection = (collection) => {
-    const existingIndex = tabs.value.findIndex(t => t.id === collection.id && t.tabType === 'collection')
+  const selectCollection = (collectionOrId) => {
+    // 支持传入 collection 对象或 collectionId
+    let collection
+    let collectionId
+
+    if (typeof collectionOrId === 'string') {
+      collectionId = collectionOrId
+      collection = collectionTabsData.value[collectionId]
+    } else {
+      collection = collectionOrId
+      collectionId = collection.id
+    }
+
+    if (!collection) {
+      // 如果没有找到 collection 对象，只切换 tab
+      const existingIndex = tabs.value.findIndex(t => t.id === collectionId && t.tabType === 'collection')
+      if (existingIndex >= 0) {
+        activeTab.value = existingIndex
+      }
+      // 通知侧边栏选中集合
+      if (sidebarRef.value) {
+        sidebarRef.value.setSelectedCollection(collectionId)
+      }
+      return
+    }
+
+    const existingIndex = tabs.value.findIndex(t => t.id === collectionId && t.tabType === 'collection')
 
     if (existingIndex >= 0) {
       activeTab.value = existingIndex
     } else {
-      collectionTabsData.value[collection.id] = collection
+      collectionTabsData.value[collectionId] = collection
       tabs.value.push({
-        id: collection.id,
+        id: collectionId,
         name: collection.name,
         tabType: 'collection'
       })
       activeTab.value = tabs.value.length - 1
     }
 
+    // 通知侧边栏选中集合
     if (sidebarRef.value) {
-      sidebarRef.value.setSelectedApi(null)
+      sidebarRef.value.setSelectedCollection(collectionId)
     }
   }
 

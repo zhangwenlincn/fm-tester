@@ -69,10 +69,32 @@ export function useRequest(currentWorkspace, tabs, activeTab, sidebarRef, reques
     }
   }
 
-  const selectApi = async (api) => {
+  const selectApi = async (apiOrId) => {
     loading.value = false
 
-    const existingIndex = tabs.value.findIndex(t => t.id === api.id && t.tabType === 'api')
+    // 支持传入 api 对象或 apiId 字符串
+    let api
+    let apiId
+
+    if (typeof apiOrId === 'string') {
+      apiId = apiOrId
+      // 从已打开的 tabs 中找到 api 数据
+      const existingTab = tabs.value.find(t => t.id === apiId && t.tabType === 'api')
+      if (existingTab) {
+        api = existingTab
+      } else {
+        // 如果 tab 不存在，只通知侧边栏展开父集合
+        if (sidebarRef.value) {
+          sidebarRef.value.setSelectedApi(apiId)
+        }
+        return
+      }
+    } else {
+      api = apiOrId
+      apiId = api.id
+    }
+
+    const existingIndex = tabs.value.findIndex(t => t.id === apiId && t.tabType === 'api')
 
     if (existingIndex >= 0) {
       tabs.value[existingIndex].commonHeaders = api.commonHeaders || []
@@ -81,7 +103,7 @@ export function useRequest(currentWorkspace, tabs, activeTab, sidebarRef, reques
       activeTab.value = existingIndex
     } else {
       tabs.value.push({
-        id: api.id,
+        id: apiId,
         name: api.name,
         method: api.method || 'GET',
         url: api.url || '',
@@ -96,6 +118,11 @@ export function useRequest(currentWorkspace, tabs, activeTab, sidebarRef, reques
         timeout: api.timeout
       })
       activeTab.value = tabs.value.length - 1
+    }
+
+    // 通知侧边栏展开父集合并选中 API
+    if (sidebarRef.value) {
+      sidebarRef.value.setSelectedApi(apiId)
     }
 
     updateCurrentRequest()

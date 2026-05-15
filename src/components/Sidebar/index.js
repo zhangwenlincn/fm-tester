@@ -73,6 +73,13 @@ export function useSidebarSetup(props, emit) {
       collectionPanelRef.value.setSelectedApiId(apiId)
     }
   }
+
+  // 设置选中集合（用于标签页联动）
+  const setSelectedCollection = (collectionId) => {
+    if (collectionPanelRef.value) {
+      collectionPanelRef.value.setSelectedCollectionId(collectionId)
+    }
+  }
   
   // 监听工作区变化，通知子组件加载数据
   watch(() => props.workspace, async (ws) => {
@@ -132,6 +139,7 @@ export function useSidebarSetup(props, emit) {
     loadCollections,
     loadEnvironments,
     loadHistory,
-    setSelectedApi
+    setSelectedApi,
+    setSelectedCollection
   }
 }

@@ -116,12 +116,14 @@ const {
         @switch-environment="onSwitchEnvironment"
         @open-settings="openSettings"
       />
-      <TabsBar 
-        :tabs="tabs"
+      <TabsBar
+        :tabs="displayTabs"
         :active-tab="activeTab"
         :workspace="currentWorkspace"
         @update:active-tab="activeTab = $event"
         @close-tab="closeTab"
+        @select-collection="selectCollection"
+        @select-api="selectApi"
       />
     </div>
     

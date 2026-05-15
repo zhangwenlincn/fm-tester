@@ -13,6 +13,7 @@ const {
   collections,
   expandedItems,
   selectedApi,
+  selectedCollectionId,
   searchQuery,
   showCreateDialog,
   createDialogParent,
@@ -29,6 +30,7 @@ const {
   selectApiItem,
   selectCollectionItem,
   setSelectedApiId,
+  setSelectedCollectionId,
   openRootCreateDialog,
   openCreateDialog,
   canCreateSubCollection,
@@ -53,7 +55,8 @@ const {
 // 暴露方法给父组件
 defineExpose({
   loadCollections,
-  setSelectedApiId
+  setSelectedApiId,
+  setSelectedCollectionId
 })
 </script>
 
@@ -100,6 +103,7 @@ defineExpose({
           :data-item-id="row.item.id"
           class="tree-folder"
           :class="{
+            selected: selectedCollectionId === row.item.id,
             'dragging': dragState.draggingId === row.item.id,
             'drag-over-before': dragState.dragOverId === row.item.id && dragState.dragPosition === 'before',
             'drag-over-after': dragState.dragOverId === row.item.id && dragState.dragPosition === 'after',

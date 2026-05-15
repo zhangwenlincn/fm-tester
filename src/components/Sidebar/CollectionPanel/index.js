@@ -11,6 +11,7 @@ export function useCollectionPanelSetup(props, emit) {
   const collections = ref([])
   const expandedItems = ref({})
   const selectedApi = ref(null)
+  const selectedCollectionId = ref(null) // 选中的集合 ID
   const searchQuery = ref('')
   const showCreateDialog = ref(false)
   const createDialogParent = ref(null)
@@ -97,24 +98,34 @@ export function useCollectionPanelSetup(props, emit) {
       for (const item of items) {
         if (item.type === 'api' && item.id === apiId) {
           // 找到 API，返回祖先路径
-          return path
+          return path // 可能是空数组（顶级 API）
         }
         if (item.type === 'collection' && item.children) {
           const newPath = [...path, item]
           const found = search(item.children, newPath)
-          if (found) return found
+          if (found !== null) return found // 找到了才返回，否则继续查找
         }
       }
-      return null
+      return null // 没找到，返回 null
     }
-    return search(collections.value) || []
+    return search(collections.value) || [] // null 时返回空数组
   }
 
   // 选择 API
-  const selectApiItem = (api) => {
+  const selectApiItem = async (api) => {
     selectedApi.value = api.id
+    selectedCollectionId.value = null // 清空集合选中状态
+
     // 查找所有祖先集合，收集 common_headers 和 collection_variables
     const ancestorCollections = findAncestorCollections(api.id)
+
+    // 展开所有祖先集合，使 API 可见
+    for (const ancestor of ancestorCollections) {
+      if (!expandedItems.value[ancestor.id]) {
+        expandedItems.value[ancestor.id] = true
+      }
+    }
+    await saveExpandState()
 
     // 合并所有祖先集合的请求头（从根到父，子覆盖父）
     const commonHeaders = []
@@ -161,13 +172,75 @@ export function useCollectionPanelSetup(props, emit) {
   }
 
   // 选择集合（打开设置页面）
-  const selectCollectionItem = (collection) => {
+  const selectCollectionItem = async (collection) => {
+    selectedCollectionId.value = collection.id
+    selectedApi.value = null // 清空 API 选中状态
+
+    // 展开该集合的所有祖先集合，使其可见
+    const ancestors = findAncestorCollectionsForItem(collections.value, collection.id)
+    if (ancestors) { // 找到了（可能是空数组，表示顶级集合）
+      for (const ancestor of ancestors) {
+        if (!expandedItems.value[ancestor.id]) {
+          expandedItems.value[ancestor.id] = true
+        }
+      }
+      await saveExpandState()
+    }
+
     emit('selectCollection', collection)
   }
 
   // 外部设置选中 API（用于标签页联动）
-  const setSelectedApiId = (apiId) => {
+  const setSelectedApiId = async (apiId) => {
     selectedApi.value = apiId
+    selectedCollectionId.value = null // 清空集合选中状态
+
+    // 展开该 API 的所有祖先集合，使其可见
+    if (apiId) {
+      const ancestors = findAncestorCollectionsForItem(collections.value, apiId)
+      if (ancestors) { // 找到了（可能是空数组，表示顶级项）
+        for (const ancestor of ancestors) {
+          if (!expandedItems.value[ancestor.id]) {
+            expandedItems.value[ancestor.id] = true
+          }
+        }
+        await saveExpandState()
+      }
+    }
+  }
+
+  // 外部设置选中集合（用于标签页联动）
+  const setSelectedCollectionId = async (collectionId) => {
+    selectedCollectionId.value = collectionId
+    selectedApi.value = null // 清空 API 选中状态
+
+    // 展开该集合的所有祖先集合，使其可见
+    if (collectionId) {
+      const ancestors = findAncestorCollectionsForItem(collections.value, collectionId)
+      if (ancestors) { // 找到了（可能是空数组，表示顶级集合）
+        for (const ancestor of ancestors) {
+          if (!expandedItems.value[ancestor.id]) {
+            expandedItems.value[ancestor.id] = true
+          }
+        }
+        await saveExpandState()
+      }
+    }
+  }
+
+  // 查找集合的所有祖先集合（不包括自己）
+  const findAncestorCollectionsForItem = (items, targetId, path = []) => {
+    for (const item of items) {
+      if (item.id === targetId) {
+        return path // 找到目标，返回祖先路径（可能是空数组，表示是顶级项）
+      }
+      if (item.type === 'collection' && item.children) {
+        const newPath = [...path, item]
+        const found = findAncestorCollectionsForItem(item.children, targetId, newPath)
+        if (found !== null) return found // 找到了，返回结果（包括空数组）
+      }
+    }
+    return null // 没找到，返回 null（与空数组区分）
   }
 
   // 打开创建对话框（根级别）
@@ -705,6 +778,7 @@ return {
     collections,
     expandedItems,
     selectedApi,
+    selectedCollectionId,
     searchQuery,
     showCreateDialog,
     createDialogParent,
@@ -721,6 +795,7 @@ return {
     selectApiItem,
     selectCollectionItem,
     setSelectedApiId,
+    setSelectedCollectionId,
     openRootCreateDialog,
     openCreateDialog,
     canCreateSubCollection,

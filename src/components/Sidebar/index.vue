@@ -50,7 +50,8 @@ const {
   loadCollections,
   loadEnvironments,
   loadHistory,
-  setSelectedApi
+  setSelectedApi,
+  setSelectedCollection
 } = useSidebarSetup(props, emit)
 
 // 暴露方法给父组件
@@ -59,7 +60,8 @@ defineExpose({
   loadCollections,
   loadEnvironments,
   loadHistory,
-  setSelectedApi
+  setSelectedApi,
+  setSelectedCollection
 })
 </script>
 

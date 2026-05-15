@@ -49,6 +49,11 @@ export function useWorkspace() {
 
   const onWorkspaceDeleted = async (deletedId) => {
     workspaces.value = workspaces.value.filter(w => w.id !== deletedId)
+
+    // 如果删除的是当前选中的工作区，直接清空
+    if (currentWorkspace.value?.id === deletedId) {
+      currentWorkspace.value = null
+    }
   }
 
   const onSwitchWorkspace = async (workspace) => {

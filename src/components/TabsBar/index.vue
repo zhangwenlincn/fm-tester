@@ -17,7 +17,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['update:activeTab', 'closeTab'])
+const emit = defineEmits(['update:activeTab', 'closeTab', 'selectCollection', 'selectApi'])
 
 const { selectTab, closeTab } = useTabsBarSetup(props, emit)
 </script>

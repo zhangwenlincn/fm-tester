@@ -145,6 +145,23 @@ export function useAppSetup() {
     // 不切换到新工作区，保持当前工作区不变
   }
 
+  // 工作区删除后的处理
+  const handleWorkspaceDeleted = async (deletedId) => {
+    const wasCurrentWorkspace = workspace.currentWorkspace.value?.id === deletedId
+    await workspace.onWorkspaceDeleted(deletedId)
+
+    // 如果删除的是当前选中的工作区，清空所有数据
+    if (wasCurrentWorkspace) {
+      tabs.value = []
+      activeTab.value = 0
+      tabsModule.collectionTabsData.value = {}
+      await environment.loadEnvironments()
+      await responseModule.loadCookies()
+    }
+
+    await sidebarRef.value?.loadWorkspaces()
+  }
+
   // 返回所有需要的状态和方法
   return {
     // 工作区
@@ -157,7 +174,7 @@ export function useAppSetup() {
     openCreateWorkspace: workspace.openCreateWorkspace,
     closeWorkspaceDialog: workspace.closeWorkspaceDialog,
     onWorkspaceCreated: handleWorkspaceCreated,
-    onWorkspaceDeleted: workspace.onWorkspaceDeleted,
+    onWorkspaceDeleted: handleWorkspaceDeleted,
     onSwitchWorkspace: handleWorkspaceSwitch,
     showWorkspaceInfo: responseModule.showWorkspaceInfo,
 

@@ -26,13 +26,8 @@ pub fn save_environment(
         // 更新现有环境
         *env = environment.clone();
     } else {
-        // 创建新环境
+        // 创建新环境，不自动设置为激活环境
         config.environments.push(environment.clone());
-
-        // 如果没有激活环境，设置为新创建的环境
-        if config.active_environment_id.is_none() {
-            config.active_environment_id = Some(environment.id.clone());
-        }
     }
 
     write_environments_config(&workspace_path, &config)?;
