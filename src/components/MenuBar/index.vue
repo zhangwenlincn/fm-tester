@@ -23,13 +23,13 @@ const props = defineProps({
 const emit = defineEmits(['switchWorkspace', 'switchEnvironment', 'openSettings'])
 
 const menus = [
-  { name: '文件', items: ['新建请求', '新建集合', '打开文件', '保存', '另存为', '导入', '导出'] },
-  { name: '语言', items: ['简体中文', 'English', '日本語'] },
-  { name: '主题', items: ['浅色', '深色', '跟随系统'] },
-  { name: '设置', items: ['偏好设置', '快捷键', '代理设置'] },
-  { name: '插件', items: ['插件市场', '已安装插件', '插件设置'] },
-  { name: '帮助', items: ['文档', '快捷键参考', '检查更新'] },
-  { name: '关于', items: ['关于 API Tester', '许可证'] }
+  { name: '文件' },
+  { name: '语言' },
+  { name: '主题' },
+  { name: '设置', items: ['偏好设置'] },
+  { name: '插件' },
+  { name: '帮助' },
+  { name: '关于' }
 ]
 
 const activeMenu = ref(null)
@@ -127,7 +127,7 @@ onUnmounted(() => {
             v-for="item in menu.items" 
             :key="item" 
             class="dropdown-item"
-            @click.stop="handleMenuItemClick(menu.name, item)"
+            @click.stop="menu.name === '设置' || menu.name === '插件' ? handleMenuItemClick(menu.name, item) : null"
           >
             {{ item }}
           </div>
