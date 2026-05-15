@@ -43,7 +43,8 @@ export function useWorkspace() {
   }
 
   const onWorkspaceCreated = async (workspace) => {
-    currentWorkspace.value = workspace
+    await loadWorkspaces() // 重新加载工作区列表
+    // 不设置 currentWorkspace，保持当前工作区不变
   }
 
   const onWorkspaceDeleted = async (deletedId) => {
