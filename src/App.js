@@ -140,9 +140,10 @@ export function useAppSetup() {
 
   // 工作区创建后的处理
   const handleWorkspaceCreated = async (ws) => {
-    await workspace.onWorkspaceCreated(ws)
+    await workspace.onWorkspaceCreated(ws) // 设置当前工作区
+    await workspace.loadWorkspaces() // 刷新 MenuBar 的工作区列表
     await sidebarRef.value?.loadWorkspaces() // 刷新侧边栏工作区列表
-    await handleWorkspaceSwitch(ws)
+    await handleWorkspaceSwitch(ws) // 加载工作区数据（集合、环境等）
   }
 
   // 返回所有需要的状态和方法
