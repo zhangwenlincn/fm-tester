@@ -31,10 +31,6 @@ export function useCollectionPanelSetup(props, emit) {
     type: '' // 'collection' 或 'root' 或 'api'
   })
   
-  // 拖拽状态
-  const draggingApiId = ref(null)
-  const dropTargetId = ref(null)
-
   // 保存响应展开状态
   const expandedResponses = ref({})
   
@@ -331,72 +327,6 @@ export function useCollectionPanelSetup(props, emit) {
     }
   }
   
-  // 拖拽开始
-  const onDragStart = (e, api) => {
-    e.stopPropagation()
-    draggingApiId.value = api.id
-    e.dataTransfer.effectAllowed = 'move'
-    e.dataTransfer.setData('text/plain', api.id)
-    // 添加拖拽样式
-    e.target.classList.add('dragging')
-  }
-  
-  // 拖拽结束
-  const onDragEnd = (e) => {
-    e.stopPropagation()
-    draggingApiId.value = null
-    dropTargetId.value = null
-    e.target.classList.remove('dragging')
-  }
-  
-  // 拖拽经过集合
-  const onDragOver = (e, collection) => {
-    e.preventDefault()
-    e.dataTransfer.dropEffect = 'move'
-    // 设置目标高亮（只在集合上设置，不在根级别设置）
-    if (collection) {
-      dropTargetId.value = collection.id
-    }
-  }
-  
-  // 拖拽离开集合（简化处理）
-  const onDragLeave = (e) => {
-    dropTargetId.value = null
-  }
-  
-  // 放置到集合
-  const onDrop = async (e, collection) => {
-    e.preventDefault()
-    const apiId = e.dataTransfer.getData('text/plain')
-    
-    if (!apiId || !props.workspace?.path) {
-      draggingApiId.value = null
-      dropTargetId.value = null
-      return
-    }
-    
-    // 不能移动到自己
-    if (collection && apiId === collection.id) {
-      draggingApiId.value = null
-      dropTargetId.value = null
-      return
-    }
-    
-    try {
-      await invoke('move_api', {
-        workspacePath: props.workspace.path,
-        apiId: apiId,
-        targetCollectionId: collection?.id || null
-      })
-      await loadCollections()
-    } catch (err) {
-      console.error('移动失败:', err)
-    }
-    
-    draggingApiId.value = null
-    dropTargetId.value = null
-  }
-  
   // 获取 HTTP 方法样式类
   const getMethodClass = (method) => method?.toLowerCase() || ''
 
@@ -497,8 +427,6 @@ return {
     renameItemType,
     renameItemName,
     contextMenu,
-    draggingApiId,
-    dropTargetId,
     expandedResponses,
     loadCollections,
     toggleExpand,
@@ -520,11 +448,6 @@ return {
     selectSavedResponse,
     getStatusClass,
     formatTime,
-    flatTreeList,
-    onDragStart,
-    onDragEnd,
-    onDragOver,
-    onDragLeave,
-    onDrop
+    flatTreeList
   }
 }
