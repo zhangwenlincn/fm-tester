@@ -30,6 +30,11 @@ pub fn create_workspace(
 ) -> Result<Workspace, String> {
     let mut config = read_config();
 
+    // 检查工作区名称是否重复
+    if config.workspaces.iter().any(|w| w.name == name) {
+        return Err("工作区名称已存在，请使用其他名称".to_string());
+    }
+
     let workspace_path = PathBuf::from(&path);
     if !workspace_path.exists() {
         fs::create_dir_all(&workspace_path).map_err(|e| format!("无法创建目录: {}", e))?;
