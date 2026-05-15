@@ -141,6 +141,7 @@ export function useAppSetup() {
   // 工作区创建后的处理
   const handleWorkspaceCreated = async (ws) => {
     await workspace.onWorkspaceCreated(ws)
+    await sidebarRef.value?.loadWorkspaces() // 刷新侧边栏工作区列表
     await handleWorkspaceSwitch(ws)
   }
 
