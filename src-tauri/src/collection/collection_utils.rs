@@ -44,6 +44,28 @@ pub fn find_api_in_collections<'a>(items: &'a [Collection], id: &str) -> Option<
     None
 }
 
+/// 获取父集合的 children 数组可变引用
+/// parent_id 为 None 时返回根级别 collections
+pub fn find_parent_children<'a>(
+    items: &'a mut Vec<Collection>,
+    parent_id: Option<&str>,
+) -> Option<&'a mut Vec<Collection>> {
+    match parent_id {
+        None => Some(items),
+        Some(pid) => {
+            for item in items.iter_mut() {
+                if item.id == pid && item.item_type == "collection" {
+                    return Some(&mut item.children);
+                }
+                if let Some(found) = find_parent_children(&mut item.children, Some(pid)) {
+                    return Some(found);
+                }
+            }
+            None
+        }
+    }
+}
+
 /// 递归获取集合深度
 pub fn get_collection_depth(items: &[Collection], id: &str, current_depth: usize) -> Option<usize> {
     for item in items {

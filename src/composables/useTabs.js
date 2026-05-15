@@ -185,8 +185,8 @@ export function useTabs(currentWorkspace, currentNavKey, sidebarRef, currentRequ
         .map(t => t.id)
       await invoke('save_open_tabs', {
         workspacePath: currentWorkspace.value.path,
-        openTabIds,
-        activeIndex: activeTab.value,
+        openTabs: openTabIds,
+        activeTabIndex: activeTab.value,
         requestTabs: requestTabs.value
       })
     } catch (e) {

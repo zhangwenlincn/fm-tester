@@ -46,6 +46,7 @@ pub fn run() {
             update_collection,
             update_collection_settings,
             move_api,
+            reorder_collection_items,
             // 环境
             get_environments,
             save_environment,

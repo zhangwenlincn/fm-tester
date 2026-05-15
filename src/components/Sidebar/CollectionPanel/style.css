@@ -67,6 +67,8 @@
   padding: 6px 16px;
   cursor: pointer;
   position: relative;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .tree-folder:hover {
@@ -140,6 +142,8 @@
   align-items: center;
   padding: 6px 16px;
   cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .tree-item:hover {
@@ -148,6 +152,23 @@
 
 .tree-item.selected {
   background: #e6f7ff;
+}
+
+/* 拖拽排序样式 */
+.tree-folder.dragging,
+.tree-item.dragging {
+  opacity: 0.5;
+  background: #f0f0f0;
+}
+
+.tree-folder.drag-over-before,
+.tree-item.drag-over-before {
+  box-shadow: 0 -2px 0 0 #1890ff;
+}
+
+.tree-folder.drag-over-after,
+.tree-item.drag-over-after {
+  box-shadow: 0 2px 0 0 #1890ff;
 }
 
 .method-tag {

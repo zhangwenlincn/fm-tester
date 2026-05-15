@@ -1,6 +1,7 @@
 use crate::collection::collection_config::{read_collections, write_collections};
 use crate::collection::collection_utils::{
-    find_api_in_collections, find_collection_item, get_collection_depth, remove_collection_item,
+    find_api_in_collections, find_collection_item, find_parent_children, get_collection_depth,
+    remove_collection_item,
 };
 use crate::models::{Collection, FormField, Header, Variable};
 use crate::saved_response::saved_response_config::get_api_saved_responses_index;
@@ -230,6 +231,44 @@ pub fn update_collection_settings(
     } else {
         return Err("集合不存在".to_string());
     }
+
+    write_collections(&workspace_path, &config)?;
+    Ok(())
+}
+
+/// 同级拖拽排序
+#[tauri::command]
+pub fn reorder_collection_items(
+    workspace_path: String,
+    parent_id: Option<String>,
+    item_id: String,
+    new_index: usize,
+) -> Result<(), String> {
+    let mut config = read_collections(&workspace_path);
+
+    let children = find_parent_children(&mut config.collections, parent_id.as_deref())
+        .ok_or("父集合不存在")?;
+
+    // 找到项的当前索引
+    let current_index = children
+        .iter()
+        .position(|item| item.id == item_id)
+        .ok_or("项不存在")?;
+
+    // 索引相同，无需移动
+    if current_index == new_index {
+        return Ok(());
+    }
+
+    // 移除并插入到新位置
+    let item = children.remove(current_index);
+    // remove 后索引调整：如果原位置在目标之前，目标索引需要 -1
+    let insert_index = if current_index < new_index {
+        new_index.saturating_sub(1).min(children.len())
+    } else {
+        new_index.min(children.len())
+    };
+    children.insert(insert_index, item);
 
     write_collections(&workspace_path, &config)?;
     Ok(())
