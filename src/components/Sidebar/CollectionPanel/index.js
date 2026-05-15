@@ -79,31 +79,72 @@ export function useCollectionPanelSetup(props, emit) {
   
   const isExpanded = (id) => expandedItems.value[id]
   
-  // 查找 API 所属的父集合（获取 common_headers）
-  const findParentCollection = (apiId) => {
-    const search = (items, parentCollection = null) => {
+  // 查找 API 所属的所有祖先集合（从根到直接父集合）
+  const findAncestorCollections = (apiId) => {
+    const ancestors = []
+    const search = (items, path = []) => {
       for (const item of items) {
         if (item.type === 'api' && item.id === apiId) {
-          return parentCollection
+          // 找到 API，返回祖先路径
+          return path
         }
         if (item.type === 'collection' && item.children) {
-          const found = search(item.children, item)
+          const newPath = [...path, item]
+          const found = search(item.children, newPath)
           if (found) return found
         }
       }
       return null
     }
-    return search(collections.value)
+    return search(collections.value) || []
   }
   
   // 选择 API
   const selectApiItem = (api) => {
     selectedApi.value = api.id
-    // 查找父集合，附带 common_headers
-    const parentCollection = findParentCollection(api.id)
+    // 查找所有祖先集合，收集 common_headers 和 collection_variables
+    const ancestorCollections = findAncestorCollections(api.id)
+    
+    // 合并所有祖先集合的请求头（从根到父，子覆盖父）
+    const commonHeaders = []
+    for (const collection of ancestorCollections) {
+      if (collection.common_headers) {
+        for (const h of collection.common_headers) {
+          if (h.enabled && h.key.trim()) {
+            // 查找是否已存在同名请求头
+            const existingIndex = commonHeaders.findIndex(ch => ch.key.toLowerCase() === h.key.toLowerCase())
+            if (existingIndex >= 0) {
+              // 子集合请求头覆盖祖先请求头
+              commonHeaders[existingIndex] = h
+            } else {
+              commonHeaders.push(h)
+            }
+          }
+        }
+      }
+    }
+    
+    // 合并所有祖先集合的变量（从根到父，子覆盖父）
+    const collectionVariables = []
+    for (const collection of ancestorCollections) {
+      if (collection.collection_variables) {
+        for (const v of collection.collection_variables) {
+          // 查找是否已存在同名变量
+          const existingIndex = collectionVariables.findIndex(cv => cv.key === v.key)
+          if (existingIndex >= 0) {
+            // 子集合变量覆盖祖先变量
+            collectionVariables[existingIndex] = v
+          } else {
+            collectionVariables.push(v)
+          }
+        }
+      }
+    }
+    
     const apiWithHeaders = {
       ...api,
-      commonHeaders: parentCollection?.common_headers || []
+      commonHeaders,
+      collectionVariables
     }
     emit('selectApi', apiWithHeaders)
   }

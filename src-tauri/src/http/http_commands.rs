@@ -1,7 +1,7 @@
 use crate::cookie::{get_cookies_config, save_cookies_config};
 use crate::environment::{get_active_variables, replace_variables};
 use crate::history::record_history;
-use crate::models::{Cookie, CookiesConfig, FormField, Header, HttpResponse};
+use crate::models::{Cookie, CookiesConfig, FormField, Header, HttpResponse, Variable};
 use crate::settings::read_settings;
 use chrono::{Local, Utc};
 use serde::Serialize;
@@ -46,11 +46,21 @@ pub async fn send_http_request(
     workspace_path: String,
     api_id: Option<String>,
     api_name: Option<String>,
+    collection_variables: Option<Vec<Variable>>,
 ) -> Result<HttpResponse, String> {
     let start_time = Instant::now();
 
     // 获取当前激活环境的变量
-    let variables = get_active_variables(workspace_path.clone());
+    let mut variables = get_active_variables(workspace_path.clone());
+    
+    // 合并集合变量（集合变量优先级更高，覆盖同名环境变量）
+    if let Some(ref coll_vars) = collection_variables {
+        for v in coll_vars {
+            if v.enabled && !v.key.is_empty() {
+                variables.insert(v.key.clone(), v.value.clone());
+            }
+        }
+    }
     
     // 收集所有未定义变量
     let mut all_undefined_vars: HashSet<String> = HashSet::new();

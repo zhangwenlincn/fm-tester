@@ -76,6 +76,7 @@ export function useRequest(currentWorkspace, tabs, activeTab, sidebarRef, reques
 
     if (existingIndex >= 0) {
       tabs.value[existingIndex].commonHeaders = api.commonHeaders || []
+      tabs.value[existingIndex].collectionVariables = api.collectionVariables || []
       tabs.value[existingIndex].timeout = api.timeout
       activeTab.value = existingIndex
     } else {
@@ -91,6 +92,7 @@ export function useRequest(currentWorkspace, tabs, activeTab, sidebarRef, reques
         binaryFile: api.binary_file_path ? { path: api.binary_file_path, name: api.binary_file_path.split(/[/\\]/).pop() } : null,
         tabType: 'api',
         commonHeaders: api.commonHeaders || [],
+        collectionVariables: api.collectionVariables || [],
         timeout: api.timeout
       })
       activeTab.value = tabs.value.length - 1
@@ -129,6 +131,7 @@ export function useRequest(currentWorkspace, tabs, activeTab, sidebarRef, reques
       let bodyToSend = request.body
 
       const commonHeaders = sendTab?.commonHeaders || []
+      const collectionVariables = sendTab?.collectionVariables || []
 
       const headersMap = new Map()
 
@@ -186,7 +189,8 @@ export function useRequest(currentWorkspace, tabs, activeTab, sidebarRef, reques
         workspacePath: currentWorkspace.value?.path,
         timeout: request.timeout || null,
         apiId: apiId,
-        apiName: apiName
+        apiName: apiName,
+        collectionVariables: collectionVariables
       })
 
       const responseData = {

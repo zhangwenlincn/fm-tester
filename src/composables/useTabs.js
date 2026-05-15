@@ -71,6 +71,77 @@ export function useTabs(currentWorkspace, currentNavKey, sidebarRef, currentRequ
     return null
   }
 
+  // 收集集合及其所有子集合下的 API ID
+  const collectApiIdsInCollection = (collection) => {
+    const apiIds = []
+    if (collection.children) {
+      for (const child of collection.children) {
+        if (child.type === 'api') {
+          apiIds.push(child.id)
+        } else if (child.type === 'collection') {
+          apiIds.push(...collectApiIdsInCollection(child))
+        }
+      }
+    }
+    return apiIds
+  }
+
+  // 查找 API 所属的所有祖先集合（从根到直接父集合）
+  const findAncestorCollectionsForApi = (collections, apiId) => {
+    const search = (items, path = []) => {
+      for (const item of items) {
+        if (item.type === 'api' && item.id === apiId) {
+          return path
+        }
+        if (item.type === 'collection' && item.children) {
+          const newPath = [...path, item]
+          const found = search(item.children, newPath)
+          if (found) return found
+        }
+      }
+      return null
+    }
+    return search(collections) || []
+  }
+
+  // 合并所有祖先集合的变量（从根到父，子覆盖父）
+  const mergeCollectionVariables = (ancestorCollections) => {
+    const collectionVariables = []
+    for (const collection of ancestorCollections) {
+      if (collection.collection_variables) {
+        for (const v of collection.collection_variables) {
+          const existingIndex = collectionVariables.findIndex(cv => cv.key === v.key)
+          if (existingIndex >= 0) {
+            collectionVariables[existingIndex] = v
+          } else {
+            collectionVariables.push(v)
+          }
+        }
+      }
+    }
+    return collectionVariables
+  }
+
+  // 合并所有祖先集合的请求头（从根到父，子覆盖父）
+  const mergeCommonHeaders = (ancestorCollections) => {
+    const commonHeaders = []
+    for (const collection of ancestorCollections) {
+      if (collection.common_headers) {
+        for (const h of collection.common_headers) {
+          if (h.enabled && h.key.trim()) {
+            const existingIndex = commonHeaders.findIndex(ch => ch.key.toLowerCase() === h.key.toLowerCase())
+            if (existingIndex >= 0) {
+              commonHeaders[existingIndex] = h
+            } else {
+              commonHeaders.push(h)
+            }
+          }
+        }
+      }
+    }
+    return commonHeaders
+  }
+
   const loadOpenTabs = async (workspacePath) => {
     try {
       const [openTabIds, activeIndex, savedRequestTabs] = await invoke('get_open_tabs', { workspacePath })
@@ -155,6 +226,19 @@ export function useTabs(currentWorkspace, currentNavKey, sidebarRef, currentRequ
         const updatedCollection = findCollection(collections, currentTab.id)
         if (updatedCollection) {
           collectionTabsData.value[currentTab.id] = updatedCollection
+          
+          // 更新所有属于该集合的子 API 标签页的 commonHeaders 和 collectionVariables
+          const childApiIds = collectApiIdsInCollection(updatedCollection)
+          for (const apiId of childApiIds) {
+            const apiTab = tabs.value.find(t => t.id === apiId && t.tabType === 'api')
+            if (apiTab) {
+              // 获取该 API 的祖先集合
+              const ancestors = findAncestorCollectionsForApi(collections, apiId)
+              // 合并所有祖先集合的请求头和变量
+              apiTab.commonHeaders = mergeCommonHeaders(ancestors)
+              apiTab.collectionVariables = mergeCollectionVariables(ancestors)
+            }
+          }
         }
       } catch (e) {
         console.error('更新集合标签页数据失败:', e)
