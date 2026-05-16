@@ -60,8 +60,11 @@ defineExpose({
         @contextmenu.prevent="(e) => openWsContextMenu(e, ws)"
       >
         <div class="env-header">
-          <span class="env-icon"><Icon name="workspace" /></span>
+          <span class="env-icon">
+            <Icon :name="ws.workspace_type === 'git' ? 'git' : 'folder'" />
+          </span>
           <span class="env-name">{{ ws.name }}</span>
+          <span v-if="ws.workspace_type === 'git'" class="ws-type-badge">Git</span>
         </div>
       </div>
       
@@ -76,6 +79,19 @@ defineExpose({
       class="context-menu"
       :style="{ left: wsContextMenu.x + 'px', top: wsContextMenu.y + 'px' }"
     >
+      <!-- Git 工作区菜单项 -->
+      <template v-if="wsContextMenu.ws?.workspace_type === 'git'">
+        <div class="menu-item" @click="handleWsContextAction('sync-ws')">
+          <span class="menu-icon"><Icon name="sync" :size="14" /></span>
+          {{ t('contextMenu.syncWorkspace') }}
+        </div>
+        <div class="menu-item" @click="handleWsContextAction('update-ws')">
+          <span class="menu-icon"><Icon name="update" :size="14" /></span>
+          {{ t('contextMenu.updateWorkspace') }}
+        </div>
+        <div class="menu-divider"></div>
+      </template>
+      <!-- 删除工作区（所有类型都有） -->
       <div class="menu-item delete" @click="handleWsContextAction('delete-ws')">
         <span class="menu-icon">🗑</span>
         {{ t('contextMenu.deleteWorkspace') }}

@@ -4,6 +4,18 @@ use crate::workspace::workspace_config::{read_config, write_config};
 use std::fs;
 use std::path::PathBuf;
 
+/// 从 Git URL 提取仓库名
+/// 例如: https://github.com/user/repo.git -> repo
+///       git@github.com:user/repo.git -> repo
+fn extract_repo_name(git_url: &str) -> String {
+    let url = git_url.trim_end_matches(".git");
+    url.rsplit('/')
+        .next()
+        .or_else(|| url.rsplit(':').next())
+        .unwrap_or("repo")
+        .to_string()
+}
+
 /// 获取所有工作区
 #[tauri::command]
 pub fn get_workspaces() -> Vec<Workspace> {
@@ -27,6 +39,11 @@ pub fn create_workspace(
     name: String,
     description: String,
     path: String,
+    workspace_type: Option<String>,
+    git_url: Option<String>,
+    git_branch: Option<String>,
+    git_username: Option<String>,
+    git_password: Option<String>,
 ) -> Result<Workspace, String> {
     let mut config = read_config();
 
@@ -35,22 +52,60 @@ pub fn create_workspace(
         return Err("工作区名称已存在，请使用其他名称".to_string());
     }
 
-    let workspace_path = PathBuf::from(&path);
-    if !workspace_path.exists() {
-        fs::create_dir_all(&workspace_path).map_err(|e| format!("无法创建目录: {}", e))?;
+    // 处理工作区类型
+    let ws_type = workspace_type.unwrap_or_else(|| "local".to_string());
+    
+    // 对于 Git 工作区，实际路径 = 父目录 + 仓库名
+    let actual_path = if ws_type == "git" {
+        let git_url_val = git_url.clone().unwrap_or_default();
+        let repo_name = extract_repo_name(&git_url_val);
+        PathBuf::from(&path).join(&repo_name).to_string_lossy().to_string()
+    } else {
+        path.clone()
+    };
+    
+    // 确保父目录存在
+    let parent_path = if ws_type == "git" {
+        PathBuf::from(&path)
+    } else {
+        PathBuf::from(&path)
+    };
+    
+    if !parent_path.exists() {
+        fs::create_dir_all(&parent_path).map_err(|e| format!("无法创建目录: {}", e))?;
     }
 
     let id = format!("ws_{}", chrono::Local::now().timestamp());
     let now = chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
+    
+    // 如果是 Git 工作区且有凭据，保存凭据
+    let git_credentials_id = if ws_type == "git" && git_username.is_some() && git_password.is_some() {
+        // 保存凭据到全局配置
+        use crate::git::save_git_credentials;
+        let cred = save_git_credentials(
+            None, // id - 创建新凭据
+            git_username.clone().unwrap(),
+            git_password.clone().unwrap(),
+        )?;
+        Some(cred.id)
+    } else {
+        None
+    };
 
     let workspace = Workspace {
         id: id.clone(),
         name,
         description,
-        path,
+        path: actual_path,  // 使用实际路径
         created_at: now.clone(),
         last_opened: now,
         last_api_id: None,
+        workspace_type: ws_type,
+        git_url,
+        git_branch,
+        git_credentials_id,
+        last_sync_at: None,
+        last_update_at: None,
     };
 
     config.workspaces.push(workspace.clone());

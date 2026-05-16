@@ -1,5 +1,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
+import { listen } from '@tauri-apps/api/event'
+import { showToast } from '../../../composables/useToast'
 
 // 导出 composable 函数
 export function useWorkspacePanelSetup(props, emit) {
@@ -39,6 +41,16 @@ export function useWorkspacePanelSetup(props, emit) {
   // 启动时自动加载
   onMounted(async () => {
     await loadWorkspaces()
+    
+    // 监听 Git 同步日志事件
+    unlistenGitSyncLog = await listen('git-sync-log', (event) => {
+      const { logType, message, data, error } = event.payload
+      if (logType === 'error') {
+        console.error('Git 同步错误:', message, error)
+      } else {
+        console.log('Git 同步:', message, data)
+      }
+    })
   })
   
   // 选择工作区（仅选中效果）
@@ -62,6 +74,35 @@ export function useWorkspacePanelSetup(props, emit) {
       console.error('删除工作区失败:', e)
     }
   }
+  
+  // 同步 Git 工作区（推送本地更改到远程）
+  const syncWorkspace = async (ws) => {
+    showToast('正在同步工作区...', 'info')
+    try {
+      await invoke('sync_git_workspace', { workspaceId: ws.id })
+      showToast('同步成功', 'success')
+    } catch (e) {
+      console.error('同步工作区失败:', e)
+      showToast(`同步失败: ${e}`, 'error')
+    }
+  }
+  
+  // 更新 Git 工作区（从远程拉取更改）
+  const updateWorkspace = async (ws) => {
+    showToast('正在更新工作区...', 'info')
+    try {
+      await invoke('update_git_workspace', { workspaceId: ws.id })
+      showToast('更新成功', 'success')
+      // 更新后刷新数据
+      emit('workspaceUpdated')
+    } catch (e) {
+      console.error('更新工作区失败:', e)
+      showToast(`更新失败: ${e}`, 'error')
+    }
+  }
+  
+  // Git 同步日志监听
+  let unlistenGitSyncLog = null
   
   // 打开工作区右键菜单
   const openWsContextMenu = (event, ws) => {
@@ -88,6 +129,14 @@ export function useWorkspacePanelSetup(props, emit) {
     if (action === 'delete-ws') {
       if (ws) {
         await deleteWorkspace(ws)
+      }
+    } else if (action === 'sync-ws') {
+      if (ws && ws.workspace_type === 'git') {
+        await syncWorkspace(ws)
+      }
+    } else if (action === 'update-ws') {
+      if (ws && ws.workspace_type === 'git') {
+        await updateWorkspace(ws)
       }
     }
     
@@ -212,6 +261,9 @@ export function useWorkspacePanelSetup(props, emit) {
   
   onUnmounted(() => {
     document.removeEventListener('click', handleGlobalClick)
+    if (unlistenGitSyncLog) {
+      unlistenGitSyncLog()
+    }
   })
   
   return {
@@ -223,6 +275,8 @@ export function useWorkspacePanelSetup(props, emit) {
     selectWorkspace,
     createWorkspace,
     deleteWorkspace,
+    syncWorkspace,
+    updateWorkspace,
     openWsContextMenu,
     closeWsContextMenu,
     handleWsContextAction,

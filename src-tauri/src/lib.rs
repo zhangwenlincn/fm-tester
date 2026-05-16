@@ -1,6 +1,7 @@
 mod collection;
 mod cookie;
 mod environment;
+mod git;
 mod history;
 mod http;
 mod memory;
@@ -13,6 +14,7 @@ mod workspace;
 pub use collection::*;
 pub use cookie::*;
 pub use environment::*;
+pub use git::*;
 pub use history::*;
 pub use http::*;
 pub use memory::*;
@@ -86,12 +88,20 @@ pub fn run() {
             // Settings
             get_settings,
             update_settings,
-            // Script
+// Script
             save_script,
             get_script,
             delete_script,
             delete_target_scripts,
-            get_all_scripts
+            get_all_scripts,
+            // Git Credentials
+            save_git_credentials,
+            get_git_credentials,
+            get_git_credential_by_id,
+            delete_git_credentials,
+            // Git Sync
+            sync_git_workspace,
+            update_git_workspace
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

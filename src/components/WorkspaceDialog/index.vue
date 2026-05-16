@@ -1,6 +1,7 @@
 <script setup>
 import { useI18n } from 'vue-i18n'
 import { useWorkspaceDialogSetup } from './index.js'
+import Icon from '../Icon/index.vue'
 
 const { t } = useI18n()
 
@@ -17,6 +18,11 @@ const {
   path,
   error,
   loading,
+  workspaceType,
+  gitUrl,
+  gitBranch,
+  gitUsername,
+  gitPassword,
   workspaces,
   selectedWorkspaceId,
   selectPath,
@@ -61,6 +67,69 @@ const {
           </div>
 
           <div class="form-group">
+            <label>工作区类型</label>
+            <div class="radio-group">
+              <label class="radio-item">
+                <input type="radio" v-model="workspaceType" value="local" />
+                <span class="radio-label">
+                  <Icon name="folder" :size="16" />
+                  本地工作区
+                </span>
+              </label>
+              <label class="radio-item">
+                <input type="radio" v-model="workspaceType" value="git" />
+                <span class="radio-label">
+                  <Icon name="git" :size="16" />
+                  Git 工作区
+                </span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Git 配置字段 -->
+          <div v-if="workspaceType === 'git'" class="git-config">
+            <div class="form-group">
+              <label>Git 仓库地址</label>
+              <input
+                v-model="gitUrl"
+                type="text"
+                placeholder="https://github.com/user/repo.git"
+                class="form-input"
+              />
+            </div>
+
+            <div class="form-group">
+              <label>分支</label>
+              <input
+                v-model="gitBranch"
+                type="text"
+                placeholder="master"
+                class="form-input"
+              />
+            </div>
+
+            <div class="form-group">
+              <label>用户名（可选）</label>
+              <input
+                v-model="gitUsername"
+                type="text"
+                placeholder="Git 用户名"
+                class="form-input"
+              />
+            </div>
+
+            <div class="form-group">
+              <label>密码/Token（可选）</label>
+              <input
+                v-model="gitPassword"
+                type="password"
+                placeholder="Git 密码或访问令牌"
+                class="form-input"
+              />
+            </div>
+          </div>
+
+          <div class="form-group">
             <label>{{ t('dialogs.workspacePath') }}</label>
             <div class="path-input">
               <input
@@ -84,7 +153,11 @@ const {
             :class="{ selected: selectedWorkspaceId === ws.id }"
             @click="handleSelectWorkspaceItem(ws.id)"
           >
-            <div class="ws-name">{{ ws.name }}</div>
+            <div class="ws-header">
+              <Icon :name="ws.workspace_type === 'git' ? 'git' : 'folder'" :size="16" />
+              <span class="ws-name">{{ ws.name }}</span>
+              <span v-if="ws.workspace_type === 'git'" class="ws-type-badge">Git</span>
+            </div>
             <div class="ws-path">{{ ws.path }}</div>
             <div class="ws-time">{{ t('workspace.lastOpened') }} {{ ws.last_opened }}</div>
           </div>

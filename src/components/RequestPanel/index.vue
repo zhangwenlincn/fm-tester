@@ -334,11 +334,11 @@ const {
       
       <!-- 脚本 -->
       <div v-if="activeTab === 'scripts'" class="scripts-panel">
-        <ScriptPanel 
-          :request="localRequest"
-          @update:request="handleScriptUpdate"
-          @save="saveScripts"
-        />
+<ScriptPanel 
+            :request="localRequest"
+            @update:request="handleScriptUpdate"
+            @save="saveScripts"
+          />
       </div>
       
       <!-- 其他标签页（占位符） -->

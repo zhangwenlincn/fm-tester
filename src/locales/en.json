@@ -233,7 +233,23 @@
   "contextMenu": {
     "deleteWorkspace": "Delete Workspace",
     "deleteEnvironment": "Delete Environment",
-    "deleteCollection": "Delete Collection"
+    "deleteCollection": "Delete Collection",
+    "syncWorkspace": "Sync APIs",
+    "updateWorkspace": "Update APIs"
+  },
+  "workspaceType": {
+    "local": "Local Workspace",
+    "git": "Git Workspace"
+  },
+  "gitConfig": {
+    "url": "Git URL",
+    "branch": "Branch",
+    "username": "Username",
+    "password": "Password"
+  },
+  "gitTimes": {
+    "sync": "Sync",
+    "update": "Update"
   },
   "script": {
     "preScript": "Pre-request Script",

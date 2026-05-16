@@ -233,7 +233,23 @@
   "contextMenu": {
     "deleteWorkspace": "删除工作区",
     "deleteEnvironment": "删除环境",
-    "deleteCollection": "删除集合"
+    "deleteCollection": "删除集合",
+    "syncWorkspace": "同步接口",
+    "updateWorkspace": "更新接口"
+  },
+  "workspaceType": {
+    "local": "本地工作区",
+    "git": "Git 工作区"
+  },
+  "gitConfig": {
+    "url": "Git 地址",
+    "branch": "分支",
+    "username": "用户名",
+    "password": "密码"
+  },
+  "gitTimes": {
+    "sync": "同步",
+    "update": "更新"
   },
   "script": {
     "preScript": "前置脚本",

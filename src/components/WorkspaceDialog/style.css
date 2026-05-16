@@ -187,3 +187,56 @@
 .btn-secondary:hover {
   background: #f5f5f5;
 }
+
+/* Radio 组样式 */
+.radio-group {
+  display: flex;
+  gap: 16px;
+}
+
+.radio-item {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.radio-item input[type="radio"] {
+  margin-right: 6px;
+  cursor: pointer;
+}
+
+.radio-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: #262626;
+}
+
+/* Git 配置区域 */
+.git-config {
+  padding: 12px;
+  background: #fafafa;
+  border-radius: 4px;
+  margin-bottom: 16px;
+  border: 1px solid #e8e8e8;
+}
+
+/* 工作区列表项头部 */
+.ws-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ws-header .ws-name {
+  flex: 1;
+}
+
+.ws-type-badge {
+  font-size: 11px;
+  padding: 2px 6px;
+  background: #f0f0f0;
+  color: #666;
+  border-radius: 3px;
+}

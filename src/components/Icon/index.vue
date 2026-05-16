@@ -78,9 +78,14 @@ const props = defineProps({
       <path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/>
     </svg>
 
-    <!-- 右箭头 -->
+<!-- 右箭头 -->
     <svg v-if="name === 'arrow-right'" :width="size" :height="size" viewBox="0 0 24 24" fill="currentColor">
       <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
+    </svg>
+    
+    <!-- Git -->
+    <svg v-if="name === 'git'" :width="size" :height="size" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M21.62 11.11l-8.73-8.73a1.3 1.3 0 0 0-1.84 0L9.2 4.23l2.34 2.34a2.5 2.5 0 0 1 3.14 3.14l2.34 2.34a2.5 2.5 0 0 1-2.83 4.24l-2.34-2.34a2.5 2.5 0 0 1-3.14-3.14L6.37 6.37 2.38 10.35a1.3 1.3 0 0 0 0 1.84l8.73 8.73a1.3 1.3 0 0 0 1.84 0l8.67-8.67a1.3 1.3 0 0 0 0-1.84z"/>
     </svg>
   </span>
 </template>

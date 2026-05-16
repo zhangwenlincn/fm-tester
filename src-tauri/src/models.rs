@@ -39,6 +39,28 @@ pub struct Workspace {
     pub last_opened: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub last_api_id: Option<String>,
+    /// 工作区类型: "local" 或 "git"
+    #[serde(default = "default_workspace_type")]
+    pub workspace_type: String,
+    /// Git 仓库 URL (仅 git 类型)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub git_url: Option<String>,
+    /// Git 分支 (仅 git 类型)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub git_branch: Option<String>,
+    /// Git 凭据 ID (仅 git 类型)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub git_credentials_id: Option<String>,
+    /// 最新同步时间 (仅 git 类型)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub last_sync_at: Option<String>,
+    /// 最新更新时间 (仅 git 类型)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub last_update_at: Option<String>,
+}
+
+fn default_workspace_type() -> String {
+    "local".to_string()
 }
 
 /// 工作区配置文件结构
@@ -283,4 +305,22 @@ pub struct HistoryEntry {
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct HistoryConfig {
     pub entries: Vec<HistoryEntry>,
+}
+
+/// Git 凭据
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GitCredentials {
+    pub id: String,
+    pub username: String,
+    /// 加密后的密码（Base64 编码）
+    pub encrypted_password: String,
+    pub created_at: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub updated_at: Option<String>,
+}
+
+/// Git 凭据配置文件结构
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct GitCredentialsConfig {
+    pub credentials: Vec<GitCredentials>,
 }

@@ -162,7 +162,7 @@ const {
       <div class="content-area" v-if="showRequestResponse">
         <!-- 请求区 -->
         <div class="request-area">
-          <RequestPanel 
+<RequestPanel 
             :request="currentRequest"
             :has-active-tab="tabs.length > 0"
             :variables="activeVariables"
