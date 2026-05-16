@@ -1,7 +1,9 @@
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import * as monaco from 'monaco-editor'
 import { open } from '@tauri-apps/plugin-dialog'
+import { invoke } from '@tauri-apps/api/core'
 import { formatJson, formatXml, formatHtml } from '../../utils/syntax-highlight.js'
+import { showToast } from '../../composables/useToast.js'
 
 // 注册 JSON5 语言
 monaco.languages.register({ id: 'json5', extensions: ['.json5'], aliases: ['JSON5', 'json5'] })
@@ -125,6 +127,36 @@ export function useRequestPanelSetup(props, emit) {
     preScript: '',  // 前置脚本
     postScript: ''  // 后置脚本
   })
+  
+  // 加载 API 脚本
+  const loadApiScripts = async () => {
+    if (!props.workspacePath || !props.apiId) return
+    try {
+      const preScript = await invoke('get_script', {
+        workspacePath: props.workspacePath,
+        targetType: 'api',
+        targetId: props.apiId,
+        scriptKind: 'pre'
+      })
+      const postScript = await invoke('get_script', {
+        workspacePath: props.workspacePath,
+        targetType: 'api',
+        targetId: props.apiId,
+        scriptKind: 'post'
+      })
+      localRequest.value.preScript = preScript || ''
+      localRequest.value.postScript = postScript || ''
+    } catch (e) {
+      console.error('加载 API 脚本失败:', e)
+    }
+  }
+  
+  // 监听 apiId 变化，加载脚本
+  watch(() => props.apiId, (newId, oldId) => {
+    if (newId && newId !== oldId) {
+      loadApiScripts()
+    }
+  }, { immediate: true })
 
   // Monaco Editor 相关
   const editorContainer = ref(null)
@@ -633,6 +665,31 @@ export function useRequestPanelSetup(props, emit) {
     isLocalUpdate = true
     emit('update:request', localRequest.value)
   }
+  
+  // 保存脚本到后端
+  const saveScripts = async () => {
+    if (!props.workspacePath || !props.apiId) return
+    try {
+      await invoke('save_script', {
+        workspacePath: props.workspacePath,
+        targetType: 'api',
+        targetId: props.apiId,
+        scriptKind: 'pre',
+        content: localRequest.value.preScript
+      })
+      await invoke('save_script', {
+        workspacePath: props.workspacePath,
+        targetType: 'api',
+        targetId: props.apiId,
+        scriptKind: 'post',
+        content: localRequest.value.postScript
+      })
+      showToast('脚本保存成功', 'success')
+    } catch (e) {
+      console.error('保存 API 脚本失败:', e)
+      showToast('脚本保存失败', 'error')
+    }
+  }
 
   return {
     methods,
@@ -661,6 +718,7 @@ export function useRequestPanelSetup(props, emit) {
     selectFormFieldFiles,
     removeFormFieldFile,
     updateTimeout,
-    handleScriptUpdate
+    handleScriptUpdate,
+    saveScripts
   }
 }

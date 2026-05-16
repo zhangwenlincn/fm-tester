@@ -165,6 +165,8 @@ const {
             :has-active-tab="tabs.length > 0"
             :variables="activeVariables"
             :request-tab="currentRequestTab"
+            :workspace-path="currentWorkspace?.path || ''"
+            :api-id="displayTabs[activeTab]?.id || ''"
             @update:request="updateRequest($event)"
             @send="sendRequest"
             @save="saveRequest"

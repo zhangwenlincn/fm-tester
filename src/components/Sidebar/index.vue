@@ -39,6 +39,7 @@ const {
   handleSelectApi,
   handleSelectCollection,
   handleDeleteApis,
+  handleDeleteCollection,
   handleRenameApi,
   handleSelectEnvironment,
   handleEnvironmentUpdated,

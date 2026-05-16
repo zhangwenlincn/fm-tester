@@ -1,5 +1,6 @@
 import { ref, reactive, watch, onUnmounted } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
+import { showToast } from '../../composables/useToast.js'
 
 const tabs = [
   { key: 'headers', name: '请求头' },
@@ -30,7 +31,7 @@ export function useCollectionSettingsSetup(props, emit) {
   let skipNextSave = false
   
   // 初始化数据
-  const initSettings = () => {
+  const initSettings = async () => {
     localSettings.name = props.collection?.name || ''
     
     // 通用请求头
@@ -57,9 +58,29 @@ export function useCollectionSettingsSetup(props, emit) {
       localSettings.collectionVariables = []
     }
     
-    // 脚本
-    localSettings.preScript = props.collection?.preScript || ''
-    localSettings.postScript = props.collection?.postScript || ''
+    // 从后端加载脚本
+    if (props.workspacePath && props.collection?.id) {
+      try {
+        const preScript = await invoke('get_script', {
+          workspacePath: props.workspacePath,
+          targetType: 'collection',
+          targetId: props.collection.id,
+          scriptKind: 'pre'
+        })
+        const postScript = await invoke('get_script', {
+          workspacePath: props.workspacePath,
+          targetType: 'collection',
+          targetId: props.collection.id,
+          scriptKind: 'post'
+        })
+        localSettings.preScript = preScript || ''
+        localSettings.postScript = postScript || ''
+      } catch (e) {
+        console.error('加载集合脚本失败:', e)
+        localSettings.preScript = ''
+        localSettings.postScript = ''
+      }
+    }
   }
   
   // 初始化标记（避免初始化时触发保存）
@@ -108,14 +129,6 @@ export function useCollectionSettingsSetup(props, emit) {
     { deep: true }
   )
   
-  // 监听脚本变化
-  watch(
-    () => [localSettings.preScript, localSettings.postScript],
-    () => {
-      debouncedSave()
-    }
-  )
-  
   // 组件卸载时清理定时器并强制保存
   onUnmounted(() => {
     if (saveTimer) {
@@ -162,6 +175,31 @@ export function useCollectionSettingsSetup(props, emit) {
     localSettings.postScript = updated.postScript || ''
   }
   
+  // 保存脚本
+  const saveScripts = async () => {
+    if (!props.workspacePath || !props.collection?.id) return
+    try {
+      await invoke('save_script', {
+        workspacePath: props.workspacePath,
+        targetType: 'collection',
+        targetId: props.collection.id,
+        scriptKind: 'pre',
+        content: localSettings.preScript
+      })
+      await invoke('save_script', {
+        workspacePath: props.workspacePath,
+        targetType: 'collection',
+        targetId: props.collection.id,
+        scriptKind: 'post',
+        content: localSettings.postScript
+      })
+      showToast('脚本保存成功', 'success')
+    } catch (e) {
+      console.error('保存集合脚本失败:', e)
+      showToast('脚本保存失败', 'error')
+    }
+  }
+  
   // 保存设置
   const saveSettings = async () => {
     if (saving.value) return // 防止重复保存
@@ -197,13 +235,12 @@ export function useCollectionSettingsSetup(props, emit) {
           description: v.description?.trim() || null
         }))
       
+      // 保存集合设置（请求头、变量）
       await invoke('update_collection_settings', {
         workspacePath: props.workspacePath,
         id: props.collection.id,
         commonHeaders: validHeaders.length > 0 ? validHeaders : null,
-        collectionVariables: validVariables.length > 0 ? validVariables : null,
-        preScript: localSettings.preScript || null,
-        postScript: localSettings.postScript || null
+        collectionVariables: validVariables.length > 0 ? validVariables : null
       })
       
       emit('save')
@@ -224,6 +261,7 @@ export function useCollectionSettingsSetup(props, emit) {
     addVariable,
     removeVariable,
     handleScriptUpdate,
+    saveScripts,
     saveSettings
   }
 }

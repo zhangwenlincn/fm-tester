@@ -26,6 +26,7 @@ const {
   addVariable,
   removeVariable,
   handleScriptUpdate,
+  saveScripts,
   saveSettings
 } = useCollectionSettingsSetup(props, emit)
 </script>
@@ -100,7 +101,7 @@ const {
       <div v-show="activeTab === 'variables'" class="variables-panel">
         <div class="panel-toolbar">
           <button class="add-btn" @click="addVariable">+ 添加变量</button>
-          <span class="panel-hint">使用 {{变量名}} 在 URL、请求头、请求体中引用这些变量</span>
+          <span class="panel-hint">使用 &#123;&#123;变量名&#125;&#125; 在 URL、请求头、请求体中引用这些变量</span>
         </div>
         <div class="params-list">
           <div class="params-header">
@@ -142,6 +143,7 @@ const {
         <ScriptPanel 
           :request="localSettings"
           @update:request="handleScriptUpdate"
+          @save="saveScripts"
         />
       </div>
       

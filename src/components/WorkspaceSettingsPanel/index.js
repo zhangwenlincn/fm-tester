@@ -1,10 +1,9 @@
-import { ref, reactive, watch, onUnmounted } from 'vue'
+import { ref, reactive, watch } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
+import { showToast } from '../../composables/useToast.js'
 
 // 导出 composable 函数
 export function useWorkspaceSettingsSetup(props, emit) {
-  const activeTab = ref('scripts')
-  
   // 本地设置状态
   const localSettings = reactive({
     name: props.workspace?.name || '',
@@ -12,57 +11,39 @@ export function useWorkspaceSettingsSetup(props, emit) {
     postScript: ''
   })
   
-  // 防抖保存定时器
-  let saveTimer = null
-  
-  // 保存中状态
-  const saving = ref(false)
-  
-  // 初始化标记（避免初始化时触发保存）
-  let initialized = false
-  
   // 初始化数据
-  const initSettings = () => {
+  const initSettings = async () => {
     localSettings.name = props.workspace?.name || ''
-    localSettings.preScript = props.workspace?.preScript || ''
-    localSettings.postScript = props.workspace?.postScript || ''
+    
+    // 从后端加载脚本
+    if (props.workspacePath) {
+      try {
+        const preScript = await invoke('get_script', {
+          workspacePath: props.workspacePath,
+          targetType: 'workspace',
+          targetId: null,
+          scriptKind: 'pre'
+        })
+        const postScript = await invoke('get_script', {
+          workspacePath: props.workspacePath,
+          targetType: 'workspace',
+          targetId: null,
+          scriptKind: 'post'
+        })
+        localSettings.preScript = preScript || ''
+        localSettings.postScript = postScript || ''
+      } catch (e) {
+        console.error('加载工作区脚本失败:', e)
+        localSettings.preScript = ''
+        localSettings.postScript = ''
+      }
+    }
   }
   
   // 监听 workspace 变化
   watch(() => props.workspace, () => {
-    initialized = false
     initSettings()
-    setTimeout(() => {
-      initialized = true
-    }, 100)
   }, { immediate: true })
-  
-  // 防抖保存（500ms 后保存）
-  const debouncedSave = () => {
-    if (!initialized) return
-    if (saveTimer) {
-      clearTimeout(saveTimer)
-    }
-    saveTimer = setTimeout(() => {
-      saveSettings()
-    }, 500)
-  }
-  
-  // 监听脚本变化
-  watch(
-    () => [localSettings.preScript, localSettings.postScript],
-    () => {
-      debouncedSave()
-    }
-  )
-  
-  // 组件卸载时清理定时器并强制保存
-  onUnmounted(() => {
-    if (saveTimer) {
-      clearTimeout(saveTimer)
-      saveSettings()
-    }
-  })
   
   // 处理脚本更新
   const handleScriptUpdate = (updated) => {
@@ -72,28 +53,37 @@ export function useWorkspaceSettingsSetup(props, emit) {
   
   // 保存设置
   const saveSettings = async () => {
-    if (saving.value) return
+    if (!props.workspacePath) return
     
-    saving.value = true
     try {
-      await invoke('update_workspace_settings', {
+      // 保存前置脚本
+      await invoke('save_script', {
         workspacePath: props.workspacePath,
-        preScript: localSettings.preScript || null,
-        postScript: localSettings.postScript || null
+        targetType: 'workspace',
+        targetId: null,
+        scriptKind: 'pre',
+        content: localSettings.preScript
       })
       
+      // 保存后置脚本
+      await invoke('save_script', {
+        workspacePath: props.workspacePath,
+        targetType: 'workspace',
+        targetId: null,
+        scriptKind: 'post',
+        content: localSettings.postScript
+      })
+      
+      showToast('脚本保存成功', 'success')
       emit('save')
     } catch (e) {
-      console.error('保存工作区设置失败:', e)
-    } finally {
-      saving.value = false
+      console.error('保存工作区脚本失败:', e)
+      showToast('脚本保存失败', 'error')
     }
   }
   
   return {
-    activeTab,
     localSettings,
-    saving,
     handleScriptUpdate,
     saveSettings
   }

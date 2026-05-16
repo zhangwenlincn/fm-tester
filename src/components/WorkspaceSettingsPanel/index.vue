@@ -18,7 +18,6 @@ const emit = defineEmits(['save', 'close'])
 
 const {
   localSettings,
-  saving,
   handleScriptUpdate,
   saveSettings
 } = useWorkspaceSettingsSetup(props, emit)
@@ -39,6 +38,7 @@ const {
       <ScriptPanel 
         :request="localSettings"
         @update:request="handleScriptUpdate"
+        @save="saveSettings"
       />
     </div>
   </div>

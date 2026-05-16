@@ -20,6 +20,14 @@ const props = defineProps({
   requestTab: {
     type: String,
     default: 'params'
+  },
+  workspacePath: {
+    type: String,
+    default: ''
+  },
+  apiId: {
+    type: String,
+    default: ''
   }
 })
 
@@ -52,7 +60,8 @@ const {
   selectFormFieldFiles,
   removeFormFieldFile,
   updateTimeout,
-  handleScriptUpdate
+  handleScriptUpdate,
+  saveScripts
 } = useRequestPanelSetup(props, emit)
 </script>
 
@@ -325,6 +334,7 @@ const {
         <ScriptPanel 
           :request="localRequest"
           @update:request="handleScriptUpdate"
+          @save="saveScripts"
         />
       </div>
       

@@ -6,7 +6,7 @@ const props = defineProps({
   request: Object
 })
 
-const emit = defineEmits(['update:request'])
+const emit = defineEmits(['update:request', 'save'])
 
 const scriptType = ref('pre')
 const editorContainer = ref(null)
@@ -33,26 +33,21 @@ const initEditor = () => {
     tabSize: 2,
     wordWrap: 'on'
   })
-  
-  editor.onDidChangeModelContent(() => {
-    emit('update:request', {
-      ...props.request,
-      [scriptType.value === 'pre' ? 'preScript' : 'postScript']: editor.getValue()
-    })
-  })
 }
 
-// 切换脚本类型时保存当前内容并加载新内容
-watch(scriptType, (newType, oldType) => {
+// 监听 request 变化，切换接口时更新编辑器内容
+watch(() => props.request, (newRequest) => {
+  if (editor && newRequest) {
+    const newValue = scriptType.value === 'pre' 
+      ? (newRequest.preScript || '') 
+      : (newRequest.postScript || '')
+    editor.setValue(newValue)
+  }
+}, { deep: true })
+
+// 切换脚本类型时加载新内容
+watch(scriptType, (newType) => {
   if (editor) {
-    // 保存当前内容
-    const currentValue = editor.getValue()
-    emit('update:request', {
-      ...props.request,
-      [oldType === 'pre' ? 'preScript' : 'postScript']: currentValue
-    })
-    
-    // 加载新内容
     const newValue = newType === 'pre' 
       ? (props.request?.preScript || '') 
       : (props.request?.postScript || '')
@@ -60,6 +55,17 @@ watch(scriptType, (newType, oldType) => {
     editor.layout()
   }
 })
+
+// 保存脚本
+const saveScript = () => {
+  if (!editor) return
+  const content = editor.getValue()
+  emit('update:request', {
+    ...props.request,
+    [scriptType.value === 'pre' ? 'preScript' : 'postScript']: content
+  })
+  emit('save')
+}
 
 onMounted(() => {
   nextTick(() => {
@@ -87,6 +93,9 @@ onUnmounted(() => {
       <div class="script-btn" :class="{ active: scriptType === 'post' }" @click="scriptType = 'post'">后置脚本</div>
     </div>
     <div class="editor-wrapper">
+      <div class="editor-header">
+        <button class="save-btn" @click="saveScript">保存</button>
+      </div>
       <div ref="editorContainer" class="editor-container"></div>
     </div>
   </div>

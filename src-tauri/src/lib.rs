@@ -6,6 +6,7 @@ mod http;
 mod memory;
 mod models;
 mod saved_response;
+mod script;
 mod settings;
 mod workspace;
 
@@ -17,6 +18,7 @@ pub use http::*;
 pub use memory::*;
 pub use models::*;
 pub use saved_response::*;
+pub use script::*;
 pub use settings::*;
 pub use workspace::*;
 
@@ -83,7 +85,13 @@ pub fn run() {
             clear_all_history,
             // Settings
             get_settings,
-            update_settings
+            update_settings,
+            // Script
+            save_script,
+            get_script,
+            delete_script,
+            delete_target_scripts,
+            get_all_scripts
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
