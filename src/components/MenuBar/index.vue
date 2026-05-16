@@ -28,13 +28,14 @@ const menus = [
   { name: '主题' },
   { name: '设置', items: ['偏好设置'] },
   { name: '插件' },
-  { name: '帮助' },
+  { name: '帮助', items: ['脚本 API 参考'] },
   { name: '关于' }
 ]
 
 const activeMenu = ref(null)
 const showWorkspaceDropdown = ref(false)
 const showEnvironmentDropdown = ref(false)
+const showScriptHelp = ref(false)
 const workspaceWrapperRef = ref(null)
 const environmentWrapperRef = ref(null)
 
@@ -89,6 +90,15 @@ const handleMenuItemClick = (menuName, item) => {
   if (menuName === '设置' && item === '偏好设置') {
     emit('openSettings')
   }
+  // 帮助菜单 - 脚本 API 参考
+  if (menuName === '帮助' && item === '脚本 API 参考') {
+    showScriptHelp.value = true
+  }
+}
+
+// 关闭脚本帮助面板
+const closeScriptHelp = () => {
+  showScriptHelp.value = false
 }
 
 // 点击外部关闭下拉菜单
@@ -122,12 +132,12 @@ onUnmounted(() => {
         @click="toggleMenu(index)"
       >
         {{ menu.name }}
-        <div v-if="activeMenu === index" class="dropdown">
+        <div v-if="activeMenu === index && menu.items" class="dropdown">
           <div 
             v-for="item in menu.items" 
             :key="item" 
             class="dropdown-item"
-            @click.stop="menu.name === '设置' || menu.name === '插件' ? handleMenuItemClick(menu.name, item) : null"
+            @click.stop="handleMenuItemClick(menu.name, item)"
           >
             {{ item }}
           </div>
@@ -187,6 +197,68 @@ onUnmounted(() => {
           <div v-if="environments.length === 0" class="dropdown-item empty">
             暂无环境
           </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 脚本 API 参考面板 -->
+    <div v-if="showScriptHelp" class="script-help-panel">
+      <div class="help-header">
+        <span class="help-title">脚本 API 参考</span>
+        <button class="close-btn" @click="closeScriptHelp">×</button>
+      </div>
+      <div class="help-content">
+        <div class="help-section">
+          <h3>前置脚本</h3>
+          <p class="section-desc">前置脚本在请求发送前执行，可修改请求参数。</p>
+          <div class="api-group">
+            <h4>环境变量</h4>
+            <code>fm.environment.get(key)</code>
+            <code>fm.environment.set(key, value)</code>
+            <code>fm.environment.getAll()</code>
+          </div>
+          <div class="api-group">
+            <h4>集合变量</h4>
+            <code>fm.collection.get(key)</code>
+            <code>fm.collection.set(key, value)</code>
+            <code>fm.collection.getAll()</code>
+          </div>
+          <div class="api-group">
+            <h4>请求参数</h4>
+            <code>fm.request.getUrl() / fm.request.setUrl(url)</code>
+            <code>fm.request.getBaseUrl() / fm.request.setBaseUrl(baseUrl)</code>
+            <code>fm.request.getPath() / fm.request.setPath(path)</code>
+            <code>fm.request.getMethod() / fm.request.setMethod(method)</code>
+            <code>fm.request.getHeader(key) / fm.request.setHeader(key, value)</code>
+            <code>fm.request.removeHeader(key) / fm.request.getHeaders()</code>
+            <code>fm.request.getBody() / fm.request.setBody(body)</code>
+          </div>
+          <div class="api-group">
+            <h4>工具方法</h4>
+            <code>fm.log(...args) - 输出日志到 Console</code>
+            <code>fm.assert(condition, message) - 断言</code>
+            <code>fm.sleep(ms) - 异步等待</code>
+          </div>
+        </div>
+        
+        <div class="help-section">
+          <h3>后置脚本</h3>
+          <p class="section-desc">后置脚本在响应返回后执行，可处理响应数据。继承前置脚本所有 API。</p>
+          <div class="api-group">
+            <h4>响应数据</h4>
+            <code>fm.response.getStatus() / fm.response.getStatusText()</code>
+            <code>fm.response.getHeader(key) / fm.response.getHeaders()</code>
+            <code>fm.response.getBody() / fm.response.getJson()</code>
+            <code>fm.response.getTime() / fm.response.getSize()</code>
+          </div>
+        </div>
+        
+        <div class="help-section">
+          <h3>执行顺序（继承链）</h3>
+          <p class="section-desc">
+            前置脚本：工作区 → 父集合 → 子集合 → 接口 → HTTP请求<br>
+            后置脚本：HTTP响应 → 接口 → 子集合 → 父集合 → 工作区
+          </p>
         </div>
       </div>
     </div>

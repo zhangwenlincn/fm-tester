@@ -92,6 +92,7 @@ onUnmounted(() => {
       <div class="script-btn" :class="{ active: scriptType === 'pre' }" @click="scriptType = 'pre'">前置脚本</div>
       <div class="script-btn" :class="{ active: scriptType === 'post' }" @click="scriptType = 'post'">后置脚本</div>
     </div>
+    
     <div class="editor-wrapper">
       <div class="editor-header">
         <button class="save-btn" @click="saveScript">保存</button>

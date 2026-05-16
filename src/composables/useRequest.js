@@ -2,6 +2,11 @@ import { ref, watch } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
 import JSON5 from 'json5'
+import { 
+  executePreScripts, 
+  executePostScripts, 
+  mergeCollectionVariablesToObject 
+} from '../utils/scriptEngine.js'
 
 /**
  * HTTP请求管理 composable（包含Console日志）
@@ -42,7 +47,13 @@ export function useRequest(currentWorkspace, tabs, activeTab, sidebarRef, reques
 
   const addConsoleLog = (type, message) => {
     const now = new Date()
-    const time = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+    const year = now.getFullYear()
+    const month = String(now.getMonth() + 1).padStart(2, '0')
+    const day = String(now.getDate()).padStart(2, '0')
+    const hour = String(now.getHours()).padStart(2, '0')
+    const minute = String(now.getMinutes()).padStart(2, '0')
+    const second = String(now.getSeconds()).padStart(2, '0')
+    const time = `${year}-${month}-${day} ${hour}:${minute}:${second}`
     consoleLogs.value.push({ type, message, time })
     if (consoleLogs.value.length > maxConsoleLogs) {
       consoleLogs.value.shift()
@@ -154,21 +165,113 @@ export function useRequest(currentWorkspace, tabs, activeTab, sidebarRef, reques
       sendTab.lastResponseData = null
     }
 
+    const apiId = sendTab?.tabType === 'api' ? sendTab?.id : null
+    const apiName = sendTab?.tabType === 'api' ? sendTab?.name : null
+    const workspacePath = currentWorkspace.value?.path
+
+    // 脚本日志函数（只输出用户 fm.log() 和错误日志）
+    const scriptLogger = (type, message, level) => {
+      // 只输出用户调用的 fm.log() 和错误日志
+      if (type !== 'script' && type !== 'error') return
+      
+      const now = new Date()
+      const year = now.getFullYear()
+      const month = String(now.getMonth() + 1).padStart(2, '0')
+      const day = String(now.getDate()).padStart(2, '0')
+      const hour = String(now.getHours()).padStart(2, '0')
+      const minute = String(now.getMinutes()).padStart(2, '0')
+      const second = String(now.getSeconds()).padStart(2, '0')
+      const time = `${year}-${month}-${day} ${hour}:${minute}:${second}`
+      const logType = type === 'error' ? 'error' : 'log'
+      consoleLogs.value.push({ type: logType, message, time, level })
+      if (consoleLogs.value.length > maxConsoleLogs) {
+        consoleLogs.value.shift()
+      }
+    }
+
     try {
-      let bodyToSend = request.body
+      // ========== 前置脚本执行 ==========
+      let modifiedRequest = request
+      let modifiedEnvVars = {}
+      let modifiedCollVars = {}
+      let ancestorCollections = []
+      let collectionsData = []
+
+      if (apiId && workspacePath) {
+        // 获取集合数据
+        collectionsData = await invoke('get_collections', { workspacePath })
+        
+        // 查找祖先集合链（从根到父）
+        const findAncestorCollectionsForApi = (collections, targetApiId) => {
+          const search = (items, path = []) => {
+            for (const item of items) {
+              if (item.type === 'api' && item.id === targetApiId) {
+                return path
+              }
+              if (item.type === 'collection' && item.children) {
+                const newPath = [...path, item]
+                const found = search(item.children, newPath)
+                if (found) return found
+              }
+            }
+            return null
+          }
+          return search(collections) || []
+        }
+        
+        ancestorCollections = findAncestorCollectionsForApi(collectionsData, apiId)
+        
+        // 获取当前环境变量
+        const activeEnvVars = await invoke('get_active_variables', { workspacePath })
+        const collVarsObj = mergeCollectionVariablesToObject(ancestorCollections)
+        
+        // 执行前置脚本链
+        const preScriptResult = await executePreScripts({
+          workspacePath,
+          apiId,
+          ancestorCollections,
+          environmentVariables: activeEnvVars || {},
+          collectionVariables: collVarsObj,
+          request: {
+            url: request.url,
+            method: request.method,
+            headers: [...request.headers],
+            body: request.body
+          },
+          logger: scriptLogger
+        })
+        
+        if (!preScriptResult.success) {
+          // 前置脚本失败，中断请求
+          scriptLogger('error', `前置脚本执行失败，请求中断`, preScriptResult.source)
+          loading.value = false
+          sendingTabId.value = null
+          return
+        }
+        
+        // 使用脚本修改后的请求参数
+        modifiedRequest = preScriptResult.data.request
+        modifiedEnvVars = preScriptResult.data.environmentVariables
+        modifiedCollVars = preScriptResult.data.collectionVariables
+      }
+
+      // ========== HTTP 请求发送 ==========
+      let bodyToSend = modifiedRequest.body
 
       const commonHeaders = sendTab?.commonHeaders || []
       const collectionVariables = sendTab?.collectionVariables || []
 
       const headersMap = new Map()
 
+      // 合并集合公共请求头
       for (const h of commonHeaders) {
         if (h.enabled && h.key.trim()) {
           headersMap.set(h.key.toLowerCase(), h)
         }
       }
 
-      for (const h of (request.headers || [])) {
+      // 合并接口请求头（脚本可能修改过）
+      for (const h of (modifiedRequest.headers || [])) {
         if (h.enabled && h.key.trim()) {
           headersMap.set(h.key.toLowerCase(), h)
         }
@@ -180,13 +283,13 @@ export function useRequest(currentWorkspace, tabs, activeTab, sidebarRef, reques
         h => h.key.toLowerCase() === 'content-type'
       )
 
-      if (contentTypeHeader?.value?.includes('json') && request.body) {
+      if (contentTypeHeader?.value?.includes('json') && modifiedRequest.body) {
         try {
-          const parsed = JSON5.parse(request.body)
+          const parsed = JSON5.parse(modifiedRequest.body)
           bodyToSend = JSON.stringify(parsed)
         } catch {
           try {
-            const parsed = JSON.parse(request.body)
+            const parsed = JSON.parse(modifiedRequest.body)
             bodyToSend = JSON.stringify(parsed)
           } catch {}
         }
@@ -202,22 +305,26 @@ export function useRequest(currentWorkspace, tabs, activeTab, sidebarRef, reques
 
       const binaryFilePath = request.binaryFile?.path || null
 
-      const apiId = sendTab?.tabType === 'api' ? sendTab?.id : null
-      const apiName = sendTab?.tabType === 'api' ? sendTab?.name : null
+      // 构建集合变量数组（用于后端变量替换）
+      const collectionVariablesArray = Object.entries(modifiedCollVars).map(([key, value]) => ({
+        key,
+        value,
+        enabled: true
+      }))
 
       const result = await invoke('send_http_request', {
-        method: request.method,
-        url: request.url,
+        method: modifiedRequest.method,
+        url: modifiedRequest.url,
         headers: headersToSend,
         body: bodyToSend || null,
         bodyType: request.bodyType || null,
         formFields: formFields,
         binaryFilePath: binaryFilePath,
-        workspacePath: currentWorkspace.value?.path,
+        workspacePath: workspacePath,
         timeout: request.timeout || null,
         apiId: apiId,
         apiName: apiName,
-        collectionVariables: collectionVariables
+        collectionVariables: collectionVariablesArray.length > 0 ? collectionVariablesArray : null
       })
 
       const responseData = {
@@ -231,6 +338,25 @@ export function useRequest(currentWorkspace, tabs, activeTab, sidebarRef, reques
         resolvedHeaders: result.resolved_headers,
       }
 
+      // ========== 后置脚本执行 ==========
+      if (apiId && workspacePath) {
+        const postScriptResult = await executePostScripts({
+          workspacePath,
+          apiId,
+          ancestorCollections,
+          environmentVariables: modifiedEnvVars,
+          collectionVariables: modifiedCollVars,
+          request: modifiedRequest,
+          response: responseData,
+          logger: scriptLogger
+        })
+        
+        if (!postScriptResult.success) {
+          scriptLogger('error', `后置脚本执行有错误: ${postScriptResult.errors?.map(e => e.error).join(', ')}`, '')
+        }
+      }
+
+      // ========== 更新响应数据 ==========
       const targetTab = tabs.value.find(t => t.id === sendingTabId.value)
       if (targetTab && targetTab.tabType === 'api') {
         targetTab.lastResponseData = responseData
@@ -240,6 +366,8 @@ export function useRequest(currentWorkspace, tabs, activeTab, sidebarRef, reques
         response.value = responseData
       }
     } catch (error) {
+      scriptLogger('error', `请求失败: ${error}`, '')
+      
       const errorResponse = {
         status: 0,
         statusText: '请求失败',

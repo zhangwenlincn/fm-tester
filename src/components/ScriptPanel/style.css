@@ -1,15 +1,15 @@
 .script-panel {
   display: flex;
+  flex-direction: column;
   height: 100%;
   background: #ffffff;
 }
 
 .script-tabs {
   display: flex;
-  flex-direction: column;
-  padding: 12px;
   gap: 8px;
-  border-right: 1px solid #e8e8e8;
+  padding: 8px 12px;
+  border-bottom: 1px solid #e8e8e8;
   background: #fafafa;
 }
 
