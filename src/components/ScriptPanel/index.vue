@@ -11,6 +11,269 @@ const emit = defineEmits(['update:request', 'save'])
 const scriptType = ref('pre')
 const editorContainer = ref(null)
 let editor = null
+let completionProvider = null
+
+// fm API 自动补全定义
+const getFmCompletions = (isPostScript) => {
+  const completions = [
+    // environment
+    {
+      label: 'fm.environment.get',
+      kind: monaco.languages.CompletionItemKind.Method,
+      insertText: 'fm.environment.get("${1:key}")',
+      insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+      documentation: '获取环境变量'
+    },
+    {
+      label: 'fm.environment.set',
+      kind: monaco.languages.CompletionItemKind.Method,
+      insertText: 'fm.environment.set("${1:key}", "${2:value}")',
+      insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+      documentation: '设置环境变量'
+    },
+    {
+      label: 'fm.environment.getAll',
+      kind: monaco.languages.CompletionItemKind.Method,
+      insertText: 'fm.environment.getAll()',
+      documentation: '获取所有环境变量'
+    },
+    // collection
+    {
+      label: 'fm.collection.get',
+      kind: monaco.languages.CompletionItemKind.Method,
+      insertText: 'fm.collection.get("${1:key}")',
+      insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+      documentation: '获取集合变量'
+    },
+    {
+      label: 'fm.collection.set',
+      kind: monaco.languages.CompletionItemKind.Method,
+      insertText: 'fm.collection.set("${1:key}", "${2:value}")',
+      insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+      documentation: '设置集合变量'
+    },
+    {
+      label: 'fm.collection.getAll',
+      kind: monaco.languages.CompletionItemKind.Method,
+      insertText: 'fm.collection.getAll()',
+      documentation: '获取所有集合变量'
+    },
+    // request
+    {
+      label: 'fm.request.getUrl',
+      kind: monaco.languages.CompletionItemKind.Method,
+      insertText: 'fm.request.getUrl()',
+      documentation: '获取请求 URL'
+    },
+    {
+      label: 'fm.request.setUrl',
+      kind: monaco.languages.CompletionItemKind.Method,
+      insertText: 'fm.request.setUrl("${1:url}")',
+      insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+      documentation: '设置请求 URL'
+    },
+    {
+      label: 'fm.request.getBaseUrl',
+      kind: monaco.languages.CompletionItemKind.Method,
+      insertText: 'fm.request.getBaseUrl()',
+      documentation: '获取 baseUrl'
+    },
+    {
+      label: 'fm.request.setBaseUrl',
+      kind: monaco.languages.CompletionItemKind.Method,
+      insertText: 'fm.request.setBaseUrl("${1:baseUrl}")',
+      insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+      documentation: '设置 baseUrl'
+    },
+    {
+      label: 'fm.request.getPath',
+      kind: monaco.languages.CompletionItemKind.Method,
+      insertText: 'fm.request.getPath()',
+      documentation: '获取请求路径'
+    },
+    {
+      label: 'fm.request.setPath',
+      kind: monaco.languages.CompletionItemKind.Method,
+      insertText: 'fm.request.setPath("${1:path}")',
+      insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+      documentation: '设置请求路径'
+    },
+    {
+      label: 'fm.request.getMethod',
+      kind: monaco.languages.CompletionItemKind.Method,
+      insertText: 'fm.request.getMethod()',
+      documentation: '获取请求方法'
+    },
+    {
+      label: 'fm.request.setMethod',
+      kind: monaco.languages.CompletionItemKind.Method,
+      insertText: 'fm.request.setMethod("${1:method}")',
+      insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+      documentation: '设置请求方法'
+    },
+    {
+      label: 'fm.request.getHeader',
+      kind: monaco.languages.CompletionItemKind.Method,
+      insertText: 'fm.request.getHeader("${1:key}")',
+      insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+      documentation: '获取请求头'
+    },
+    {
+      label: 'fm.request.setHeader',
+      kind: monaco.languages.CompletionItemKind.Method,
+      insertText: 'fm.request.setHeader("${1:key}", "${2:value}")',
+      insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+      documentation: '设置请求头'
+    },
+    {
+      label: 'fm.request.removeHeader',
+      kind: monaco.languages.CompletionItemKind.Method,
+      insertText: 'fm.request.removeHeader("${1:key}")',
+      insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+      documentation: '移除请求头'
+    },
+    {
+      label: 'fm.request.getHeaders',
+      kind: monaco.languages.CompletionItemKind.Method,
+      insertText: 'fm.request.getHeaders()',
+      documentation: '获取所有请求头'
+    },
+    {
+      label: 'fm.request.getBody',
+      kind: monaco.languages.CompletionItemKind.Method,
+      insertText: 'fm.request.getBody()',
+      documentation: '获取请求体'
+    },
+    {
+      label: 'fm.request.setBody',
+      kind: monaco.languages.CompletionItemKind.Method,
+      insertText: 'fm.request.setBody("${1:body}")',
+      insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+      documentation: '设置请求体'
+    },
+    // log
+    {
+      label: 'fm.log',
+      kind: monaco.languages.CompletionItemKind.Method,
+      insertText: 'fm.log("${1:message}")',
+      insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+      documentation: '输出日志到 Console'
+    },
+    // assert
+    {
+      label: 'fm.assert',
+      kind: monaco.languages.CompletionItemKind.Method,
+      insertText: 'fm.assert(${1:condition}, "${2:message}")',
+      insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+      documentation: '断言检查'
+    },
+    // sleep
+    {
+      label: 'fm.sleep',
+      kind: monaco.languages.CompletionItemKind.Method,
+      insertText: 'fm.sleep(${1:ms})',
+      insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+      documentation: '异步等待（毫秒）'
+    }
+  ]
+  
+  // 后置脚本额外提供 response API
+  if (isPostScript) {
+    completions.push(
+      {
+        label: 'fm.response.getStatus',
+        kind: monaco.languages.CompletionItemKind.Method,
+        insertText: 'fm.response.getStatus()',
+        documentation: '获取响应状态码'
+      },
+      {
+        label: 'fm.response.getStatusText',
+        kind: monaco.languages.CompletionItemKind.Method,
+        insertText: 'fm.response.getStatusText()',
+        documentation: '获取响应状态文本'
+      },
+      {
+        label: 'fm.response.getHeader',
+        kind: monaco.languages.CompletionItemKind.Method,
+        insertText: 'fm.response.getHeader("${1:key}")',
+        insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+        documentation: '获取响应头'
+      },
+      {
+        label: 'fm.response.getHeaders',
+        kind: monaco.languages.CompletionItemKind.Method,
+        insertText: 'fm.response.getHeaders()',
+        documentation: '获取所有响应头'
+      },
+      {
+        label: 'fm.response.getBody',
+        kind: monaco.languages.CompletionItemKind.Method,
+        insertText: 'fm.response.getBody()',
+        documentation: '获取响应体（字符串）'
+      },
+      {
+        label: 'fm.response.getJson',
+        kind: monaco.languages.CompletionItemKind.Method,
+        insertText: 'fm.response.getJson()',
+        documentation: '获取响应体（JSON 对象）'
+      },
+      {
+        label: 'fm.response.getTime',
+        kind: monaco.languages.CompletionItemKind.Method,
+        insertText: 'fm.response.getTime()',
+        documentation: '获取响应时间（ms）'
+      },
+      {
+        label: 'fm.response.getSize',
+        kind: monaco.languages.CompletionItemKind.Method,
+        insertText: 'fm.response.getSize()',
+        documentation: '获取响应大小（bytes）'
+      }
+    )
+  }
+  
+  return completions
+}
+
+// 注册自动补全
+const registerCompletionProvider = (isPostScript) => {
+  // 先注销旧的
+  if (completionProvider) {
+    completionProvider.dispose()
+  }
+  
+  completionProvider = monaco.languages.registerCompletionItemProvider('javascript', {
+    provideCompletionItems: (model, position) => {
+      const textUntilPosition = model.getValueInRange({
+        startLineNumber: 1,
+        startColumn: 1,
+        endLineNumber: position.lineNumber,
+        endColumn: position.column
+      })
+      
+      // 检查是否在 fm. 后面
+      const match = textUntilPosition.match(/fm\.(\w*)$/)
+      if (!match) {
+        return { suggestions: [] }
+      }
+      
+      const word = match[1]
+      const suggestions = getFmCompletions(isPostScript)
+        .filter(item => item.label.startsWith(`fm.${word}`) || word === '')
+        .map(item => ({
+          ...item,
+          range: {
+            startLineNumber: position.lineNumber,
+            startColumn: position.column - word.length,
+            endLineNumber: position.lineNumber,
+            endColumn: position.column
+          }
+        }))
+      
+      return { suggestions }
+    }
+  })
+}
 
 // 初始化编辑器
 const initEditor = () => {
@@ -33,6 +296,9 @@ const initEditor = () => {
     tabSize: 2,
     wordWrap: 'on'
   })
+  
+  // 注册自动补全
+  registerCompletionProvider(scriptType.value === 'post')
 }
 
 // 监听 request 变化，切换接口时更新编辑器内容
@@ -53,6 +319,8 @@ watch(scriptType, (newType) => {
       : (props.request?.postScript || '')
     editor.setValue(newValue)
     editor.layout()
+    // 更新自动补全
+    registerCompletionProvider(newType === 'post')
   }
 })
 
@@ -83,6 +351,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   editor?.dispose()
+  completionProvider?.dispose()
 })
 </script>
 
