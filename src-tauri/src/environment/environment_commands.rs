@@ -83,3 +83,31 @@ pub fn get_active_variables(workspace_path: String) -> HashMap<String, String> {
 
     HashMap::new()
 }
+
+/// 环境排序
+#[tauri::command]
+pub fn reorder_environments(
+    workspace_path: String,
+    environment_id: String,
+    new_index: usize,
+) -> Result<(), String> {
+    let mut config = read_environments_config(&workspace_path);
+
+    // 查找环境当前位置
+    let current_index = config
+        .environments
+        .iter()
+        .position(|e| e.id == environment_id)
+        .ok_or_else(|| "环境不存在".to_string())?;
+
+    // 移动环境到新位置
+    if current_index != new_index {
+        let environment = config.environments.remove(current_index);
+        // 确保新索引在有效范围内
+        let insert_index = new_index.min(config.environments.len());
+        config.environments.insert(insert_index, environment);
+        write_environments_config(&workspace_path, &config)?;
+    }
+
+    Ok(())
+}

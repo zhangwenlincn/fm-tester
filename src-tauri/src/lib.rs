@@ -37,6 +37,7 @@ pub fn run() {
             set_last_workspace,
             set_last_api,
             get_last_api,
+            reorder_workspaces,
             // 集合
             get_collections,
             create_collection,
@@ -54,6 +55,7 @@ pub fn run() {
             delete_environment,
             switch_environment,
             get_active_variables,
+            reorder_environments,
             // 记忆
             get_expanded_collections,
             save_expanded_collections,

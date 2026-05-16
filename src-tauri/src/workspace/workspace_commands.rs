@@ -178,3 +178,27 @@ pub fn set_last_workspace(workspace_id: String) -> Result<(), String> {
     write_config(&config)?;
     Ok(())
 }
+
+/// 工作区排序
+#[tauri::command]
+pub fn reorder_workspaces(workspace_id: String, new_index: usize) -> Result<(), String> {
+    let mut config = read_config();
+
+    // 查找工作区当前位置
+    let current_index = config
+        .workspaces
+        .iter()
+        .position(|w| w.id == workspace_id)
+        .ok_or_else(|| "工作区不存在".to_string())?;
+
+    // 移动工作区到新位置
+    if current_index != new_index {
+        let workspace = config.workspaces.remove(current_index);
+        // 确保新索引在有效范围内
+        let insert_index = new_index.min(config.workspaces.len());
+        config.workspaces.insert(insert_index, workspace);
+        write_config(&config)?;
+    }
+
+    Ok(())
+}

@@ -50,6 +50,8 @@
   border-radius: 4px;
   background: #fafafa;
   border: 1px solid #e8e8e8;
+  cursor: grab;
+  user-select: none;
 }
 
 .env-item:hover {
@@ -59,6 +61,22 @@
 .env-item.active {
   background: #e6f7ff;
   border-color: #1890ff;
+}
+
+/* 拖拽状态 */
+.env-item.dragging {
+  opacity: 0.5;
+  cursor: grabbing;
+}
+
+.env-item.drag-over-before {
+  border-top: 2px solid #1890ff;
+  margin-top: -2px;
+}
+
+.env-item.drag-over-after {
+  border-bottom: 2px solid #1890ff;
+  margin-bottom: -2px;
 }
 
 .env-header {

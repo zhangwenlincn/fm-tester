@@ -22,8 +22,15 @@
       <div 
         v-for="env in environments" 
         :key="env.id"
+        :data-item-id="env.id"
         class="env-item"
-        :class="{ active: activeEnvironmentId === env.id }"
+        :class="{ 
+          active: activeEnvironmentId === env.id,
+          dragging: dragState.draggingId === env.id,
+          'drag-over-before': dragState.dragOverId === env.id && dragState.dragPosition === 'before',
+          'drag-over-after': dragState.dragOverId === env.id && dragState.dragPosition === 'after'
+        }"
+        @mousedown="(e) => onMouseDown(e, env)"
         @click="selectEnvironment(env.id)"
         @contextmenu.prevent="(e) => openEnvContextMenu(e, env, 'env')"
       >
@@ -110,6 +117,7 @@ const {
   editingEnvName,
   editingEnvVariables,
   envContextMenu,
+  dragState,
   loadEnvironments,
   selectEnvironment,
   openCreateEnvDialog,
@@ -120,7 +128,8 @@ const {
   deleteEnvironment,
   openEnvContextMenu,
   closeEnvContextMenu,
-  handleEnvContextAction
+  handleEnvContextAction,
+  onMouseDown
 } = useEnvironmentPanelSetup(props, emit)
 
 // 暴露方法供父组件调用

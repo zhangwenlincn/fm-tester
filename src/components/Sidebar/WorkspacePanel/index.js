@@ -1,4 +1,4 @@
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 
 // 导出 composable 函数
@@ -14,6 +14,17 @@ export function useWorkspacePanelSetup(props, emit) {
     y: 0,
     ws: null
   })
+  
+  // 拖拽排序状态
+  const dragState = ref({
+    draggingId: null,
+    dragOverId: null,
+    dragPosition: null // 'before' | 'after'
+  })
+  let isDragging = false
+  let dragStartY = 0
+  let dragStartId = null
+  const DRAG_THRESHOLD = 4
   
   // 加载工作区列表
   const loadWorkspaces = async () => {
@@ -46,7 +57,6 @@ export function useWorkspacePanelSetup(props, emit) {
     try {
       await invoke('delete_workspace', { id: ws.id })
       await loadWorkspaces()
-      // 通知父组件（传递被删除的工作区 id，让 App 判断是否需要清空）
       emit('workspaceDeleted', ws.id)
     } catch (e) {
       console.error('删除工作区失败:', e)
@@ -84,16 +94,138 @@ export function useWorkspacePanelSetup(props, emit) {
     closeWsContextMenu()
   }
   
+  // ============ 拖拽排序 ============
+  
+  const getItemEl = (id) => {
+    return document.querySelector(`[data-item-id="${id}"]`)
+  }
+  
+  const onMouseDown = (e, ws) => {
+    if (e.button !== 0) return
+    dragStartY = e.clientY
+    dragStartId = ws.id
+    isDragging = false
+    document.addEventListener('mousemove', onMouseMove)
+    document.addEventListener('mouseup', onMouseUp)
+  }
+  
+  const onMouseMove = (e) => {
+    if (!dragStartId) {
+      cleanupDrag()
+      return
+    }
+    
+    const deltaY = Math.abs(e.clientY - dragStartY)
+    if (!isDragging && deltaY < DRAG_THRESHOLD) return
+    
+    if (!isDragging) {
+      isDragging = true
+      dragState.value = {
+        draggingId: dragStartId,
+        dragOverId: null,
+        dragPosition: null
+      }
+    }
+    
+    const target = findItemAtY(e.clientY)
+    if (target) {
+      dragState.value = {
+        ...dragState.value,
+        dragOverId: target.id,
+        dragPosition: target.position
+      }
+    } else {
+      dragState.value = {
+        ...dragState.value,
+        dragOverId: null,
+        dragPosition: null
+      }
+    }
+  }
+  
+  const onMouseUp = async (e) => {
+    if (isDragging && dragState.value.dragOverId && dragState.value.draggingId !== dragState.value.dragOverId) {
+      await performReorder()
+    }
+    cleanupDrag()
+  }
+  
+  const performReorder = async () => {
+    const { draggingId, dragOverId, dragPosition } = dragState.value
+    if (!draggingId || !dragOverId || !dragPosition || draggingId === dragOverId) return
+    
+    // 找到目标索引
+    const targetIndex = workspaces.value.findIndex(ws => ws.id === dragOverId)
+    if (targetIndex === -1) return
+    
+    const newIndex = dragPosition === 'before' ? targetIndex : targetIndex + 1
+    
+    try {
+      await invoke('reorder_workspaces', {
+        workspaceId: draggingId,
+        newIndex
+      })
+      await loadWorkspaces()
+    } catch (e) {
+      console.error('排序失败:', e)
+    }
+  }
+  
+  const cleanupDrag = () => {
+    isDragging = false
+    dragStartId = null
+    dragStartY = 0
+    dragState.value = {
+      draggingId: null,
+      dragOverId: null,
+      dragPosition: null
+    }
+    document.removeEventListener('mousemove', onMouseMove)
+    document.removeEventListener('mouseup', onMouseUp)
+  }
+  
+  const findItemAtY = (clientY) => {
+    for (const ws of workspaces.value) {
+      if (ws.id === dragState.value.draggingId) continue
+      
+      const el = getItemEl(ws.id)
+      if (!el) continue
+      
+      const rect = el.getBoundingClientRect()
+      if (clientY >= rect.top && clientY <= rect.bottom) {
+        const midY = rect.top + rect.height / 2
+        const position = clientY < midY ? 'before' : 'after'
+        return { id: ws.id, position }
+      }
+    }
+    return null
+  }
+  
+  // 全局点击关闭右键菜单
+  const handleGlobalClick = () => {
+    closeWsContextMenu()
+  }
+  
+  onMounted(() => {
+    document.addEventListener('click', handleGlobalClick)
+  })
+  
+  onUnmounted(() => {
+    document.removeEventListener('click', handleGlobalClick)
+  })
+  
   return {
     workspaces,
     currentWorkspace,
     wsContextMenu,
+    dragState,
     loadWorkspaces,
     selectWorkspace,
     createWorkspace,
     deleteWorkspace,
     openWsContextMenu,
     closeWsContextMenu,
-    handleWsContextAction
+    handleWsContextAction,
+    onMouseDown
   }
 }

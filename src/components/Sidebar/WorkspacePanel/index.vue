@@ -13,12 +13,14 @@ const {
   workspaces,
   currentWorkspace,
   wsContextMenu,
+  dragState,
   loadWorkspaces,
   selectWorkspace,
   createWorkspace,
   openWsContextMenu,
   closeWsContextMenu,
-  handleWsContextAction
+  handleWsContextAction,
+  onMouseDown
 } = useWorkspacePanelSetup(props, emit)
 
 // 暴露方法给父组件
@@ -42,8 +44,15 @@ defineExpose({
       <div 
         v-for="ws in workspaces" 
         :key="ws.id"
+        :data-item-id="ws.id"
         class="env-item"
-        :class="{ active: currentWorkspace?.id === ws.id }"
+        :class="{
+          active: currentWorkspace?.id === ws.id,
+          dragging: dragState.draggingId === ws.id,
+          'drag-over-before': dragState.dragOverId === ws.id && dragState.dragPosition === 'before',
+          'drag-over-after': dragState.dragOverId === ws.id && dragState.dragPosition === 'after'
+        }"
+        @mousedown="(e) => onMouseDown(e, ws)"
         @click="selectWorkspace(ws)"
         @contextmenu.prevent="(e) => openWsContextMenu(e, ws)"
       >
