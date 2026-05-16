@@ -121,7 +121,9 @@ export function useRequestPanelSetup(props, emit) {
     formData: [],
     formUrlEncoded: [],
     binaryFile: null,  // binary 文件信息 { path, name }
-    timeout: null  // 请求超时时间（秒）
+    timeout: null,  // 请求超时时间（秒）
+    preScript: '',  // 前置脚本
+    postScript: ''  // 后置脚本
   })
 
   // Monaco Editor 相关
@@ -153,7 +155,9 @@ export function useRequestPanelSetup(props, emit) {
         formData: newVal.formData || [],
         formUrlEncoded: newVal.formUrlEncoded || [],
         binaryFile: newVal.binaryFile || null,
-        timeout: newVal.timeout || null
+        timeout: newVal.timeout || null,
+        preScript: newVal.preScript || '',
+        postScript: newVal.postScript || ''
       })
       // 确保 formData 字段有 files 属性
       localRequest.value.formData = localRequest.value.formData.map(field => ({
@@ -621,6 +625,14 @@ export function useRequestPanelSetup(props, emit) {
     isLocalUpdate = true
     emit('update:request', localRequest.value)
   }
+  
+  // 处理脚本更新
+  const handleScriptUpdate = (updatedRequest) => {
+    localRequest.value.preScript = updatedRequest.preScript || ''
+    localRequest.value.postScript = updatedRequest.postScript || ''
+    isLocalUpdate = true
+    emit('update:request', localRequest.value)
+  }
 
   return {
     methods,
@@ -648,6 +660,7 @@ export function useRequestPanelSetup(props, emit) {
     selectBinaryFile,
     selectFormFieldFiles,
     removeFormFieldFile,
-    updateTimeout
+    updateTimeout,
+    handleScriptUpdate
   }
 }

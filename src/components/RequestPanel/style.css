@@ -153,7 +153,7 @@
 
 .tab-content {
   flex: 1;
-  overflow: auto;
+  overflow: hidden;
   position: relative;
   min-height: 0;
 }
@@ -697,4 +697,13 @@
   font-size: 11px;
   color: #8c8c8c;
   margin-left: 4px;
+}
+
+/* 脚本面板 */
+.scripts-panel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
 }

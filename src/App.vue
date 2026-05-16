@@ -168,8 +168,8 @@ const {
           />
         </div>
         
-        <!-- 响应区 -->
-        <div class="response-area">
+        <!-- 响应区 - 脚本tab时不显示 -->
+        <div class="response-area" v-if="currentRequestTab !== 'scripts'">
           <ResponsePanel 
             :response="response"
             :loading="loading"

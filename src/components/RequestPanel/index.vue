@@ -2,6 +2,7 @@
 import { useRequestPanelSetup } from './index.js'
 import Icon from '../Icon/index.vue'
 import VariableHighlight from '../VariableHighlight/index.vue'
+import ScriptPanel from '../ScriptPanel/index.vue'
 
 const props = defineProps({
   request: {
@@ -50,7 +51,8 @@ const {
   selectBinaryFile,
   selectFormFieldFiles,
   removeFormFieldFile,
-  updateTimeout
+  updateTimeout,
+  handleScriptUpdate
 } = useRequestPanelSetup(props, emit)
 </script>
 
@@ -318,8 +320,16 @@ const {
         </div>
       </div>
       
+      <!-- 脚本 -->
+      <div v-if="activeTab === 'scripts'" class="scripts-panel">
+        <ScriptPanel 
+          :request="localRequest"
+          @update:request="handleScriptUpdate"
+        />
+      </div>
+      
       <!-- 其他标签页（占位符） -->
-      <div v-show="activeTab !== 'params' && activeTab !== 'headers' && activeTab !== 'body'" class="placeholder-panel">
+      <div v-show="activeTab !== 'params' && activeTab !== 'headers' && activeTab !== 'body' && activeTab !== 'scripts'" class="placeholder-panel">
         <div class="placeholder-content">
           <span class="placeholder-icon">📝</span>
           <p>{{ tabs.find(t => t.key === activeTab)?.name }}配置</p>
