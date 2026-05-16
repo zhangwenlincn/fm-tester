@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useTabsBarSetup } from './index.js'
 import Icon from '../Icon/index.vue'
@@ -30,6 +30,7 @@ const contextMenuVisible = ref(false)
 const contextMenuX = ref(0)
 const contextMenuY = ref(0)
 const contextMenuTargetIndex = ref(-1)
+const contextMenuRef = ref(null)
 
 // 使用 computed 确保语言切换时更新
 const contextMenuItems = computed(() => [
@@ -61,6 +62,24 @@ const handleContextMenuAction = (action) => {
 const closeContextMenu = () => {
   contextMenuVisible.value = false
 }
+
+// 全局点击监听，关闭右键菜单
+const handleGlobalClick = (event) => {
+  if (contextMenuVisible.value && contextMenuRef.value) {
+    const menuEl = contextMenuRef.value.$el || contextMenuRef.value
+    if (menuEl && !menuEl.contains(event.target)) {
+      closeContextMenu()
+    }
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('click', handleGlobalClick)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleGlobalClick)
+})
 </script>
 
 <template>
@@ -91,6 +110,7 @@ const closeContextMenu = () => {
     
     <!-- 右键菜单 -->
     <ContextMenu
+      ref="contextMenuRef"
       :visible="contextMenuVisible"
       :x="contextMenuX"
       :y="contextMenuY"

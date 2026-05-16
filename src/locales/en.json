@@ -185,7 +185,7 @@
     "selector": "Environment:",
     "notSelected": "Not selected",
     "noEnvironment": "No environment",
-    "hint": "Use {{variableName}} to reference these variables in URL, headers, and body"
+    "hint": "Use {'{'}{'{'}variableName{'}'}{'}'} to reference these variables in URL, headers, and body"
   },
   "collectionSettings": {
     "headersHint": "These headers will be automatically added to all requests in this collection"
@@ -237,7 +237,24 @@
   },
   "script": {
     "preScript": "Pre-request Script",
-    "postScript": "Post-request Script"
+    "postScript": "Post-request Script",
+    "apiRef": {
+      "title": "Script API Reference",
+      "preScriptSection": "Pre-request Script",
+      "preScriptDesc": "Pre-request scripts run before the request is sent, allowing you to modify request parameters.",
+      "postScriptSection": "Post-request Script",
+      "postScriptDesc": "Post-request scripts run after the response is received, allowing you to process response data. Inherits all pre-request script APIs.",
+      "executionOrder": "Execution Order (Inheritance Chain)",
+      "executionOrderDesc": "Pre-request: Workspace → Parent Collection → Sub Collection → API → HTTP Request\nPost-request: HTTP Response → API → Sub Collection → Parent Collection → Workspace",
+      "environment": "Environment Variables",
+      "collection": "Collection Variables",
+      "request": "Request Parameters",
+      "response": "Response Data",
+      "tools": "Utility Methods",
+      "logDesc": "Log output to Console",
+      "assertDesc": "Assertion check",
+      "sleepDesc": "Async wait"
+    }
   },
   "languages": {
     "zhCN": "简体中文",

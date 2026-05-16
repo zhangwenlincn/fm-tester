@@ -185,7 +185,7 @@
     "selector": "环境:",
     "notSelected": "未选择",
     "noEnvironment": "暂无环境",
-    "hint": "使用 {{变量名}} 在 URL、请求头、请求体中引用这些变量"
+    "hint": "使用 {'{'}{'{'}变量名{'}'}{'}'} 在 URL、请求头、请求体中引用这些变量"
   },
   "collectionSettings": {
     "headersHint": "这些请求头会自动添加到该集合下所有接口的请求中"
@@ -237,7 +237,24 @@
   },
   "script": {
     "preScript": "前置脚本",
-    "postScript": "后置脚本"
+    "postScript": "后置脚本",
+    "apiRef": {
+      "title": "脚本 API 参考",
+      "preScriptSection": "前置脚本",
+      "preScriptDesc": "前置脚本在请求发送前执行，可修改请求参数。",
+      "postScriptSection": "后置脚本",
+      "postScriptDesc": "后置脚本在响应返回后执行，可处理响应数据。继承前置脚本所有 API。",
+      "executionOrder": "执行顺序（继承链）",
+      "executionOrderDesc": "前置脚本：工作区 → 父集合 → 子集合 → 接口 → HTTP请求\n后置脚本：HTTP响应 → 接口 → 子集合 → 父集合 → 工作区",
+      "environment": "环境变量",
+      "collection": "集合变量",
+      "request": "请求参数",
+      "response": "响应数据",
+      "tools": "工具方法",
+      "logDesc": "输出日志到 Console",
+      "assertDesc": "断言检查",
+      "sleepDesc": "异步等待"
+    }
   },
   "languages": {
     "zhCN": "简体中文",
