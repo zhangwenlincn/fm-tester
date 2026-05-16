@@ -67,21 +67,15 @@ const {
           </div>
 
           <div class="form-group">
-            <label>工作区类型</label>
+            <label>{{ t('common.type') }}</label>
             <div class="radio-group">
               <label class="radio-item">
                 <input type="radio" v-model="workspaceType" value="local" />
-                <span class="radio-label">
-                  <Icon name="folder" :size="16" />
-                  本地工作区
-                </span>
+                <span>{{ t('workspaceType.local') }}</span>
               </label>
               <label class="radio-item">
                 <input type="radio" v-model="workspaceType" value="git" />
-                <span class="radio-label">
-                  <Icon name="git" :size="16" />
-                  Git 工作区
-                </span>
+                <span>{{ t('workspaceType.git') }}</span>
               </label>
             </div>
           </div>
@@ -89,7 +83,7 @@ const {
           <!-- Git 配置字段 -->
           <div v-if="workspaceType === 'git'" class="git-config">
             <div class="form-group">
-              <label>Git 仓库地址</label>
+              <label>{{ t('gitConfig.url') }}</label>
               <input
                 v-model="gitUrl"
                 type="text"
@@ -99,7 +93,7 @@ const {
             </div>
 
             <div class="form-group">
-              <label>分支</label>
+              <label>{{ t('gitConfig.branch') }}</label>
               <input
                 v-model="gitBranch"
                 type="text"
@@ -109,21 +103,19 @@ const {
             </div>
 
             <div class="form-group">
-              <label>用户名（可选）</label>
+              <label>{{ t('gitConfig.username') }}</label>
               <input
                 v-model="gitUsername"
                 type="text"
-                placeholder="Git 用户名"
                 class="form-input"
               />
             </div>
 
             <div class="form-group">
-              <label>密码/Token（可选）</label>
+              <label>{{ t('gitConfig.password') }}</label>
               <input
                 v-model="gitPassword"
                 type="password"
-                placeholder="Git 密码或访问令牌"
                 class="form-input"
               />
             </div>
