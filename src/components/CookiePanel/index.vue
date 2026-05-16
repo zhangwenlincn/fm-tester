@@ -1,4 +1,5 @@
 <script setup>
+import { useI18n } from 'vue-i18n'
 import { useCookiePanel } from './index.js'
 
 const props = defineProps({
@@ -8,6 +9,8 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['close', 'refresh'])
+
+const { t } = useI18n()
 
 const { deleteCookie, clearCookies } = useCookiePanel(props, emit)
 </script>
@@ -20,11 +23,11 @@ const { deleteCookie, clearCookies } = useCookiePanel(props, emit)
         <button class="close-btn" @click="$emit('close')">×</button>
       </div>
       <div class="panel-actions">
-        <button class="clear-btn" @click="clearCookies">清空全部</button>
+        <button class="clear-btn" @click="clearCookies">{{ t('buttons.clearAll') }}</button>
       </div>
       <div class="panel-content">
         <div v-if="cookies.length === 0" class="empty-message">
-          暂无 Cookie
+          {{ t('empty.noCookies') }}
         </div>
         <div v-else class="cookie-list">
           <div class="cookie-item" v-for="cookie in cookies" :key="cookie.name + cookie.domain">
@@ -34,7 +37,7 @@ const { deleteCookie, clearCookies } = useCookiePanel(props, emit)
             </div>
             <div class="cookie-value">{{ cookie.value }}</div>
             <div class="cookie-actions">
-              <button class="delete-btn" @click="deleteCookie(cookie.name, cookie.domain)">删除</button>
+              <button class="delete-btn" @click="deleteCookie(cookie.name, cookie.domain)">{{ t('common.delete') }}</button>
             </div>
           </div>
         </div>

@@ -1,6 +1,9 @@
 <script setup>
+import { useI18n } from 'vue-i18n'
 import { useCollectionPanelSetup } from './index.js'
 import Icon from '../../Icon/index.vue'
+
+const { t } = useI18n()
 
 const props = defineProps({
   workspace: Object
@@ -64,9 +67,9 @@ defineExpose({
   <div class="collection-panel">
     <!-- 面板头部 -->
     <div class="panel-header">
-      <span class="panel-title">集合</span>
+      <span class="panel-title">{{ t('panels.collections') }}</span>
       <div class="panel-actions">
-        <span class="action-btn" title="新建集合" @click="openRootCreateDialog">+</span>
+        <span class="action-btn" :title="t('buttons.newCollection')" @click="openRootCreateDialog">+</span>
       </div>
     </div>
 
@@ -75,14 +78,14 @@ defineExpose({
       <input
         v-model="searchQuery"
         type="text"
-        placeholder="搜索..."
+        :placeholder="t('placeholder.search')"
         class="search-input"
       />
     </div>
 
     <!-- 提示：需要先选择工作区 -->
     <div v-if="!props.workspace" class="empty-panel">
-      请先选择或创建工作区
+      {{ t('empty.selectWorkspace') }}
     </div>
 
     <!-- 树形列表 -->
@@ -93,7 +96,7 @@ defineExpose({
       @contextmenu="(e) => openContextMenu(e, null, 0, 'root')"
     >
       <div v-if="flatTreeList.length === 0" class="empty-panel">
-        暂无集合，右键创建
+        {{ t('empty.noCollections') }}
       </div>
 
       <template v-for="row in flatTreeList" :key="row.item.id">
@@ -182,25 +185,25 @@ defineExpose({
     <div v-if="showCreateDialog" class="create-dialog-overlay" @click.self="showCreateDialog = false">
       <div class="create-dialog">
         <div class="dialog-header">
-          <span>新建集合</span>
+          <span>{{ t('dialogs.newCollection') }}</span>
           <span class="dialog-close" @click="showCreateDialog = false">×</span>
         </div>
 
         <div class="dialog-body">
           <div class="dialog-row">
-            <label>名称</label>
-            <input v-model="newItemName" type="text" placeholder="请输入名称" />
+            <label>{{ t('common.name') }}</label>
+            <input v-model="newItemName" type="text" :placeholder="t('placeholder.name')" />
           </div>
 
           <div v-if="createDialogParent" class="dialog-row">
-            <label>父级</label>
+            <label>{{ t('dialogs.parent') }}</label>
             <span class="parent-name">{{ createDialogParent.name }}</span>
           </div>
         </div>
 
         <div class="dialog-footer">
-          <button class="btn-cancel" @click="showCreateDialog = false">取消</button>
-          <button class="btn-confirm" @click="handleCreate">确定</button>
+          <button class="btn-cancel" @click="showCreateDialog = false">{{ t('common.cancel') }}</button>
+          <button class="btn-confirm" @click="handleCreate">{{ t('common.confirm') }}</button>
         </div>
       </div>
     </div>
@@ -209,20 +212,20 @@ defineExpose({
     <div v-if="showRenameDialog" class="create-dialog-overlay" @click.self="showRenameDialog = false">
       <div class="create-dialog">
         <div class="dialog-header">
-          <span>重命名</span>
+          <span>{{ t('dialogs.rename') }}</span>
           <span class="dialog-close" @click="showRenameDialog = false">×</span>
         </div>
 
         <div class="dialog-body">
           <div class="dialog-row">
-            <label>名称</label>
-            <input v-model="renameItemName" type="text" placeholder="请输入名称" />
+            <label>{{ t('common.name') }}</label>
+            <input v-model="renameItemName" type="text" :placeholder="t('placeholder.name')" />
           </div>
         </div>
 
         <div class="dialog-footer">
-          <button class="btn-cancel" @click="showRenameDialog = false">取消</button>
-          <button class="btn-confirm" @click="handleRename">确定</button>
+          <button class="btn-cancel" @click="showRenameDialog = false">{{ t('common.cancel') }}</button>
+          <button class="btn-confirm" @click="handleRename">{{ t('common.confirm') }}</button>
         </div>
       </div>
     </div>
@@ -245,11 +248,11 @@ defineExpose({
       <template v-if="contextMenu.type === 'root'">
         <div class="menu-item" @click="handleContextAction('new-collection')">
           <span class="menu-icon"><Icon name="folder" :size="14" /></span>
-          <span>新建集合</span>
+          <span>{{ t('buttons.newCollection') }}</span>
         </div>
         <div class="menu-item" @click="handleContextAction('new-api')">
           <span class="menu-icon"><Icon name="api" :size="14" /></span>
-          <span>新建接口</span>
+          <span>{{ t('buttons.newApi') }}</span>
         </div>
       </template>
 
@@ -261,36 +264,36 @@ defineExpose({
           @click="handleContextAction('new-collection')"
         >
           <span class="menu-icon"><Icon name="folder" :size="14" /></span>
-          <span>新建子集合</span>
+          <span>{{ t('buttons.newSubCollection') }}</span>
         </div>
         <div class="menu-item" @click="handleContextAction('new-api')">
           <span class="menu-icon"><Icon name="api" :size="14" /></span>
-          <span>新建接口</span>
+          <span>{{ t('buttons.newApi') }}</span>
         </div>
         <div class="menu-divider"></div>
         <div class="menu-item" @click="handleContextAction('rename')">
-          <span>重命名</span>
+          <span>{{ t('common.rename') }}</span>
         </div>
         <div class="menu-item delete" @click="handleContextAction('delete')">
-          <span>删除</span>
+          <span>{{ t('common.delete') }}</span>
         </div>
       </template>
 
       <!-- API 菜单 -->
       <template v-if="contextMenu.type === 'api'">
         <div class="menu-item" @click="handleContextAction('rename')">
-          <span>重命名</span>
+          <span>{{ t('common.rename') }}</span>
         </div>
         <div class="menu-divider"></div>
         <div class="menu-item delete" @click="handleContextAction('delete')">
-          <span>删除</span>
+          <span>{{ t('common.delete') }}</span>
         </div>
       </template>
 
       <!-- 保存响应菜单 -->
       <template v-if="contextMenu.type === 'saved-response'">
         <div class="menu-item delete" @click="handleContextAction('delete-saved-response')">
-          <span>删除</span>
+          <span>{{ t('common.delete') }}</span>
         </div>
       </template>
     </div>

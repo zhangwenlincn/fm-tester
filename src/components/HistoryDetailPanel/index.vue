@@ -1,6 +1,9 @@
 <script setup>
 import { useHistoryDetailSetup } from './index.js'
 import Icon from '../Icon/index.vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps({
   entry: Object
@@ -23,14 +26,14 @@ const {
 } = useHistoryDetailSetup(props)
 
 const requestTabs = [
-  { key: 'params', name: '参数' },
-  { key: 'headers', name: 'Headers' },
-  { key: 'body', name: 'Body' }
+  { key: 'params', name: t('tabs.params') },
+  { key: 'headers', name: t('tabs.headers') },
+  { key: 'body', name: t('tabs.body') }
 ]
 
 const responseTabs = [
-  { key: 'body', name: '响应体' },
-  { key: 'headers', name: '响应头' }
+  { key: 'body', name: t('tabs.responseBody') },
+  { key: 'headers', name: t('tabs.responseHeaders') }
 ]
 
 // 解析 URL 参数
@@ -85,12 +88,12 @@ const parseUrlParams = (url) => {
           <div class="params-list">
             <div class="params-header">
               <span class="col-check"></span>
-              <span class="col-key">参数名</span>
-              <span class="col-value">参数值</span>
-              <span class="col-desc">描述</span>
+              <span class="col-key">{{ t('table.paramName') }}</span>
+              <span class="col-value">{{ t('table.paramValue') }}</span>
+              <span class="col-desc">{{ t('table.description') }}</span>
             </div>
             <div v-if="!entry.url.includes('?')" class="empty-params">
-              无 URL 参数
+              {{ t('empty.noUrlParams') }}
             </div>
             <div 
               v-for="(param, index) in parseUrlParams(entry.url)" 
@@ -118,12 +121,12 @@ const parseUrlParams = (url) => {
           <div class="params-list">
             <div class="params-header">
               <span class="col-check"></span>
-              <span class="col-key">Header 名</span>
-              <span class="col-value">Header 值</span>
-              <span class="col-desc">描述</span>
+              <span class="col-key">{{ t('table.headerName') }}</span>
+              <span class="col-value">{{ t('table.headerValue') }}</span>
+              <span class="col-desc">{{ t('table.description') }}</span>
             </div>
             <div v-if="!entry.headers || entry.headers.length === 0" class="empty-params">
-              无请求头
+              {{ t('empty.noRequestHeaders') }}
             </div>
             <div 
               v-for="(header, index) in entry.headers" 
@@ -150,14 +153,14 @@ const parseUrlParams = (url) => {
         <div v-show="requestTab === 'body'" class="body-panel">
           <div class="body-toolbar">
             <div class="body-type-display">
-              Body 类型: <span class="type-value">{{ entry.body_type || 'none' }}</span>
+              {{ t('tabs.body') }} {{ t('common.type') }}: <span class="type-value">{{ entry.body_type || 'none' }}</span>
             </div>
             <div class="language-indicator" v-if="entry.body">
               <span class="language-tag">{{ detectedRequestLanguage }}</span>
             </div>
           </div>
           <div v-if="!entry.body" class="body-empty">
-            <span class="empty-text">无请求体</span>
+            <span class="empty-text">{{ t('empty.noRequestBody') }}</span>
           </div>
           <div v-else class="editor-wrapper">
             <div ref="requestEditorContainer" class="monaco-editor-container"></div>
@@ -172,15 +175,15 @@ const parseUrlParams = (url) => {
       <div class="response-status">
         <div class="status-info">
           <div class="status-item">
-            <span class="status-label">状态:</span>
+            <span class="status-label">{{ t('response.status') }}:</span>
             <span class="status-value" :class="getStatusClass(entry.status)">{{ entry.status }} {{ entry.status_text }}</span>
           </div>
           <div class="status-item">
-            <span class="status-label">时间:</span>
+            <span class="status-label">{{ t('response.time') }}:</span>
             <span class="status-value">{{ formatResponseTime(entry.time) }}</span>
           </div>
           <div class="status-item">
-            <span class="status-label">大小:</span>
+            <span class="status-label">{{ t('response.size') }}:</span>
             <span class="status-value">{{ formatSize(entry.size) }}</span>
           </div>
         </div>
@@ -212,8 +215,8 @@ const parseUrlParams = (url) => {
         <!-- 响应头 -->
         <div v-show="responseTab === 'headers'" class="headers-content">
           <div class="headers-list" v-if="entry.response_headers">
-            <div 
-              v-for="(value, key) in entry.response_headers" 
+            <div
+              v-for="(value, key) in entry.response_headers"
               :key="key"
               class="header-row"
             >
@@ -221,7 +224,7 @@ const parseUrlParams = (url) => {
               <span class="header-value">{{ value }}</span>
             </div>
           </div>
-          <div v-else class="empty-state">无响应头</div>
+          <div v-else class="empty-state">{{ t('empty.noResponseHeaders') }}</div>
         </div>
       </div>
     </div>
@@ -230,8 +233,8 @@ const parseUrlParams = (url) => {
   <!-- 无数据提示 -->
   <div class="history-empty" v-else>
     <span class="empty-icon"><Icon name="history" :size="48" /></span>
-    <p class="empty-text">请从历史列表中选择一条记录</p>
-    <p class="empty-hint">点击左侧历史列表查看请求详情</p>
+    <p class="empty-text">{{ t('empty.selectHistory') }}</p>
+    <p class="empty-hint">{{ t('empty.selectHistoryHint') }}</p>
   </div>
 </template>
 

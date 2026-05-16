@@ -1,18 +1,21 @@
 import { ref } from "vue";
+import { useI18n } from "vue-i18n";
 
 // 导航项配置
 export const navItems = [
-  { icon: "collection", name: "集合", key: "collection" },
-  { icon: "environment", name: "环境", key: "environment" },
-  { icon: "workspace", name: "工作区", key: "workspace" },
-  { icon: "history", name: "历史", key: "history" },
-  { icon: "function", name: "功能", key: "function" },
-  { icon: "performance", name: "性能", key: "performance" },
-  { icon: "toolbox", name: "工具箱", key: "toolbox" },
+  { icon: "collection", nameKey: "nav.collections", key: "collection" },
+  { icon: "environment", nameKey: "nav.environments", key: "environment" },
+  { icon: "workspace", nameKey: "nav.workspaces", key: "workspace" },
+  { icon: "history", nameKey: "nav.history", key: "history" },
+  { icon: "function", nameKey: "nav.features", key: "function" },
+  { icon: "performance", nameKey: "nav.performance", key: "performance" },
+  { icon: "toolbox", nameKey: "nav.toolbox", key: "toolbox" },
 ];
 
 // 导出 composable 函数
 export function useIconNavSetup(props, emit) {
+  const { t } = useI18n();
+  
   // 当前激活的导航索引
   const activeNav = ref(0);
 
@@ -32,11 +35,17 @@ export function useIconNavSetup(props, emit) {
     return navItems[activeNav.value];
   };
 
+  // 获取导航项名称（国际化）
+  const getNavName = (item) => {
+    return t(item.nameKey);
+  };
+
   return {
     navItems,
     activeNav,
     selectNav,
     setActiveNav,
     currentNavItem,
+    getNavName,
   };
 }

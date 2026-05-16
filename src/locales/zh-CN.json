@@ -1,0 +1,252 @@
+{
+  "common": {
+    "cancel": "取消",
+    "confirm": "确定",
+    "save": "保存",
+    "delete": "删除",
+    "rename": "重命名",
+    "new": "新建",
+    "edit": "编辑",
+    "clear": "清空",
+    "close": "关闭",
+    "name": "名称",
+    "description": "描述",
+    "search": "搜索",
+    "loading": "加载中...",
+    "developing": "此功能正在开发中...",
+    "selectAll": "全选",
+    "inverseSelect": "反选",
+    "type": "类型"
+  },
+  "menu": {
+    "file": "文件",
+    "language": "语言",
+    "theme": "主题",
+    "settings": "设置",
+    "plugin": "插件",
+    "help": "帮助",
+    "about": "关于",
+    "preferences": "偏好设置",
+    "scriptApiRef": "脚本 API 参考"
+  },
+  "tabs": {
+    "params": "参数",
+    "headers": "请求头",
+    "body": "请求体",
+    "scripts": "脚本",
+    "auth": "授权",
+    "docs": "文档",
+    "responseBody": "响应体",
+    "responseHeaders": "响应头",
+    "testResults": "测试结果",
+    "networkLog": "网络日志",
+    "requestInfo": "请求信息",
+    "responseInfo": "响应信息",
+    "preRequest": "前置脚本",
+    "postRequest": "后置脚本",
+    "timeline": "时间线",
+    "variables": "变量"
+  },
+  "buttons": {
+    "send": "发送",
+    "format": "格式化",
+    "selectFile": "选择文件",
+    "addParam": "+ 添加参数",
+    "addHeader": "+ 添加请求头",
+    "addField": "+ 添加字段",
+    "addVariable": "+ 添加变量",
+    "saveResponse": "保存响应",
+    "clearAll": "清空全部",
+    "clearToday": "清空当天",
+    "newCollection": "新建集合",
+    "newApi": "新建接口",
+    "newSubCollection": "新建子集合",
+    "newEnvironment": "新建环境",
+    "newWorkspace": "新建工作区"
+  },
+  "table": {
+    "paramName": "参数名",
+    "paramValue": "参数值",
+    "headerName": "Header 名",
+    "headerValue": "Header 值",
+    "fieldName": "字段名",
+    "fieldValue": "值",
+    "fieldType": "类型",
+    "variableName": "变量名",
+    "variableValue": "变量值",
+    "status": "状态",
+    "time": "时间",
+    "size": "大小",
+    "description": "描述",
+    "enabled": "启用"
+  },
+  "empty": {
+    "noParams": "暂无参数，点击上方按钮添加",
+    "noHeaders": "暂无请求头，点击上方按钮添加",
+    "noFields": "暂无字段，点击上方按钮添加",
+    "noVariables": "暂无变量，点击上方按钮添加",
+    "noCookies": "暂无 Cookie",
+    "noLogs": "暂无日志",
+    "noCollectionHeaders": "暂无通用请求头，点击上方按钮添加",
+    "noCollectionVariables": "暂无集合变量，点击上方按钮添加",
+    "noCollections": "暂无集合，右键创建",
+    "noEnvironments": "暂无环境，右键创建",
+    "noHistory": "暂无历史记录",
+    "noWorkspaces": "暂无工作区，点击上方 + 创建",
+    "selectApi": "请选择一个接口",
+    "selectApiHint": "从左侧集合中选择接口开始测试",
+    "noResponse": "发送请求以查看响应",
+    "noResponseHint": "在上方输入 URL 并点击'发送'按钮",
+    "noBody": "此请求不需要请求体",
+    "selectBinary": "请选择要上传的二进制文件",
+    "selectWorkspace": "请先选择或创建工作区",
+    "selectHistory": "请从历史列表中选择一条记录",
+    "selectHistoryHint": "点击左侧历史列表查看请求详情",
+    "noUrlParams": "无 URL 参数",
+    "noRequestHeaders": "无请求头",
+    "noRequestBody": "无请求体",
+    "noResponseHeaders": "无响应头",
+    "selectEnvironment": "请先在左侧选择一个环境"
+  },
+  "placeholder": {
+    "url": "输入请求 URL",
+    "search": "搜索...",
+    "name": "请输入名称",
+    "description": "描述（可选）",
+    "paramName": "参数名",
+    "paramValue": "参数值",
+    "headerName": "Header 名",
+    "headerValue": "Header 值",
+    "fieldName": "字段名",
+    "fieldValue": "值",
+    "variableName": "变量名",
+    "variableValue": "变量值",
+    "environmentName": "如：开发环境、测试环境",
+    "workspaceName": "输入工作区名称",
+    "workspaceDesc": "输入工作区描述（可选）",
+    "workspacePath": "选择工作区存储路径",
+    "responseName": "输入响应名称"
+  },
+  "panels": {
+    "collections": "集合",
+    "environments": "环境",
+    "history": "历史",
+    "workspaces": "工作区",
+    "console": "控制台",
+    "cookies": "Cookies",
+    "globalSettings": "全局设置",
+    "requestSettings": "请求设置",
+    "collectionSettings": "集合设置"
+  },
+  "dialogs": {
+    "newCollection": "新建集合",
+    "newApi": "新建接口",
+    "newSubCollection": "新建子集合",
+    "newEnvironment": "新建环境",
+    "editEnvironment": "编辑环境",
+    "newWorkspace": "创建工作区",
+    "switchWorkspace": "选择工作区",
+    "saveResponse": "保存响应",
+    "rename": "重命名",
+    "workspacePath": "路径",
+    "responseName": "响应名称",
+    "parent": "父级"
+  },
+  "toast": {
+    "scriptSaved": "脚本保存成功",
+    "scriptSaveFailed": "脚本保存失败",
+    "saved": "已保存",
+    "saveFailed": "保存失败",
+    "deleteFailed": "删除失败",
+    "clearFailed": "清空失败",
+    "selectBinary": "选择二进制文件",
+    "selectFileFailed": "选择文件失败"
+  },
+  "response": {
+    "status": "状态",
+    "time": "时间",
+    "size": "大小",
+    "requesting": "请求中...",
+    "sending": "正在发送请求..."
+  },
+  "settings": {
+    "timeout": "请求超时时间",
+    "timeoutUnit": "秒",
+    "timeoutDesc": "设置 HTTP 请求的最大等待时间，超过该时间请求将自动取消。默认值为 60 秒。",
+    "language": "语言"
+  },
+  "workspace": {
+    "selector": "工作区:",
+    "notSelected": "未选择",
+    "noWorkspace": "暂无工作区",
+    "lastOpened": "最后打开:"
+  },
+  "environment": {
+    "selector": "环境:",
+    "notSelected": "未选择",
+    "noEnvironment": "暂无环境",
+    "hint": "使用 {{变量名}} 在 URL、请求头、请求体中引用这些变量"
+  },
+  "collectionSettings": {
+    "headersHint": "这些请求头会自动添加到该集合下所有接口的请求中"
+  },
+  "tabsBar": {
+    "close": "关闭",
+    "closeOthers": "关闭其他",
+    "closeAll": "关闭全部"
+  },
+  "bodyType": {
+    "none": "none",
+    "formData": "form-data",
+    "formUrlencoded": "x-www-form-urlencoded",
+    "raw": "raw",
+    "binary": "binary"
+  },
+  "rawType": {
+    "json": "JSON",
+    "text": "Text",
+    "javascript": "JavaScript",
+    "html": "HTML",
+    "xml": "XML"
+  },
+  "fieldType": {
+    "text": "文本",
+    "file": "文件"
+  },
+  "nav": {
+    "collections": "集合",
+    "environments": "环境",
+    "workspaces": "工作区",
+    "history": "历史",
+    "features": "功能",
+    "performance": "性能",
+    "toolbox": "工具箱"
+  },
+  "savedResponse": {
+    "originalUrl": "原始 URL:",
+    "requestHeaders": "请求头",
+    "requestBody": "请求体",
+    "path": "路径:",
+    "secure": "安全",
+    "httpOnly": "仅 HTTP"
+  },
+  "contextMenu": {
+    "deleteWorkspace": "删除工作区",
+    "deleteEnvironment": "删除环境",
+    "deleteCollection": "删除集合"
+  },
+  "script": {
+    "preScript": "前置脚本",
+    "postScript": "后置脚本"
+  },
+  "languages": {
+    "zhCN": "简体中文",
+    "en": "English"
+  },
+  "time": {
+    "justNow": "刚刚",
+    "minutesAgo": "{n}分钟前",
+    "hoursAgo": "{n}小时前",
+    "daysAgo": "{n}天前"
+  }
+}

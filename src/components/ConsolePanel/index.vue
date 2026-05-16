@@ -1,5 +1,6 @@
 <script setup>
 import { ref, watch, nextTick, onUnmounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import * as monaco from 'monaco-editor'
 import Icon from '../Icon/index.vue'
 
@@ -9,6 +10,8 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['close', 'clear'])
+
+const { t } = useI18n()
 
 // 面板高度
 const panelHeight = ref(200)
@@ -235,16 +238,16 @@ watch(() => props.logs, () => {
     <div class="resize-handle" :class="{ dragging: isDragging }" @mousedown="startDrag"></div>
     
     <div class="panel-header">
-      <span class="header-title">控制台</span>
+      <span class="header-title">{{ t('panels.console') }}</span>
       <div class="header-actions">
-        <button class="clear-btn" @click="$emit('clear')">清空</button>
+        <button class="clear-btn" @click="$emit('clear')">{{ t('common.clear') }}</button>
         <button class="close-btn" @click="$emit('close')">×</button>
       </div>
     </div>
     
     <div class="panel-content">
       <div v-if="logs.length === 0" class="empty-state">
-        <span>暂无日志</span>
+        <span>{{ t('empty.noLogs') }}</span>
       </div>
       <div v-else class="log-list">
         <div class="log-item-wrapper" v-for="(log, index) in logs" :key="index">

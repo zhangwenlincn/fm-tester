@@ -1,0 +1,252 @@
+{
+  "common": {
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save",
+    "delete": "Delete",
+    "rename": "Rename",
+    "new": "New",
+    "edit": "Edit",
+    "clear": "Clear",
+    "close": "Close",
+    "name": "Name",
+    "description": "Description",
+    "search": "Search",
+    "loading": "Loading...",
+    "developing": "This feature is under development...",
+    "selectAll": "Select All",
+    "inverseSelect": "Inverse Select",
+    "type": "Type"
+  },
+  "menu": {
+    "file": "File",
+    "language": "Language",
+    "theme": "Theme",
+    "settings": "Settings",
+    "plugin": "Plugin",
+    "help": "Help",
+    "about": "About",
+    "preferences": "Preferences",
+    "scriptApiRef": "Script API Reference"
+  },
+  "tabs": {
+    "params": "Params",
+    "headers": "Headers",
+    "body": "Body",
+    "scripts": "Scripts",
+    "auth": "Auth",
+    "docs": "Docs",
+    "responseBody": "Response Body",
+    "responseHeaders": "Response Headers",
+    "testResults": "Test Results",
+    "networkLog": "Network Log",
+    "requestInfo": "Request Info",
+    "responseInfo": "Response Info",
+    "preRequest": "Pre-request Script",
+    "postRequest": "Post-request Script",
+    "timeline": "Timeline",
+    "variables": "Variables"
+  },
+  "buttons": {
+    "send": "Send",
+    "format": "Format",
+    "selectFile": "Select File",
+    "addParam": "+ Add Param",
+    "addHeader": "+ Add Header",
+    "addField": "+ Add Field",
+    "addVariable": "+ Add Variable",
+    "saveResponse": "Save Response",
+    "clearAll": "Clear All",
+    "clearToday": "Clear Today",
+    "newCollection": "New Collection",
+    "newApi": "New API",
+    "newSubCollection": "New Sub-collection",
+    "newEnvironment": "New Environment",
+    "newWorkspace": "New Workspace"
+  },
+  "table": {
+    "paramName": "Param Name",
+    "paramValue": "Param Value",
+    "headerName": "Header Name",
+    "headerValue": "Header Value",
+    "fieldName": "Field Name",
+    "fieldValue": "Value",
+    "fieldType": "Type",
+    "variableName": "Variable Name",
+    "variableValue": "Variable Value",
+    "status": "Status",
+    "time": "Time",
+    "size": "Size",
+    "description": "Description",
+    "enabled": "Enabled"
+  },
+  "empty": {
+    "noParams": "No params, click button above to add",
+    "noHeaders": "No headers, click button above to add",
+    "noFields": "No fields, click button above to add",
+    "noVariables": "No variables, click button above to add",
+    "noCookies": "No Cookies",
+    "noLogs": "No Logs",
+    "noCollectionHeaders": "No collection headers, click button above to add",
+    "noCollectionVariables": "No collection variables, click button above to add",
+    "noCollections": "No collections, right-click to create",
+    "noEnvironments": "No environments, right-click to create",
+    "noHistory": "No history records",
+    "noWorkspaces": "No workspaces, click + above to create",
+    "selectApi": "Please select an API",
+    "selectApiHint": "Select an API from collections to start testing",
+    "noResponse": "Send request to view response",
+    "noResponseHint": "Enter URL above and click 'Send' button",
+    "noBody": "This request does not need a body",
+    "selectBinary": "Please select a binary file to upload",
+    "selectWorkspace": "Please select or create a workspace first",
+    "selectHistory": "Please select a record from history list",
+    "selectHistoryHint": "Click history list on left to view request details",
+    "noUrlParams": "No URL params",
+    "noRequestHeaders": "No request headers",
+    "noRequestBody": "No request body",
+    "noResponseHeaders": "No response headers",
+    "selectEnvironment": "Please select an environment on left first"
+  },
+  "placeholder": {
+    "url": "Enter request URL",
+    "search": "Search...",
+    "name": "Enter name",
+    "description": "Description (optional)",
+    "paramName": "Param name",
+    "paramValue": "Param value",
+    "headerName": "Header name",
+    "headerValue": "Header value",
+    "fieldName": "Field name",
+    "fieldValue": "Value",
+    "variableName": "Variable name",
+    "variableValue": "Variable value",
+    "environmentName": "e.g. Development, Testing",
+    "workspaceName": "Enter workspace name",
+    "workspaceDesc": "Enter workspace description (optional)",
+    "workspacePath": "Select workspace storage path",
+    "responseName": "Enter response name"
+  },
+  "panels": {
+    "collections": "Collections",
+    "environments": "Environments",
+    "history": "History",
+    "workspaces": "Workspaces",
+    "console": "Console",
+    "cookies": "Cookies",
+    "globalSettings": "Global Settings",
+    "requestSettings": "Request Settings",
+    "collectionSettings": "Collection Settings"
+  },
+  "dialogs": {
+    "newCollection": "New Collection",
+    "newApi": "New API",
+    "newSubCollection": "New Sub-collection",
+    "newEnvironment": "New Environment",
+    "editEnvironment": "Edit Environment",
+    "newWorkspace": "Create Workspace",
+    "switchWorkspace": "Select Workspace",
+    "saveResponse": "Save Response",
+    "rename": "Rename",
+    "workspacePath": "Path",
+    "responseName": "Response Name",
+    "parent": "Parent"
+  },
+  "toast": {
+    "scriptSaved": "Script saved",
+    "scriptSaveFailed": "Script save failed",
+    "saved": "Saved",
+    "saveFailed": "Save failed",
+    "deleteFailed": "Delete failed",
+    "clearFailed": "Clear failed",
+    "selectBinary": "Select binary file",
+    "selectFileFailed": "Select file failed"
+  },
+  "response": {
+    "status": "Status",
+    "time": "Time",
+    "size": "Size",
+    "requesting": "Requesting...",
+    "sending": "Sending request..."
+  },
+  "settings": {
+    "timeout": "Request Timeout",
+    "timeoutUnit": "seconds",
+    "timeoutDesc": "Set the maximum wait time for HTTP requests. Requests will be cancelled if timeout. Default is 60 seconds.",
+    "language": "Language"
+  },
+  "workspace": {
+    "selector": "Workspace:",
+    "notSelected": "Not selected",
+    "noWorkspace": "No workspace",
+    "lastOpened": "Last opened:"
+  },
+  "environment": {
+    "selector": "Environment:",
+    "notSelected": "Not selected",
+    "noEnvironment": "No environment",
+    "hint": "Use {{variableName}} to reference these variables in URL, headers, and body"
+  },
+  "collectionSettings": {
+    "headersHint": "These headers will be automatically added to all requests in this collection"
+  },
+  "tabsBar": {
+    "close": "Close",
+    "closeOthers": "Close Others",
+    "closeAll": "Close All"
+  },
+  "bodyType": {
+    "none": "none",
+    "formData": "form-data",
+    "formUrlencoded": "x-www-form-urlencoded",
+    "raw": "raw",
+    "binary": "binary"
+  },
+  "rawType": {
+    "json": "JSON",
+    "text": "Text",
+    "javascript": "JavaScript",
+    "html": "HTML",
+    "xml": "XML"
+  },
+  "fieldType": {
+    "text": "Text",
+    "file": "File"
+  },
+  "nav": {
+    "collections": "Collections",
+    "environments": "Environments",
+    "workspaces": "Workspaces",
+    "history": "History",
+    "features": "Features",
+    "performance": "Performance",
+    "toolbox": "Toolbox"
+  },
+  "savedResponse": {
+    "originalUrl": "Original URL:",
+    "requestHeaders": "Request Headers",
+    "requestBody": "Request Body",
+    "path": "Path:",
+    "secure": "Secure",
+    "httpOnly": "HTTP Only"
+  },
+  "contextMenu": {
+    "deleteWorkspace": "Delete Workspace",
+    "deleteEnvironment": "Delete Environment",
+    "deleteCollection": "Delete Collection"
+  },
+  "script": {
+    "preScript": "Pre-request Script",
+    "postScript": "Post-request Script"
+  },
+  "languages": {
+    "zhCN": "简体中文",
+    "en": "English"
+  },
+  "time": {
+    "justNow": "Just now",
+    "minutesAgo": "{n} minutes ago",
+    "hoursAgo": "{n} hours ago",
+    "daysAgo": "{n} days ago"
+  }
+}

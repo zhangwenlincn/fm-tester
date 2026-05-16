@@ -1,6 +1,9 @@
 <script setup>
+import { useI18n } from 'vue-i18n'
 import { useResponsePanelSetup } from './index.js'
 import Icon from '../Icon/index.vue'
+
+const { t } = useI18n()
 
 const props = defineProps({
   response: {
@@ -34,26 +37,26 @@ const {
     <div class="response-status" v-if="response || loading">
       <div v-if="loading" class="loading-indicator">
         <span class="loading-spinner"></span>
-        <span>请求中...</span>
+        <span>{{ t('response.requesting') }}</span>
       </div>
       <template v-else-if="response">
         <div class="status-info">
           <div class="status-item">
-            <span class="status-label">状态:</span>
+            <span class="status-label">{{ t('response.status') }}:</span>
             <span class="status-value" :class="statusClass">{{ response.status }} {{ response.statusText }}</span>
           </div>
           <div class="status-item">
-            <span class="status-label">时间:</span>
+            <span class="status-label">{{ t('response.time') }}:</span>
             <span class="status-value">{{ formatTime(response.time) }}</span>
           </div>
           <div class="status-item">
-            <span class="status-label">大小:</span>
+            <span class="status-label">{{ t('response.size') }}:</span>
             <span class="status-value">{{ formatSize(response.size) }}</span>
           </div>
         </div>
         <button class="save-response-btn" @click="handleSaveResponse">
           <Icon name="save" :size="14" />
-          <span>保存响应</span>
+          <span>{{ t('buttons.saveResponse') }}</span>
         </button>
       </template>
     </div>
@@ -76,14 +79,14 @@ const {
       <!-- 空状态 -->
       <div v-if="!response && !loading" class="empty-state">
         <span class="empty-icon"><Icon name="send" :size="48" /></span>
-        <p class="empty-text">发送请求以查看响应</p>
-        <p class="empty-hint">在上方输入 URL 并点击"发送"按钮</p>
+        <p class="empty-text">{{ t('empty.noResponse') }}</p>
+        <p class="empty-hint">{{ t('empty.noResponseHint') }}</p>
       </div>
       
       <!-- 加载状态 -->
       <div v-else-if="loading" class="loading-state">
         <div class="loading-spinner large"></div>
-        <p>正在发送请求...</p>
+        <p>{{ t('response.sending') }}</p>
       </div>
       
       <!-- 响应体 - Monaco Editor (用 v-show 确保容器始终存在) -->
@@ -109,7 +112,7 @@ const {
       <div v-show="response && !loading && activeTab !== 'body' && activeTab !== 'headers'" class="placeholder-content">
         <span class="placeholder-icon"><Icon name="performance" :size="32" /></span>
         <p>{{ tabs.find(t => t.key === activeTab)?.name }}</p>
-        <p class="placeholder-hint">此功能正在开发中...</p>
+        <p class="placeholder-hint">{{ t('common.developing') }}</p>
       </div>
     </div>
   </div>

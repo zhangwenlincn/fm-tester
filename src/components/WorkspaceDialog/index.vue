@@ -1,5 +1,8 @@
 <script setup>
+import { useI18n } from 'vue-i18n'
 import { useWorkspaceDialogSetup } from './index.js'
+
+const { t } = useI18n()
 
 const props = defineProps({
   visible: Boolean,
@@ -29,7 +32,7 @@ const {
     <div class="dialog">
       <div class="dialog-header">
         <span class="dialog-title">
-          {{ mode === 'create' ? '创建工作区' : '选择工作区' }}
+          {{ mode === 'create' ? t('dialogs.newWorkspace') : t('dialogs.switchWorkspace') }}
         </span>
         <span class="dialog-close" @click="close">×</span>
       </div>
@@ -38,36 +41,36 @@ const {
         <!-- 创建模式 -->
         <div v-if="mode === 'create'" class="create-form">
           <div class="form-group">
-            <label>名称</label>
-            <input 
-              v-model="name" 
-              type="text" 
-              placeholder="输入工作区名称"
+            <label>{{ t('common.name') }}</label>
+            <input
+              v-model="name"
+              type="text"
+              :placeholder="t('placeholder.workspaceName')"
               class="form-input"
             />
           </div>
 
           <div class="form-group">
-            <label>描述</label>
-            <input 
-              v-model="description" 
-              type="text" 
-              placeholder="输入工作区描述（可选）"
+            <label>{{ t('common.description') }}</label>
+            <input
+              v-model="description"
+              type="text"
+              :placeholder="t('placeholder.workspaceDesc')"
               class="form-input"
             />
           </div>
 
           <div class="form-group">
-            <label>路径</label>
+            <label>{{ t('dialogs.workspacePath') }}</label>
             <div class="path-input">
-              <input 
-                v-model="path" 
-                type="text" 
-                placeholder="选择工作区存储路径"
+              <input
+                v-model="path"
+                type="text"
+                :placeholder="t('placeholder.workspacePath')"
                 class="form-input"
                 readonly
               />
-              <button class="btn-select" @click="selectPath">选择</button>
+              <button class="btn-select" @click="selectPath">{{ t('buttons.selectFile') }}</button>
             </div>
           </div>
         </div>
@@ -83,11 +86,11 @@ const {
           >
             <div class="ws-name">{{ ws.name }}</div>
             <div class="ws-path">{{ ws.path }}</div>
-            <div class="ws-time">最后打开: {{ ws.last_opened }}</div>
+            <div class="ws-time">{{ t('workspace.lastOpened') }} {{ ws.last_opened }}</div>
           </div>
           
           <div v-if="workspaces.length === 0" class="empty-tip">
-            暂无工作区，请先创建
+            {{ t('empty.noWorkspaces') }}
           </div>
         </div>
 
@@ -96,25 +99,25 @@ const {
       </div>
 
       <div class="dialog-footer">
-        <button 
-          v-if="mode === 'create'" 
-          class="btn-primary" 
+        <button
+          v-if="mode === 'create'"
+          class="btn-primary"
           :disabled="loading"
           @click="createWorkspace"
         >
-          {{ loading ? '创建中...' : '创建' }}
+          {{ loading ? t('common.loading') : t('common.new') }}
         </button>
-        
-        <button 
-          v-if="mode === 'select'" 
-          class="btn-primary" 
+
+        <button
+          v-if="mode === 'select'"
+          class="btn-primary"
           :disabled="loading"
           @click="selectWorkspace"
         >
-          {{ loading ? '切换中...' : '切换' }}
+          {{ loading ? t('common.loading') : t('common.confirm') }}
         </button>
 
-        <button class="btn-secondary" @click="close">取消</button>
+        <button class="btn-secondary" @click="close">{{ t('common.cancel') }}</button>
       </div>
     </div>
   </div>

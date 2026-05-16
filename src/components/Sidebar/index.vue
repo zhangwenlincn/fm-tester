@@ -1,4 +1,5 @@
 <script setup>
+import { useI18n } from 'vue-i18n'
 import { useSidebarSetup } from './index.js'
 import IconNav from './IconNav/index.vue'
 import CollectionPanel from './CollectionPanel/index.vue'
@@ -28,6 +29,7 @@ const emit = defineEmits([
 ])
 
 // 使用 composable
+const { t } = useI18n()
 const {
   activeNav,
   navItems,
@@ -126,10 +128,10 @@ defineExpose({
         class="other-panel"
       >
         <div class="panel-header">
-          <span class="panel-title">{{ navItems[activeNav]?.name }}</span>
+          <span class="panel-title">{{ t(navItems[activeNav]?.nameKey) }}</span>
         </div>
         <div class="empty-panel">
-          功能开发中...
+          {{ t('common.developing') }}
         </div>
       </div>
     </div>

@@ -1,5 +1,6 @@
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
+import { useI18n } from 'vue-i18n'
 import { showToast } from '../../../composables/useToast'
 
 // 最大层级深度（集合最多三层）
@@ -7,6 +8,8 @@ const MAX_DEPTH = 2 // depth 0, 1, 2 共三层
 
 // 导出 composable 函数
 export function useCollectionPanelSetup(props, emit) {
+  const { t } = useI18n()
+
   // 集合数据
   const collections = ref([])
   const expandedItems = ref({})
@@ -313,7 +316,7 @@ export function useCollectionPanelSetup(props, emit) {
       try {
         const newApi = await invoke('create_api', {
           workspacePath: props.workspace.path,
-          name: '新建接口',
+          name: t('buttons.newApi'),
           method: 'GET',
           url: '',
           parentId: type === 'root' ? null : item?.id
@@ -479,10 +482,10 @@ export function useCollectionPanelSetup(props, emit) {
     const hours = Math.floor(diff / 3600000)
     const days = Math.floor(diff / 86400000)
 
-    if (minutes < 1) return '刚刚'
-    if (minutes < 60) return `${minutes}分钟前`
-    if (hours < 24) return `${hours}小时前`
-    if (days < 7) return `${days}天前`
+    if (minutes < 1) return t('time.justNow')
+    if (minutes < 60) return t('time.minutesAgo', { n: minutes })
+    if (hours < 24) return t('time.hoursAgo', { n: hours })
+    if (days < 7) return t('time.daysAgo', { n: days })
     return date.toLocaleDateString()
   }
 

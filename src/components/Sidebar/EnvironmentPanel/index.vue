@@ -2,15 +2,15 @@
   <div class="environment-panel">
     <!-- 面板头部 -->
     <div class="panel-header">
-      <span class="panel-title">环境</span>
+      <span class="panel-title">{{ t('panels.environments') }}</span>
       <div class="panel-actions">
-        <span class="action-btn" title="新建环境" @click="openCreateEnvDialog">+</span>
+        <span class="action-btn" :title="t('buttons.newEnvironment')" @click="openCreateEnvDialog">+</span>
       </div>
     </div>
     
     <!-- 提示：需要先选择工作区 -->
     <div v-if="!workspace" class="empty-panel">
-      请先选择或创建工作区
+      {{ t('empty.selectWorkspace') }}
     </div>
     
     <!-- 环境列表 -->
@@ -41,7 +41,7 @@
       </div>
       
       <div v-if="environments.length === 0" class="empty-panel">
-        暂无环境，右键创建
+        {{ t('empty.noEnvironments') }}
       </div>
     </div>
     
@@ -49,20 +49,20 @@
     <div v-if="showEnvDialog" class="create-dialog-overlay" @click.self="showEnvDialog = false">
       <div class="create-dialog env-dialog">
         <div class="dialog-header">
-          <span>{{ editingEnv ? '编辑环境' : '新建环境' }}</span>
+          <span>{{ editingEnv ? t('dialogs.editEnvironment') : t('dialogs.newEnvironment') }}</span>
           <span class="dialog-close" @click="showEnvDialog = false">×</span>
         </div>
-        
+
         <div class="dialog-body">
           <div class="dialog-row">
-            <label>环境名称</label>
-            <input v-model="editingEnvName" type="text" placeholder="如：开发环境、测试环境" />
+            <label>{{ t('common.name') }}</label>
+            <input v-model="editingEnvName" type="text" :placeholder="t('placeholder.environmentName')" />
           </div>
         </div>
-        
+
         <div class="dialog-footer">
-          <button class="btn-cancel" @click="showEnvDialog = false">取消</button>
-          <button class="btn-confirm" @click="handleSaveEnv">保存</button>
+          <button class="btn-cancel" @click="showEnvDialog = false">{{ t('common.cancel') }}</button>
+          <button class="btn-confirm" @click="handleSaveEnv">{{ t('common.save') }}</button>
         </div>
       </div>
     </div>
@@ -78,18 +78,18 @@
       <template v-if="envContextMenu.type === 'root'">
         <div class="menu-item" @click="handleEnvContextAction('new-env')">
           <span class="menu-icon"><Icon name="environment" :size="14" /></span>
-          <span>新建环境</span>
+          <span>{{ t('buttons.newEnvironment') }}</span>
         </div>
       </template>
-      
+
       <!-- 环境菜单 -->
       <template v-if="envContextMenu.type === 'env'">
         <div class="menu-item" @click="handleEnvContextAction('edit-env')">
-          <span>编辑环境</span>
+          <span>{{ t('common.edit') }}</span>
         </div>
         <div class="menu-divider"></div>
         <div class="menu-item delete" @click="handleEnvContextAction('delete-env')">
-          <span>删除环境</span>
+          <span>{{ t('contextMenu.deleteEnvironment') }}</span>
         </div>
       </template>
     </div>
@@ -97,8 +97,11 @@
 </template>
 
 <script setup>
+import { useI18n } from 'vue-i18n'
 import { useEnvironmentPanelSetup } from './index.js'
 import Icon from '../../Icon/index.vue'
+
+const { t } = useI18n()
 
 const props = defineProps({
   workspace: {

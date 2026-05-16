@@ -1,4 +1,5 @@
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
+import { useI18n } from 'vue-i18n'
 import * as monaco from 'monaco-editor'
 import { open } from '@tauri-apps/plugin-dialog'
 import { invoke } from '@tauri-apps/api/core'
@@ -69,23 +70,6 @@ monaco.languages.setLanguageConfiguration('json5', {
 
 const methods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS']
 
-const tabs = [
-  { key: 'docs', name: '文档' },
-  { key: 'params', name: '参数' },
-  { key: 'auth', name: '授权' },
-  { key: 'headers', name: '请求头' },
-  { key: 'body', name: '请求体' },
-  { key: 'scripts', name: '脚本' }
-]
-
-const bodyTypes = [
-  { key: 'none', name: 'none' },
-  { key: 'form-data', name: 'form-data' },
-  { key: 'x-www-form-urlencoded', name: 'x-www-form-urlencoded' },
-  { key: 'raw', name: 'raw' },
-  { key: 'binary', name: 'binary' }
-]
-
 const rawTypes = ['JSON', 'Text', 'JavaScript', 'HTML', 'XML']
 
 // 语言映射
@@ -99,6 +83,25 @@ const languageMap = {
 
 // 导出 composable 函数
 export function useRequestPanelSetup(props, emit) {
+  const { t } = useI18n()
+  
+  const tabs = computed(() => [
+    { key: 'docs', name: t('tabs.docs') },
+    { key: 'params', name: t('tabs.params') },
+    { key: 'auth', name: t('tabs.auth') },
+    { key: 'headers', name: t('tabs.headers') },
+    { key: 'body', name: t('tabs.body') },
+    { key: 'scripts', name: t('tabs.scripts') }
+  ])
+  
+  const bodyTypes = computed(() => [
+    { key: 'none', name: t('bodyType.none') },
+    { key: 'form-data', name: t('bodyType.formData') },
+    { key: 'x-www-form-urlencoded', name: t('bodyType.formUrlencoded') },
+    { key: 'raw', name: t('bodyType.raw') },
+    { key: 'binary', name: t('bodyType.binary') }
+  ])
+  
   const activeTab = ref(props.requestTab || 'params')
   
   // 监听 props.requestTab 变化
@@ -565,7 +568,7 @@ export function useRequestPanelSetup(props, emit) {
     try {
       const selected = await open({
         multiple: false,
-        title: '选择二进制文件'
+        title: t('toast.selectBinary')
       })
       if (selected) {
         // selected 是文件路径字符串
@@ -584,7 +587,7 @@ export function useRequestPanelSetup(props, emit) {
     try {
       const selected = await open({
         multiple: true,  // 支持多文件
-        title: '选择文件'
+        title: t('buttons.selectFile')
       })
       if (selected) {
         // selected 可能是字符串或数组
@@ -684,10 +687,10 @@ export function useRequestPanelSetup(props, emit) {
         scriptKind: 'post',
         content: localRequest.value.postScript
       })
-      showToast('脚本保存成功', 'success')
+      showToast(t('toast.scriptSaved'), 'success')
     } catch (e) {
       console.error('保存 API 脚本失败:', e)
-      showToast('脚本保存失败', 'error')
+      showToast(t('toast.scriptSaveFailed'), 'error')
     }
   }
 

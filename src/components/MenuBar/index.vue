@@ -1,5 +1,8 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { useI18nSetup } from '../../composables/useI18n'
+
+const { t, locale, supportedLocales, switchLanguage } = useI18nSetup()
 
 const props = defineProps({
   workspaces: {
@@ -22,15 +25,16 @@ const props = defineProps({
 
 const emit = defineEmits(['switchWorkspace', 'switchEnvironment', 'openSettings'])
 
-const menus = [
-  { name: '文件' },
-  { name: '语言' },
-  { name: '主题' },
-  { name: '设置', items: ['偏好设置'] },
-  { name: '插件' },
-  { name: '帮助', items: ['脚本 API 参考'] },
-  { name: '关于' }
-]
+// 菜单配置 - 使用 computed 以响应语言变化
+const menus = computed(() => [
+  { name: t('menu.file') },
+  { name: t('menu.language'), items: supportedLocales.map(l => l.name) },
+  { name: t('menu.theme') },
+  { name: t('menu.settings'), items: [t('menu.preferences')] },
+  { name: t('menu.plugin') },
+  { name: t('menu.help'), items: [t('menu.scriptApiRef')] },
+  { name: t('menu.about') }
+])
 
 const activeMenu = ref(null)
 const showWorkspaceDropdown = ref(false)
@@ -41,7 +45,7 @@ const environmentWrapperRef = ref(null)
 
 // 获取当前工作区显示名称
 const currentWorkspaceName = () => {
-  return props.currentWorkspace?.name || '未选择'
+  return props.currentWorkspace?.name || t('workspace.notSelected')
 }
 
 const toggleMenu = (index) => {
@@ -86,12 +90,23 @@ const handleSwitchEnvironment = (env) => {
 // 处理菜单项点击
 const handleMenuItemClick = (menuName, item) => {
   closeMenu()
+  
+  // 语言切换
+  if (menuName === t('menu.language')) {
+    const localeCode = supportedLocales.find(l => l.name === item)?.code
+    if (localeCode) {
+      switchLanguage(localeCode)
+    }
+    return
+  }
+  
   // 设置菜单 - 偏好设置
-  if (menuName === '设置' && item === '偏好设置') {
+  if (menuName === t('menu.settings') && item === t('menu.preferences')) {
     emit('openSettings')
   }
+  
   // 帮助菜单 - 脚本 API 参考
-  if (menuName === '帮助' && item === '脚本 API 参考') {
+  if (menuName === t('menu.help') && item === t('menu.scriptApiRef')) {
     showScriptHelp.value = true
   }
 }
@@ -154,7 +169,7 @@ onUnmounted(() => {
           :class="{ active: showWorkspaceDropdown }"
           @click="toggleWorkspaceDropdown"
         >
-          <span class="selector-label">工作区:</span>
+          <span class="selector-label">{{ t('workspace.selector') }}</span>
           <span class="selector-value">{{ currentWorkspaceName() }}</span>
           <span class="selector-arrow">▼</span>
         </div>
@@ -169,7 +184,7 @@ onUnmounted(() => {
             {{ ws.name }}
           </div>
           <div v-if="workspaces.length === 0" class="dropdown-item empty">
-            暂无工作区
+            {{ t('workspace.noWorkspace') }}
           </div>
         </div>
       </div>
@@ -181,8 +196,8 @@ onUnmounted(() => {
           :class="{ active: showEnvironmentDropdown }"
           @click="toggleEnvironmentDropdown($event)"
         >
-          <span class="selector-label">环境:</span>
-          <span class="selector-value">{{ activeEnvironment?.name || '未选择' }}</span>
+          <span class="selector-label">{{ t('environment.selector') }}</span>
+          <span class="selector-value">{{ activeEnvironment?.name || t('environment.notSelected') }}</span>
           <span class="selector-arrow">▼</span>
         </div>
         <div v-show="showEnvironmentDropdown" class="selector-dropdown">
@@ -195,7 +210,7 @@ onUnmounted(() => {
             {{ env.name }}
           </div>
           <div v-if="environments.length === 0" class="dropdown-item empty">
-            暂无环境
+            {{ t('environment.noEnvironment') }}
           </div>
         </div>
       </div>

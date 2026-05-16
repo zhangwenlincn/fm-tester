@@ -1,4 +1,7 @@
 <script setup>
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 const version = 'v0.0.1'
 
 const emit = defineEmits(['open-cookie-panel', 'open-console-panel'])
@@ -13,7 +16,7 @@ const emit = defineEmits(['open-cookie-panel', 'open-console-panel'])
       <div class="status-icon" title="Cookies" @click="$emit('open-cookie-panel')">
         <span>🍪</span>
       </div>
-      <div class="status-icon" title="控制台" @click="$emit('open-console-panel')">
+      <div class="status-icon" :title="t('panels.console')" @click="$emit('open-console-panel')">
         <span>🖥️</span>
       </div>
     </div>

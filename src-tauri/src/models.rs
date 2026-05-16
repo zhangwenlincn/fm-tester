@@ -6,16 +6,24 @@ pub struct AppSettings {
     /// HTTP 请求超时时间（秒）
     #[serde(default = "default_timeout")]
     pub request_timeout: u64,
+    /// 语言设置（zh-CN 或 en）
+    #[serde(default = "default_language")]
+    pub language: String,
 }
 
 fn default_timeout() -> u64 {
     60
 }
 
+fn default_language() -> String {
+    "zh-CN".to_string()
+}
+
 impl Default for AppSettings {
     fn default() -> Self {
         Self {
             request_timeout: 60,
+            language: "zh-CN".to_string(),
         }
     }
 }

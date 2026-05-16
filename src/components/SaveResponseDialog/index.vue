@@ -1,5 +1,8 @@
 <script setup>
+import { useI18n } from 'vue-i18n'
 import { useSaveResponseDialogSetup } from './index.js'
+
+const { t } = useI18n()
 
 const props = defineProps({
   show: Boolean,
@@ -14,16 +17,16 @@ const { name, handleSave, handleCancel } = useSaveResponseDialogSetup(props, emi
 <template>
   <div v-if="show" class="dialog-overlay" @click.self="handleCancel">
     <div class="dialog-content">
-      <h3>保存响应</h3>
-      <input 
-        v-model="name" 
-        placeholder="输入响应名称" 
+      <h3>{{ t('dialogs.saveResponse') }}</h3>
+      <input
+        v-model="name"
+        :placeholder="t('placeholder.responseName')"
         class="name-input"
         @keyup.enter="handleSave"
       />
       <div class="dialog-buttons">
-        <button class="cancel-btn" @click="handleCancel">取消</button>
-        <button class="save-btn" @click="handleSave">保存</button>
+        <button class="cancel-btn" @click="handleCancel">{{ t('common.cancel') }}</button>
+        <button class="save-btn" @click="handleSave">{{ t('common.save') }}</button>
       </div>
     </div>
   </div>

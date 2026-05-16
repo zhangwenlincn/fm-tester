@@ -1,13 +1,6 @@
 import { ref, computed, watch, onUnmounted, nextTick } from 'vue'
+import { useI18n } from 'vue-i18n'
 import * as monaco from 'monaco-editor'
-
-const tabs = [
-  { key: 'body', name: '响应体' },
-  { key: 'headers', name: '响应头' },
-  { key: 'test', name: '测试结果' },
-  { key: 'network', name: '网络日志' },
-  { key: 'timeline', name: '时间线' }
-]
 
 // 语言映射 - Content-Type 到 Monaco 语言
 const contentTypeToLanguage = {
@@ -24,6 +17,16 @@ const contentTypeToLanguage = {
 
 // 导出 composable 函数
 export function useResponsePanelSetup(props, emit) {
+  const { t } = useI18n()
+
+  const tabs = computed(() => [
+    { key: 'body', name: t('tabs.responseBody') },
+    { key: 'headers', name: t('tabs.responseHeaders') },
+    { key: 'test', name: t('tabs.testResults') },
+    { key: 'network', name: t('tabs.networkLog') },
+    { key: 'timeline', name: t('tabs.timeline') }
+  ])
+
   const activeTab = ref('body')
   const editorContainer = ref(null)
   let monacoEditor = null

@@ -1,15 +1,18 @@
 import { ref, reactive, watch, onUnmounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { invoke } from '@tauri-apps/api/core'
 import { showToast } from '../../composables/useToast.js'
 
-const tabs = [
-  { key: 'headers', name: '请求头' },
-  { key: 'variables', name: '变量' },
-  { key: 'scripts', name: '脚本' }
-]
-
 // 导出 composable 函数
 export function useCollectionSettingsSetup(props, emit) {
+  const { t } = useI18n()
+  
+  const tabs = [
+    { key: 'headers', name: t('tabs.headers') },
+    { key: 'variables', name: t('tabs.variables') },
+    { key: 'scripts', name: t('tabs.scripts') }
+  ]
+  
   const activeTab = ref('headers')
   
   // 本地设置状态
@@ -252,6 +255,7 @@ export function useCollectionSettingsSetup(props, emit) {
   }
   
   return {
+    t,
     activeTab,
     tabs,
     localSettings,

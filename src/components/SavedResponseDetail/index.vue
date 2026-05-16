@@ -1,6 +1,9 @@
 <script setup>
 import { useSavedResponseDetailSetup } from './index.js'
 import Icon from '../Icon/index.vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps({
   savedResponse: {
@@ -37,8 +40,8 @@ const {
 
     <!-- 请求信息 -->
     <div class="request-section">
-      <h4 class="section-title">请求信息</h4>
-      
+      <h4 class="section-title">{{ t('tabs.requestInfo') }}</h4>
+
       <!-- 方法和 URL -->
       <div class="request-line">
         <span class="method" :class="getMethodClass(savedResponse?.request?.method)">
@@ -46,16 +49,16 @@ const {
         </span>
         <span class="url">{{ savedResponse?.request?.resolved_url }}</span>
       </div>
-      
+
       <!-- 原始 URL（如果有变量） -->
       <div v-if="savedResponse?.request?.url !== savedResponse?.request?.resolved_url" class="original-url">
-        <span class="label">原始 URL:</span>
+        <span class="label">{{ t('savedResponse.originalUrl') }}</span>
         <span class="value">{{ savedResponse?.request?.url }}</span>
       </div>
 
       <!-- 请求头 -->
       <div v-if="savedResponse?.request?.headers?.length" class="headers-list">
-        <div class="list-title">请求头</div>
+        <div class="list-title">{{ t('savedResponse.requestHeaders') }}</div>
         <div class="header-row" v-for="h in savedResponse?.request?.headers" :key="h.key">
           <span class="header-key">{{ h.key }}</span>
           <span class="header-value">{{ h.value }}</span>
@@ -64,55 +67,55 @@ const {
 
       <!-- 请求体 -->
       <div v-if="savedResponse?.request?.body" class="request-body">
-        <div class="list-title">请求体</div>
+        <div class="list-title">{{ t('savedResponse.requestBody') }}</div>
         <pre class="body-content">{{ savedResponse?.request?.body }}</pre>
       </div>
     </div>
 
     <!-- 响应信息 -->
     <div class="response-section">
-      <h4 class="section-title">响应信息</h4>
-      
+      <h4 class="section-title">{{ t('tabs.responseInfo') }}</h4>
+
       <!-- 状态栏 -->
       <div class="response-status">
         <div class="status-item">
-          <span class="status-label">状态:</span>
+          <span class="status-label">{{ t('response.status') }}:</span>
           <span class="status-value" :class="statusClass">
             {{ savedResponse?.response?.status }} {{ savedResponse?.response?.status_text }}
           </span>
         </div>
         <div class="status-item">
-          <span class="status-label">时间:</span>
+          <span class="status-label">{{ t('response.time') }}:</span>
           <span class="status-value">{{ formatTime(savedResponse?.response?.time) }}</span>
         </div>
         <div class="status-item">
-          <span class="status-label">大小:</span>
+          <span class="status-label">{{ t('response.size') }}:</span>
           <span class="status-value">{{ formatSize(savedResponse?.response?.size) }}</span>
         </div>
       </div>
 
       <!-- 标签页 -->
       <div class="response-tabs">
-        <div 
+        <div
           class="tab-item"
           :class="{ active: activeTab === 'body' }"
           @click="activeTab = 'body'"
         >
-          响应体
+          {{ t('tabs.responseBody') }}
         </div>
-        <div 
+        <div
           class="tab-item"
           :class="{ active: activeTab === 'headers' }"
           @click="activeTab = 'headers'"
         >
-          响应头
+          {{ t('tabs.responseHeaders') }}
         </div>
-        <div 
+        <div
           class="tab-item"
           :class="{ active: activeTab === 'cookies' }"
           @click="activeTab = 'cookies'"
         >
-          Cookie
+          {{ t('panels.cookies') }}
         </div>
       </div>
 
@@ -126,16 +129,16 @@ const {
         <!-- 响应头 -->
         <div v-show="activeTab === 'headers'" class="headers-panel">
           <div v-if="savedResponse?.response?.headers" class="headers-list">
-            <div 
-              class="header-row" 
-              v-for="(value, key) in savedResponse?.response?.headers" 
+            <div
+              class="header-row"
+              v-for="(value, key) in savedResponse?.response?.headers"
               :key="key"
             >
               <span class="header-key">{{ key }}</span>
               <span class="header-value">{{ value }}</span>
             </div>
           </div>
-          <div v-else class="empty-content">无响应头</div>
+          <div v-else class="empty-content">{{ t('empty.noResponseHeaders') }}</div>
         </div>
 
         <!-- Cookie -->
@@ -148,13 +151,13 @@ const {
               </div>
               <div class="cookie-meta">
                 <span class="cookie-domain">{{ c.domain }}</span>
-                <span class="cookie-path">路径: {{ c.path }}</span>
-                <span v-if="c.secure" class="cookie-secure">安全</span>
-                <span v-if="c.http_only" class="cookie-http-only">仅 HTTP</span>
+                <span class="cookie-path">{{ t('savedResponse.path') }} {{ c.path }}</span>
+                <span v-if="c.secure" class="cookie-secure">{{ t('savedResponse.secure') }}</span>
+                <span v-if="c.http_only" class="cookie-http-only">{{ t('savedResponse.httpOnly') }}</span>
               </div>
             </div>
           </div>
-          <div v-else class="empty-content">无 Cookie</div>
+          <div v-else class="empty-content">{{ t('empty.noCookies') }}</div>
         </div>
       </div>
     </div>

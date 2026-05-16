@@ -1,8 +1,11 @@
 <script setup>
+import { useI18n } from 'vue-i18n'
 import { useRequestPanelSetup } from './index.js'
 import Icon from '../Icon/index.vue'
 import VariableHighlight from '../VariableHighlight/index.vue'
 import ScriptPanel from '../ScriptPanel/index.vue'
+
+const { t } = useI18n()
 
 const props = defineProps({
   request: {
@@ -70,8 +73,8 @@ const {
     <!-- 空状态 -->
     <div v-if="!hasActiveTab" class="empty-state">
       <span class="empty-icon"><Icon name="api" :size="48" /></span>
-      <p class="empty-text">请选择一个接口</p>
-      <p class="empty-hint">从左侧集合中选择接口开始测试</p>
+      <p class="empty-text">{{ t('empty.selectApi') }}</p>
+      <p class="empty-hint">{{ t('empty.selectApiHint') }}</p>
     </div>
     
     <!-- 有内容时显示 -->
@@ -89,10 +92,10 @@ const {
           :variables="variables"
           @input="updateUrl"
           class="url-input-wrapper"
-          placeholder="输入请求 URL"
+          :placeholder="t('placeholder.url')"
         />
-        <button class="send-btn" @click="sendRequest">发送</button>
-        <button class="save-btn" @click="saveRequest">保存</button>
+        <button class="send-btn" @click="sendRequest">{{ t('buttons.send') }}</button>
+        <button class="save-btn" @click="saveRequest">{{ t('common.save') }}</button>
       </div>
     
     <!-- 请求配置标签页 -->
@@ -113,18 +116,18 @@ const {
       <!-- 参数 -->
       <div v-show="activeTab === 'params'" class="params-panel">
         <div class="params-toolbar">
-          <button class="add-btn" @click="addParam">+ 添加参数</button>
+          <button class="add-btn" @click="addParam">{{ t('buttons.addParam') }}</button>
         </div>
         <div class="params-list">
           <div class="params-header">
             <span class="col-check"></span>
-            <span class="col-key">参数名</span>
-            <span class="col-value">参数值</span>
-            <span class="col-desc">描述</span>
+            <span class="col-key">{{ t('table.paramName') }}</span>
+            <span class="col-value">{{ t('table.paramValue') }}</span>
+            <span class="col-desc">{{ t('table.description') }}</span>
             <span class="col-action"></span>
           </div>
           <div v-if="localRequest.params.length === 0" class="empty-params">
-            暂无参数，点击上方按钮添加
+            {{ t('empty.noParams') }}
           </div>
           <div 
             v-for="(param, index) in localRequest.params" 
@@ -135,13 +138,13 @@ const {
               <input type="checkbox" v-model="param.enabled" />
             </span>
             <span class="col-key">
-              <input type="text" v-model="param.key" placeholder="参数名" />
+              <input type="text" v-model="param.key" :placeholder="t('placeholder.paramName')" />
             </span>
             <span class="col-value">
-              <input type="text" v-model="param.value" placeholder="参数值" />
+              <input type="text" v-model="param.value" :placeholder="t('placeholder.paramValue')" />
             </span>
             <span class="col-desc">
-              <input type="text" v-model="param.description" placeholder="描述" />
+              <input type="text" v-model="param.description" :placeholder="t('placeholder.description')" />
             </span>
             <span class="col-action">
               <button class="remove-btn" @click="removeParam(index)">×</button>
@@ -153,18 +156,18 @@ const {
       <!-- 请求头 -->
       <div v-show="activeTab === 'headers'" class="headers-panel">
         <div class="params-toolbar">
-          <button class="add-btn" @click="addHeader">+ 添加请求头</button>
+          <button class="add-btn" @click="addHeader">{{ t('buttons.addHeader') }}</button>
         </div>
         <div class="params-list">
           <div class="params-header">
             <span class="col-check"></span>
-            <span class="col-key">Header 名</span>
-            <span class="col-value">Header 值</span>
-            <span class="col-desc">描述</span>
+            <span class="col-key">{{ t('table.headerName') }}</span>
+            <span class="col-value">{{ t('table.headerValue') }}</span>
+            <span class="col-desc">{{ t('table.description') }}</span>
             <span class="col-action"></span>
           </div>
           <div v-if="localRequest.headers.length === 0" class="empty-params">
-            暂无请求头，点击上方按钮添加
+            {{ t('empty.noHeaders') }}
           </div>
           <div 
             v-for="(header, index) in localRequest.headers" 
@@ -175,13 +178,13 @@ const {
               <input type="checkbox" v-model="header.enabled" />
             </span>
             <span class="col-key">
-              <input type="text" v-model="header.key" placeholder="Header 名" />
+              <input type="text" v-model="header.key" :placeholder="t('placeholder.headerName')" />
             </span>
             <span class="col-value">
-              <input type="text" v-model="header.value" placeholder="Header 值" />
+              <input type="text" v-model="header.value" :placeholder="t('placeholder.headerValue')" />
             </span>
             <span class="col-desc">
-              <input type="text" v-model="header.description" placeholder="描述" />
+              <input type="text" v-model="header.description" :placeholder="t('placeholder.description')" />
             </span>
             <span class="col-action">
               <button class="remove-btn" @click="removeHeader(index)">×</button>
@@ -206,37 +209,37 @@ const {
         </div>
         <!-- none 类型时不显示编辑器 -->
         <div v-show="localRequest.bodyType === 'none'" class="body-empty">
-          <span class="empty-text">此请求不需要请求体</span>
+          <span class="empty-text">{{ t('empty.noBody') }}</span>
         </div>
         <!-- binary 类型显示文件选择 -->
         <div v-show="localRequest.bodyType === 'binary'" class="body-binary">
           <div class="binary-file-selector">
             <button class="select-file-btn" @click="selectBinaryFile">
               <Icon name="file" :size="16" />
-              选择文件
+              {{ t('buttons.selectFile') }}
             </button>
             <div v-if="localRequest.binaryFile" class="selected-file">
               <span class="file-name">{{ localRequest.binaryFile.name }}</span>
               <button class="remove-file-btn" @click="localRequest.binaryFile = null">×</button>
             </div>
-            <div v-else class="no-file-hint">请选择要上传的二进制文件</div>
+            <div v-else class="no-file-hint">{{ t('empty.selectBinary') }}</div>
           </div>
         </div>
         <!-- form-data 类型显示键值对表格 -->
         <div v-show="localRequest.bodyType === 'form-data'" class="form-data-panel">
           <div class="form-toolbar">
-            <button class="add-btn" @click="addFormField">+ 添加字段</button>
+            <button class="add-btn" @click="addFormField">{{ t('buttons.addField') }}</button>
           </div>
           <div class="form-list">
             <div class="form-header">
               <span class="col-check"></span>
-              <span class="col-key">字段名</span>
-              <span class="col-value">值</span>
-              <span class="col-type">类型</span>
+              <span class="col-key">{{ t('table.fieldName') }}</span>
+              <span class="col-value">{{ t('table.fieldValue') }}</span>
+              <span class="col-type">{{ t('table.fieldType') }}</span>
               <span class="col-action"></span>
             </div>
             <div v-if="localRequest.formData?.length === 0" class="empty-params">
-              暂无字段，点击上方按钮添加
+              {{ t('empty.noFields') }}
             </div>
             <div 
               v-for="(field, index) in localRequest.formData" 
@@ -247,19 +250,19 @@ const {
                 <input type="checkbox" v-model="field.enabled" />
               </span>
               <span class="col-key">
-                <input type="text" v-model="field.key" placeholder="字段名" />
+                <input type="text" v-model="field.key" :placeholder="t('placeholder.fieldName')" />
               </span>
               <span class="col-value">
                 <!-- 文本类型显示输入框 -->
                 <template v-if="field.type === 'text'">
-                  <input type="text" v-model="field.value" placeholder="值" />
+                  <input type="text" v-model="field.value" :placeholder="t('placeholder.fieldValue')" />
                 </template>
                 <!-- 文件类型显示文件选择按钮和已选文件列表 -->
                 <template v-else>
                   <div class="file-value-cell">
                     <button v-if="!field.files || field.files.length === 0" class="select-file-btn small" @click="selectFormFieldFiles(index)">
                       <Icon name="file" :size="14" />
-                      选择
+                      {{ t('buttons.selectFile') }}
                     </button>
                     <div v-else class="selected-files-list">
                       <div v-for="(file, fIndex) in field.files" :key="fIndex" class="selected-file-item">
@@ -272,8 +275,8 @@ const {
               </span>
               <span class="col-type">
                 <select v-model="field.type">
-                  <option value="text">文本</option>
-                  <option value="file">文件</option>
+                  <option value="text">{{ t('fieldType.text') }}</option>
+                  <option value="file">{{ t('fieldType.file') }}</option>
                 </select>
               </span>
               <span class="col-action">
@@ -285,17 +288,17 @@ const {
         <!-- x-www-form-urlencoded 类型显示键值对表格 -->
         <div v-show="localRequest.bodyType === 'x-www-form-urlencoded'" class="form-urlencoded-panel">
           <div class="form-toolbar">
-            <button class="add-btn" @click="addFormUrlField">+ 添加字段</button>
+            <button class="add-btn" @click="addFormUrlField">{{ t('buttons.addField') }}</button>
           </div>
           <div class="form-list">
             <div class="form-header">
               <span class="col-check"></span>
-              <span class="col-key">字段名</span>
-              <span class="col-value">值</span>
+              <span class="col-key">{{ t('table.fieldName') }}</span>
+              <span class="col-value">{{ t('table.fieldValue') }}</span>
               <span class="col-action"></span>
             </div>
             <div v-if="localRequest.formUrlEncoded?.length === 0" class="empty-params">
-              暂无字段，点击上方按钮添加
+              {{ t('empty.noFields') }}
             </div>
             <div 
               v-for="(field, index) in localRequest.formUrlEncoded" 
@@ -306,10 +309,10 @@ const {
                 <input type="checkbox" v-model="field.enabled" />
               </span>
               <span class="col-key">
-                <input type="text" v-model="field.key" placeholder="字段名" />
+                <input type="text" v-model="field.key" :placeholder="t('placeholder.fieldName')" />
               </span>
               <span class="col-value">
-                <input type="text" v-model="field.value" placeholder="值" />
+                <input type="text" v-model="field.value" :placeholder="t('placeholder.fieldValue')" />
               </span>
               <span class="col-action">
                 <button class="remove-btn" @click="removeFormUrlField(index)">×</button>
@@ -323,7 +326,7 @@ const {
             <select v-model="selectedRawType" class="raw-select">
               <option v-for="t in rawTypes" :key="t" :value="t">{{ t }}</option>
             </select>
-            <button class="format-btn" @click="handleFormat">格式化</button>
+            <button class="format-btn" @click="handleFormat">{{ t('buttons.format') }}</button>
           </div>
           <div class="monaco-editor-container" ref="editorContainer"></div>
         </div>
@@ -342,8 +345,8 @@ const {
       <div v-show="activeTab !== 'params' && activeTab !== 'headers' && activeTab !== 'body' && activeTab !== 'scripts'" class="placeholder-panel">
         <div class="placeholder-content">
           <span class="placeholder-icon">📝</span>
-          <p>{{ tabs.find(t => t.key === activeTab)?.name }}配置</p>
-          <p class="placeholder-hint">此功能正在开发中...</p>
+          <p>{{ tabs.find(tab => tab.key === activeTab)?.name }}</p>
+          <p class="placeholder-hint">{{ t('common.developing') }}</p>
         </div>
       </div>
     </div>

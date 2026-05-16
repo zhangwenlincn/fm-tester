@@ -1,8 +1,11 @@
 import { ref, onMounted } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
+import { useI18nSetup } from '../../composables/useI18n'
 
 export function useSettingsSetup(props, emit) {
+  const { t, locale, supportedLocales, switchLanguage } = useI18nSetup()
   const timeout = ref(60)
+  const selectedLanguage = ref('zh-CN')
   const loading = ref(false)
   const saved = ref(false)
 
@@ -12,8 +15,9 @@ export function useSettingsSetup(props, emit) {
       loading.value = true
       const settings = await invoke('get_settings')
       timeout.value = settings.request_timeout
+      selectedLanguage.value = settings.language || 'zh-CN'
     } catch (e) {
-      console.error('加载设置失败:', e)
+      console.error('Failed to load settings:', e)
     } finally {
       loading.value = false
     }
@@ -23,8 +27,15 @@ export function useSettingsSetup(props, emit) {
   const saveSettings = async () => {
     try {
       loading.value = true
-      const settings = await invoke('update_settings', { timeout: timeout.value })
+      const settings = await invoke('update_settings', { 
+        timeout: timeout.value,
+        language: selectedLanguage.value 
+      })
       timeout.value = settings.request_timeout
+      
+      // 切换语言
+      switchLanguage(selectedLanguage.value)
+      
       saved.value = true
       emit('saved')
       // 保存成功后自动关闭
@@ -32,7 +43,7 @@ export function useSettingsSetup(props, emit) {
         emit('close')
       }, 100)
     } catch (e) {
-      console.error('保存设置失败:', e)
+      console.error('Failed to save settings:', e)
       saved.value = false
     } finally {
       loading.value = false
@@ -49,7 +60,10 @@ export function useSettingsSetup(props, emit) {
   })
 
   return {
+    t,
     timeout,
+    selectedLanguage,
+    supportedLocales,
     loading,
     saved,
     saveSettings,

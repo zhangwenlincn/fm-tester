@@ -1,6 +1,9 @@
 <script setup>
+import { useI18n } from 'vue-i18n'
 import { useWorkspacePanelSetup } from './index.js'
 import Icon from '../../Icon/index.vue'
+
+const { t } = useI18n()
 
 const props = defineProps({
   workspace: Object  // 当前选中的工作区，用于显示选中状态
@@ -33,9 +36,9 @@ defineExpose({
   <div class="workspace-panel">
     <!-- 面板头部 -->
     <div class="panel-header">
-      <span class="panel-title">工作区</span>
+      <span class="panel-title">{{ t('panels.workspaces') }}</span>
       <div class="panel-actions">
-        <span class="action-btn" title="新建工作区" @click="createWorkspace">+</span>
+        <span class="action-btn" :title="t('buttons.newWorkspace')" @click="createWorkspace">+</span>
       </div>
     </div>
     
@@ -63,7 +66,7 @@ defineExpose({
       </div>
       
       <div v-if="workspaces.length === 0" class="empty-panel">
-        暂无工作区，点击上方 + 创建
+        {{ t('empty.noWorkspaces') }}
       </div>
     </div>
     
@@ -75,7 +78,7 @@ defineExpose({
     >
       <div class="menu-item delete" @click="handleWsContextAction('delete-ws')">
         <span class="menu-icon">🗑</span>
-        删除工作区
+        {{ t('contextMenu.deleteWorkspace') }}
       </div>
     </div>
   </div>

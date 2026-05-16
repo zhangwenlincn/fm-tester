@@ -1,6 +1,9 @@
 <script setup>
 import { ref, watch, onMounted, onUnmounted, nextTick } from 'vue'
+import { useI18n } from 'vue-i18n'
 import * as monaco from 'monaco-editor'
+
+const { t } = useI18n()
 
 const props = defineProps({
   request: Object
@@ -358,13 +361,13 @@ onUnmounted(() => {
 <template>
   <div class="script-panel">
     <div class="script-tabs">
-      <div class="script-btn" :class="{ active: scriptType === 'pre' }" @click="scriptType = 'pre'">前置脚本</div>
-      <div class="script-btn" :class="{ active: scriptType === 'post' }" @click="scriptType = 'post'">后置脚本</div>
+      <div class="script-btn" :class="{ active: scriptType === 'pre' }" @click="scriptType = 'pre'">{{ t('script.preScript') }}</div>
+      <div class="script-btn" :class="{ active: scriptType === 'post' }" @click="scriptType = 'post'">{{ t('script.postScript') }}</div>
     </div>
     
     <div class="editor-wrapper">
       <div class="editor-header">
-        <button class="save-btn" @click="saveScript">保存</button>
+        <button class="save-btn" @click="saveScript">{{ t('common.save') }}</button>
       </div>
       <div ref="editorContainer" class="editor-container"></div>
     </div>

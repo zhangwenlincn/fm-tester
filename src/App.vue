@@ -1,4 +1,5 @@
 <script setup>
+import { useI18n } from 'vue-i18n'
 import { useAppSetup } from './App.js'
 import MenuBar from './components/MenuBar/index.vue'
 import TabsBar from './components/TabsBar/index.vue'
@@ -18,6 +19,7 @@ import SettingsPanel from './components/SettingsPanel/index.vue'
 import Toast from './components/Toast/index.vue'
 
 // 使用 composable
+const { t } = useI18n()
 const {
   currentWorkspace,
   workspaces,
@@ -218,7 +220,7 @@ const {
       <!-- 空状态提示 -->
       <div class="empty-content" v-else>
         <div class="empty-message">
-          {{ currentWorkspace ? '请选择或创建接口' : '请先选择或创建工作区' }}
+          {{ currentWorkspace ? t('empty.selectApiHint') : t('empty.selectWorkspace') }}
         </div>
       </div>
     </div>

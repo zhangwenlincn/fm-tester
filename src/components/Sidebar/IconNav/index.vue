@@ -12,7 +12,7 @@ const props = defineProps({
 
 const emit = defineEmits(['navChange'])
 
-const { navItems, activeNav, selectNav } = useIconNavSetup(props, emit)
+const { navItems, activeNav, selectNav, getNavName } = useIconNavSetup(props, emit)
 
 // 监听 activeIndex 变化，同步更新
 watch(() => props.activeIndex, (newIndex) => {
@@ -26,10 +26,10 @@ watch(() => props.activeIndex, (newIndex) => {
   <div class="icon-nav">
     <div 
       v-for="(item, index) in navItems" 
-      :key="item.name"
+      :key="item.key"
       class="nav-item"
       :class="{ active: activeNav === index }"
-      :title="item.name"
+      :title="getNavName(item)"
       @click="selectNav(index)"
     >
       <span class="nav-icon"><Icon :name="item.icon" /></span>

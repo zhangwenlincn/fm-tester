@@ -17,6 +17,7 @@ const props = defineProps({
 const emit = defineEmits(['save', 'close'])
 
 const {
+  t,
   activeTab,
   tabs,
   localSettings,
@@ -59,19 +60,19 @@ const {
       <!-- 请求头 -->
       <div v-show="activeTab === 'headers'" class="headers-panel">
         <div class="panel-toolbar">
-          <button class="add-btn" @click="addHeader">+ 添加请求头</button>
-          <span class="panel-hint">这些请求头会自动添加到该集合下所有接口的请求中</span>
+          <button class="add-btn" @click="addHeader">{{ t('buttons.addHeader') }}</button>
+          <span class="panel-hint">{{ t('collectionSettings.headersHint') }}</span>
         </div>
         <div class="params-list">
           <div class="params-header">
             <span class="col-check"></span>
-            <span class="col-key">Header 名</span>
-            <span class="col-value">Header 值</span>
-            <span class="col-desc">描述</span>
+            <span class="col-key">{{ t('table.headerName') }}</span>
+            <span class="col-value">{{ t('table.headerValue') }}</span>
+            <span class="col-desc">{{ t('table.description') }}</span>
             <span class="col-action"></span>
           </div>
           <div v-if="localSettings.commonHeaders.length === 0" class="empty-params">
-            暂无通用请求头，点击上方按钮添加
+            {{ t('empty.noCollectionHeaders') }}
           </div>
           <div 
             v-for="(header, index) in localSettings.commonHeaders" 
@@ -100,19 +101,19 @@ const {
       <!-- 变量 -->
       <div v-show="activeTab === 'variables'" class="variables-panel">
         <div class="panel-toolbar">
-          <button class="add-btn" @click="addVariable">+ 添加变量</button>
-          <span class="panel-hint">使用 &#123;&#123;变量名&#125;&#125; 在 URL、请求头、请求体中引用这些变量</span>
+          <button class="add-btn" @click="addVariable">{{ t('buttons.addVariable') }}</button>
+          <span class="panel-hint">{{ t('environment.hint') }}</span>
         </div>
         <div class="params-list">
           <div class="params-header">
             <span class="col-check"></span>
-            <span class="col-key">变量名</span>
-            <span class="col-value">变量值</span>
-            <span class="col-desc">描述</span>
+            <span class="col-key">{{ t('table.variableName') }}</span>
+            <span class="col-value">{{ t('table.variableValue') }}</span>
+            <span class="col-desc">{{ t('table.description') }}</span>
             <span class="col-action"></span>
           </div>
           <div v-if="localSettings.collectionVariables.length === 0" class="empty-params">
-            暂无集合变量，点击上方按钮添加
+            {{ t('empty.noCollectionVariables') }}
           </div>
           <div 
             v-for="(variable, index) in localSettings.collectionVariables" 
@@ -151,8 +152,8 @@ const {
       <div v-show="activeTab === 'settings'" class="settings-panel">
         <div class="placeholder-content">
           <span class="placeholder-icon">⚙️</span>
-          <p>集合设置</p>
-          <p class="placeholder-hint">此功能正在开发中...</p>
+          <p>{{ t('panels.collectionSettings') }}</p>
+          <p class="placeholder-hint">{{ t('common.developing') }}</p>
         </div>
       </div>
     </div>

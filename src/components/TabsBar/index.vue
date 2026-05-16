@@ -1,5 +1,6 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useTabsBarSetup } from './index.js'
 import Icon from '../Icon/index.vue'
 import ContextMenu from '../Sidebar/ContextMenu/index.vue'
@@ -21,6 +22,7 @@ const props = defineProps({
 
 const emit = defineEmits(['update:activeTab', 'closeTab', 'closeAllTabs', 'closeOtherTabs', 'selectCollection', 'selectApi'])
 
+const { t } = useI18n()
 const { selectTab, closeTab, closeAllTabs, closeOtherTabs } = useTabsBarSetup(props, emit)
 
 // 右键菜单状态
@@ -29,12 +31,13 @@ const contextMenuX = ref(0)
 const contextMenuY = ref(0)
 const contextMenuTargetIndex = ref(-1)
 
-const contextMenuItems = [
-  { label: '关闭', action: 'close' },
-  { label: '关闭其他', action: 'closeOther' },
+// 使用 computed 确保语言切换时更新
+const contextMenuItems = computed(() => [
+  { label: t('tabsBar.close'), action: 'close' },
+  { label: t('tabsBar.closeOthers'), action: 'closeOther' },
   { divider: true },
-  { label: '关闭全部', action: 'closeAll' }
-]
+  { label: t('tabsBar.closeAll'), action: 'closeAll' }
+])
 
 const handleContextMenu = (index, event) => {
   event.preventDefault()
