@@ -48,7 +48,7 @@ defineExpose({
         @contextmenu.prevent="(e) => openWsContextMenu(e, ws)"
       >
         <div class="env-header">
-          <span class="env-icon"><Icon name="ws" /></span>
+          <span class="env-icon"><Icon name="workspace" /></span>
           <span class="env-name">{{ ws.name }}</span>
         </div>
       </div>
