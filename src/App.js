@@ -177,6 +177,8 @@ export function useAppSetup() {
     onWorkspaceDeleted: handleWorkspaceDeleted,
     onSwitchWorkspace: handleWorkspaceSwitch,
     showWorkspaceInfo: responseModule.showWorkspaceInfo,
+    selectedWorkspace: responseModule.selectedWorkspace,
+    onSelectWorkspace: responseModule.onSelectWorkspace,
 
     // 标签页
     tabs,

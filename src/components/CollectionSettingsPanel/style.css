@@ -66,7 +66,18 @@
 /* 标签页内容 */
 .tab-content {
   flex: 1;
-  overflow-y: auto;
+  overflow: hidden;
+  padding: 16px;
+  position: relative;
+}
+
+/* 脚本面板 */
+.scripts-panel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   padding: 16px;
 }
 

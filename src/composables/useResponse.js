@@ -24,6 +24,9 @@ export function useResponse(currentWorkspace, tabs, activeTab, currentNavKey, si
   // 历史记录
   const selectedHistoryEntry = ref(null)
 
+  // 选中查看的工作区（用于设置面板）
+  const selectedWorkspace = ref(null)
+
   const loadCookies = async () => {
     if (!currentWorkspace.value?.path) {
       cookies.value = []
@@ -51,8 +54,13 @@ export function useResponse(currentWorkspace, tabs, activeTab, currentNavKey, si
   })
 
   const showWorkspaceInfo = computed(() => {
-    return currentNavKey.value === 'workspace' && currentWorkspace.value
+    return currentNavKey.value === 'workspace' && selectedWorkspace.value
   })
+
+  // 选择工作区（用于显示设置面板）
+  const onSelectWorkspace = (ws) => {
+    selectedWorkspace.value = ws
+  }
 
   const onSelectHistory = (historyEntry) => {
     selectedHistoryEntry.value = historyEntry
@@ -196,6 +204,8 @@ export function useResponse(currentWorkspace, tabs, activeTab, currentNavKey, si
     selectedHistoryEntry,
     showHistoryDetail,
     showWorkspaceInfo,
+    selectedWorkspace,
+    onSelectWorkspace,
     onSelectHistory,
     onSaveResponse,
     handleSaveResponse,

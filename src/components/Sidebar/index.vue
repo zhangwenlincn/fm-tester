@@ -23,7 +23,8 @@ const emit = defineEmits([
   'environmentUpdated',
   'workspaceDeleted',
   'selectSavedResponse',
-  'selectHistory'
+  'selectHistory',
+  'selectWorkspace'
 ])
 
 // 使用 composable

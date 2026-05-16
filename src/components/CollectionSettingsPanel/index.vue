@@ -1,6 +1,7 @@
 <script setup>
 import { useCollectionSettingsSetup } from './index.js'
 import Icon from '../Icon/index.vue'
+import ScriptPanel from '../ScriptPanel/index.vue'
 
 const props = defineProps({
   collection: {
@@ -24,6 +25,7 @@ const {
   removeHeader,
   addVariable,
   removeVariable,
+  handleScriptUpdate,
   saveSettings
 } = useCollectionSettingsSetup(props, emit)
 </script>
@@ -137,11 +139,10 @@ const {
       
       <!-- 脚本 -->
       <div v-show="activeTab === 'scripts'" class="scripts-panel">
-        <div class="placeholder-content">
-          <span class="placeholder-icon">📝</span>
-          <p>脚本配置</p>
-          <p class="placeholder-hint">此功能正在开发中...</p>
-        </div>
+        <ScriptPanel 
+          :request="localSettings"
+          @update:request="handleScriptUpdate"
+        />
       </div>
       
       <!-- 设置 -->

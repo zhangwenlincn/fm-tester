@@ -15,7 +15,9 @@ export function useCollectionSettingsSetup(props, emit) {
   const localSettings = reactive({
     name: props.collection?.name || '',
     commonHeaders: [],
-    collectionVariables: []
+    collectionVariables: [],
+    preScript: '',
+    postScript: ''
   })
   
   // 防抖保存定时器
@@ -54,6 +56,10 @@ export function useCollectionSettingsSetup(props, emit) {
     } else {
       localSettings.collectionVariables = []
     }
+    
+    // 脚本
+    localSettings.preScript = props.collection?.preScript || ''
+    localSettings.postScript = props.collection?.postScript || ''
   }
   
   // 初始化标记（避免初始化时触发保存）
@@ -102,6 +108,14 @@ export function useCollectionSettingsSetup(props, emit) {
     { deep: true }
   )
   
+  // 监听脚本变化
+  watch(
+    () => [localSettings.preScript, localSettings.postScript],
+    () => {
+      debouncedSave()
+    }
+  )
+  
   // 组件卸载时清理定时器并强制保存
   onUnmounted(() => {
     if (saveTimer) {
@@ -140,6 +154,12 @@ export function useCollectionSettingsSetup(props, emit) {
   // 移除变量
   const removeVariable = (index) => {
     localSettings.collectionVariables.splice(index, 1)
+  }
+  
+  // 处理脚本更新
+  const handleScriptUpdate = (updated) => {
+    localSettings.preScript = updated.preScript || ''
+    localSettings.postScript = updated.postScript || ''
   }
   
   // 保存设置
@@ -181,7 +201,9 @@ export function useCollectionSettingsSetup(props, emit) {
         workspacePath: props.workspacePath,
         id: props.collection.id,
         commonHeaders: validHeaders.length > 0 ? validHeaders : null,
-        collectionVariables: validVariables.length > 0 ? validVariables : null
+        collectionVariables: validVariables.length > 0 ? validVariables : null,
+        preScript: localSettings.preScript || null,
+        postScript: localSettings.postScript || null
       })
       
       emit('save')
@@ -201,6 +223,7 @@ export function useCollectionSettingsSetup(props, emit) {
     removeHeader,
     addVariable,
     removeVariable,
+    handleScriptUpdate,
     saveSettings
   }
 }

@@ -13,6 +13,7 @@ import ConsolePanel from './components/ConsolePanel/index.vue'
 import SaveResponseDialog from './components/SaveResponseDialog/index.vue'
 import HistoryDetailPanel from './components/HistoryDetailPanel/index.vue'
 import CollectionSettingsPanel from './components/CollectionSettingsPanel/index.vue'
+import WorkspaceSettingsPanel from './components/WorkspaceSettingsPanel/index.vue'
 import SettingsPanel from './components/SettingsPanel/index.vue'
 import Toast from './components/Toast/index.vue'
 
@@ -77,9 +78,11 @@ const {
   showRequestResponse,
   showHistoryDetail,
   showWorkspaceInfo,
+  selectedWorkspace,
   showEnvironmentInfo,
   onSwitchEnvironment,
   onSelectEnvironment,
+  onSelectWorkspace,
   openCreateWorkspace,
   onWorkspaceCreated,
   onWorkspaceDeleted,
@@ -150,6 +153,7 @@ const {
         @workspace-deleted="onWorkspaceDeleted"
         @select-saved-response="onSelectSavedResponse"
         @select-history="onSelectHistory"
+        @select-workspace="onSelectWorkspace"
       />
       
       <!-- 中间内容区 -->
@@ -192,8 +196,12 @@ const {
         <HistoryDetailPanel :entry="selectedHistoryEntry" />
       </div>
       
-      <!-- 工作区信息面板 -->
-      <div class="content-area workspace-info-panel" v-else-if="showWorkspaceInfo">
+      <!-- 工作区设置面板 -->
+      <div class="content-area" v-else-if="showWorkspaceInfo">
+        <WorkspaceSettingsPanel 
+          :workspace="selectedWorkspace"
+          :workspace-path="selectedWorkspace?.path || ''"
+        />
       </div>
       
       <!-- 环境信息面板 -->
