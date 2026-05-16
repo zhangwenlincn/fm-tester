@@ -314,6 +314,16 @@ pub async fn sync_git_workspace(
                     error: None,
                 },
             );
+            // 即使没有更改，也更新同步时间
+            let mut config = read_config();
+            let now = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
+            for w in &mut config.workspaces {
+                if w.id == workspace_id {
+                    w.last_sync_at = Some(now);
+                    break;
+                }
+            }
+            write_config(&config)?;
             return Ok(());
         }
     }
@@ -702,5 +712,245 @@ pub async fn update_git_workspace(
     }
     write_config(&config)?;
 
+    Ok(())
+}
+
+/// 同步 Git 工作区（先拉取再推送）
+#[tauri::command]
+pub async fn sync_git_workspace_full(
+    app: AppHandle,
+    workspace_id: String,
+    commit_message: Option<String>,
+) -> Result<(), String> {
+    // 先拉取远程更改
+    emit_log(
+        &app,
+        GitSyncLog {
+            log_type: "info".to_string(),
+            timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+            message: "开始同步：先拉取远程更改".to_string(),
+            data: None,
+            error: None,
+        },
+    );
+    
+    // 执行 pull
+    {
+        let config = read_config();
+        let workspace = config
+            .workspaces
+            .iter()
+            .find(|w| w.id == workspace_id)
+            .cloned()
+            .ok_or_else(|| "工作区不存在".to_string())?;
+        
+        if workspace.workspace_type != "git" {
+            return Err("此工作区不是 Git 类型".to_string());
+        }
+        
+        let workspace_path = workspace.path.clone();
+        
+        let (username, password) = if let Some(cred_id) = &workspace.git_credentials_id {
+            let cred = get_credential_by_id_internal(cred_id.clone())?;
+            (Some(cred.username), Some(cred.encrypted_password))
+        } else {
+            (None, None)
+        };
+        
+        if is_git_repo(&workspace_path) {
+            // 设置远程 URL
+            if let (Some(user), Some(pass)) = (username.clone(), password.clone()) {
+                let remote_url_result = run_git_command(vec!["remote", "get-url", "origin"], Some(&workspace_path));
+                if let Ok(current_url) = remote_url_result {
+                    let encoded_user = user.replace('@', "%40").replace(':', "%3A");
+                    let encoded_pass = pass.replace('@', "%40").replace(':', "%3A");
+                    
+                    let clean_url = if current_url.starts_with("https://") {
+                        let after = &current_url[8..];
+                        if let Some(at_pos) = after.find('@') {
+                            after[at_pos + 1..].to_string()
+                        } else {
+                            after.to_string()
+                        }
+                    } else if current_url.starts_with("http://") {
+                        let after = &current_url[7..];
+                        if let Some(at_pos) = after.find('@') {
+                            after[at_pos + 1..].to_string()
+                        } else {
+                            after.to_string()
+                        }
+                    } else {
+                        current_url.clone()
+                    };
+                    
+                    let auth_url = if current_url.starts_with("https://") {
+                        format!("https://{}:{}@{}", encoded_user, encoded_pass, clean_url)
+                    } else if current_url.starts_with("http://") {
+                        format!("http://{}:{}@{}", encoded_user, encoded_pass, clean_url)
+                    } else {
+                        clean_url
+                    };
+                    
+                    let _ = run_git_command(vec!["remote", "set-url", "origin", &auth_url], Some(&workspace_path));
+                }
+            }
+            
+            // Git pull
+            emit_log(
+                &app,
+                GitSyncLog {
+                    log_type: "info".to_string(),
+                    timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+                    message: "拉取远程更改".to_string(),
+                    data: None,
+                    error: None,
+                },
+            );
+            
+            let pull_result = run_git_command(vec!["pull", "origin", "HEAD"], Some(&workspace_path));
+            if let Err(e) = pull_result {
+                if e.contains("CONFLICT") || e.contains("conflict") {
+                    let err_msg = format!("拉取时发生冲突: {}", e);
+                    emit_log(
+                        &app,
+                        GitSyncLog {
+                            log_type: "error".to_string(),
+                            timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+                            message: err_msg.clone(),
+                            data: None,
+                            error: Some(err_msg.clone()),
+                        },
+                    );
+                    return Err(err_msg);
+                }
+            }
+        }
+    }
+    
+    // 再推送本地更改
+    emit_log(
+        &app,
+        GitSyncLog {
+            log_type: "info".to_string(),
+            timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+            message: "推送本地更改".to_string(),
+            data: None,
+            error: None,
+        },
+    );
+    
+    {
+        let config = read_config();
+        let workspace = config
+            .workspaces
+            .iter()
+            .find(|w| w.id == workspace_id)
+            .cloned()
+            .ok_or_else(|| "工作区不存在".to_string())?;
+        
+        let workspace_path = workspace.path.clone();
+        
+        let (username, password) = if let Some(cred_id) = &workspace.git_credentials_id {
+            let cred = get_credential_by_id_internal(cred_id.clone())?;
+            (Some(cred.username), Some(cred.encrypted_password))
+        } else {
+            (None, None)
+        };
+        
+        // 如果不是 git 仓库，先 clone
+        if !is_git_repo(&workspace_path) {
+            let repo_url = workspace.git_url.clone().unwrap_or_default();
+            
+            let parent_dir = Path::new(&workspace_path).parent();
+            if let Some(parent) = parent_dir {
+                if !parent.exists() {
+                    fs::create_dir_all(parent)
+                        .map_err(|e| format!("创建父目录失败: {}", e))?;
+                }
+            }
+            
+            let clean_url = if repo_url.starts_with("https://") {
+                let after = &repo_url[8..];
+                if let Some(at_pos) = after.find('@') { after[at_pos + 1..].to_string() } else { after.to_string() }
+            } else if repo_url.starts_with("http://") {
+                let after = &repo_url[7..];
+                if let Some(at_pos) = after.find('@') { after[at_pos + 1..].to_string() } else { after.to_string() }
+            } else { repo_url.clone() };
+            
+            fn url_encode(s: &str) -> String {
+                s.replace('@', "%40").replace(':', "%3A").replace('/', "%2F").replace(' ', "%20")
+            }
+            
+            let auth_url = if let (Some(user), Some(pass)) = (username.clone(), password.clone()) {
+                if repo_url.starts_with("https://") { format!("https://{}:{}@{}", url_encode(&user), url_encode(&pass), clean_url) }
+                else if repo_url.starts_with("http://") { format!("http://{}:{}@{}", url_encode(&user), url_encode(&pass), clean_url) }
+                else { format!("https://{}", clean_url) }
+            } else { format!("https://{}", clean_url) };
+            
+            let _ = run_git_command(vec!["clone", &auth_url, &workspace_path], None);
+        }
+        
+        // 配置 Git 用户
+        let _ = run_git_command(vec!["config", "user.name", "FM Tester"], Some(&workspace_path));
+        let _ = run_git_command(vec!["config", "user.email", "fm-tester@example.com"], Some(&workspace_path));
+        
+        // Git add
+        let _ = run_git_command(vec!["add", "."], Some(&workspace_path));
+        
+        // Git commit（如果有更改）
+        let status = run_git_command(vec!["status", "--porcelain"], Some(&workspace_path)).unwrap_or_default();
+        if !status.is_empty() {
+            let message = commit_message.unwrap_or_else(|| "Update".to_string());
+            let _ = run_git_command(vec!["commit", "-m", &message], Some(&workspace_path));
+        }
+        
+        // Git push
+        if let (Some(user), Some(pass)) = (username, password) {
+            let current_url = run_git_command(vec!["remote", "get-url", "origin"], Some(&workspace_path)).unwrap_or_default();
+            let clean_url = if current_url.starts_with("https://") {
+                let after = &current_url[8..];
+                if let Some(at_pos) = after.find('@') { after[at_pos + 1..].to_string() } else { after.to_string() }
+            } else if current_url.starts_with("http://") {
+                let after = &current_url[7..];
+                if let Some(at_pos) = after.find('@') { after[at_pos + 1..].to_string() } else { after.to_string() }
+            } else { current_url.clone() };
+            
+            let auth_url = if current_url.starts_with("https://") {
+                format!("https://{}:{}@{}", user.replace('@', "%40"), pass.replace('@', "%40"), clean_url)
+            } else if current_url.starts_with("http://") {
+                format!("http://{}:{}@{}", user.replace('@', "%40"), pass.replace('@', "%40"), clean_url)
+            } else { clean_url };
+            
+            let _ = run_git_command(vec!["remote", "set-url", "origin", &auth_url], Some(&workspace_path));
+        }
+        
+        let push_result = run_git_command(vec!["push", "origin", "HEAD"], Some(&workspace_path));
+        if let Err(e) = push_result {
+            return Err(format!("推送失败: {}", e));
+        }
+    }
+    
+    emit_log(
+        &app,
+        GitSyncLog {
+            log_type: "success".to_string(),
+            timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+            message: "同步完成".to_string(),
+            data: None,
+            error: None,
+        },
+    );
+    
+    // 更新同步时间
+    let mut config = read_config();
+    let now = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
+    for w in &mut config.workspaces {
+        if w.id == workspace_id {
+            w.last_sync_at = Some(now);
+            break;
+        }
+    }
+    write_config(&config)?;
+    
     Ok(())
 }

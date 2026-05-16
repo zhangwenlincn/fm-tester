@@ -156,6 +156,7 @@ const {
         @select-saved-response="onSelectSavedResponse"
         @select-history="onSelectHistory"
         @select-workspace="onSelectWorkspace"
+        @workspace-updated="onWorkspaceUpdated"
       />
       
       <!-- 中间内容区 -->

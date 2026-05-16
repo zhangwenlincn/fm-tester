@@ -101,7 +101,8 @@ pub fn run() {
             delete_git_credentials,
             // Git Sync
             sync_git_workspace,
-            update_git_workspace
+            update_git_workspace,
+            sync_git_workspace_full
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

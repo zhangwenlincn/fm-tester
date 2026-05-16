@@ -2,9 +2,12 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
 import { showToast } from '../../../composables/useToast'
+import { useI18n } from 'vue-i18n'
 
 // 导出 composable 函数
 export function useWorkspacePanelSetup(props, emit) {
+  const { t } = useI18n()
+  
   // 工作区列表
   const workspaces = ref([])
   const currentWorkspace = ref(null)
@@ -75,29 +78,22 @@ export function useWorkspacePanelSetup(props, emit) {
     }
   }
   
-  // 同步 Git 工作区（推送本地更改到远程）
+  // 同步 Git 工作区（先拉取再推送）
   const syncWorkspace = async (ws) => {
-    showToast('正在同步工作区...', 'info')
+    showToast(t('toast.syncing'), 'info')
     try {
-      await invoke('sync_git_workspace', { workspaceId: ws.id })
-      showToast('同步成功', 'success')
+      await invoke('sync_git_workspace_full', { workspaceId: ws.id })
+      showToast(t('toast.syncSuccess'), 'success')
+      // 同步后刷新数据
+      await loadWorkspaces()
+      // 找到更新后的工作区并通知父组件
+      const updatedWs = workspaces.value.find(w => w.id === ws.id)
+      if (updatedWs) {
+        emit('selectWorkspace', updatedWs)
+      }
     } catch (e) {
       console.error('同步工作区失败:', e)
-      showToast(`同步失败: ${e}`, 'error')
-    }
-  }
-  
-  // 更新 Git 工作区（从远程拉取更改）
-  const updateWorkspace = async (ws) => {
-    showToast('正在更新工作区...', 'info')
-    try {
-      await invoke('update_git_workspace', { workspaceId: ws.id })
-      showToast('更新成功', 'success')
-      // 更新后刷新数据
-      emit('workspaceUpdated')
-    } catch (e) {
-      console.error('更新工作区失败:', e)
-      showToast(`更新失败: ${e}`, 'error')
+      showToast(`${t('toast.syncFailed')}: ${e}`, 'error')
     }
   }
   
@@ -133,10 +129,6 @@ export function useWorkspacePanelSetup(props, emit) {
     } else if (action === 'sync-ws') {
       if (ws && ws.workspace_type === 'git') {
         await syncWorkspace(ws)
-      }
-    } else if (action === 'update-ws') {
-      if (ws && ws.workspace_type === 'git') {
-        await updateWorkspace(ws)
       }
     }
     
@@ -276,7 +268,6 @@ export function useWorkspacePanelSetup(props, emit) {
     createWorkspace,
     deleteWorkspace,
     syncWorkspace,
-    updateWorkspace,
     openWsContextMenu,
     closeWsContextMenu,
     handleWsContextAction,

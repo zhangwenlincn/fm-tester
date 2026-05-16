@@ -160,7 +160,10 @@
     "deleteFailed": "删除失败",
     "clearFailed": "清空失败",
     "selectBinary": "选择二进制文件",
-    "selectFileFailed": "选择文件失败"
+    "selectFileFailed": "选择文件失败",
+    "syncing": "正在同步接口...",
+    "syncSuccess": "同步成功",
+    "syncFailed": "同步失败"
   },
   "response": {
     "status": "状态",
@@ -179,7 +182,9 @@
     "selector": "工作区:",
     "notSelected": "未选择",
     "noWorkspace": "暂无工作区",
-    "lastOpened": "最后打开:"
+    "lastOpened": "最后打开:",
+    "lastSync": "同步时间:",
+    "lastUpdate": "更新时间:"
   },
   "environment": {
     "selector": "环境:",
@@ -234,8 +239,7 @@
     "deleteWorkspace": "删除工作区",
     "deleteEnvironment": "删除环境",
     "deleteCollection": "删除集合",
-    "syncWorkspace": "同步接口",
-    "updateWorkspace": "更新接口"
+    "syncWorkspace": "同步接口"
   },
   "workspaceType": {
     "local": "本地工作区",

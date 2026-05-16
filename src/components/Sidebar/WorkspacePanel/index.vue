@@ -85,10 +85,6 @@ defineExpose({
           <span class="menu-icon"><Icon name="sync" :size="14" /></span>
           {{ t('contextMenu.syncWorkspace') }}
         </div>
-        <div class="menu-item" @click="handleWsContextAction('update-ws')">
-          <span class="menu-icon"><Icon name="update" :size="14" /></span>
-          {{ t('contextMenu.updateWorkspace') }}
-        </div>
         <div class="menu-divider"></div>
       </template>
       <!-- 删除工作区（所有类型都有） -->

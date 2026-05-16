@@ -62,6 +62,20 @@ export function useResponse(currentWorkspace, tabs, activeTab, currentNavKey, si
     selectedWorkspace.value = ws
   }
 
+  // 更新选中的工作区数据（同步/更新后刷新）
+  const onUpdateSelectedWorkspace = async () => {
+    if (!selectedWorkspace.value) return
+    try {
+      const workspaces = await invoke('get_workspaces')
+      const updated = workspaces?.find(w => w.id === selectedWorkspace.value.id)
+      if (updated) {
+        selectedWorkspace.value = updated
+      }
+    } catch (e) {
+      console.error('更新工作区数据失败:', e)
+    }
+  }
+
   const onSelectHistory = (historyEntry) => {
     selectedHistoryEntry.value = historyEntry
   }
@@ -206,6 +220,7 @@ export function useResponse(currentWorkspace, tabs, activeTab, currentNavKey, si
     showWorkspaceInfo,
     selectedWorkspace,
     onSelectWorkspace,
+    onUpdateSelectedWorkspace,
     onSelectHistory,
     onSaveResponse,
     handleSaveResponse,

@@ -87,6 +87,16 @@ const props = defineProps({
     <svg v-if="name === 'git'" :width="size" :height="size" viewBox="0 0 24 24" fill="currentColor">
       <path d="M21.62 11.11l-8.73-8.73a1.3 1.3 0 0 0-1.84 0L9.2 4.23l2.34 2.34a2.5 2.5 0 0 1 3.14 3.14l2.34 2.34a2.5 2.5 0 0 1-2.83 4.24l-2.34-2.34a2.5 2.5 0 0 1-3.14-3.14L6.37 6.37 2.38 10.35a1.3 1.3 0 0 0 0 1.84l8.73 8.73a1.3 1.3 0 0 0 1.84 0l8.67-8.67a1.3 1.3 0 0 0 0-1.84z"/>
     </svg>
+    
+<!-- 同步(双向箭头) -->
+    <svg v-if="name === 'sync'" :width="size" :height="size" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0 0 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74A7.93 7.93 0 0 0 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/>
+    </svg>
+    
+    <!-- 更新(从远程拉取/下载) -->
+    <svg v-if="name === 'update'" :width="size" :height="size" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+    </svg>
   </span>
 </template>
 

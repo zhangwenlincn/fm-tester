@@ -160,7 +160,10 @@
     "deleteFailed": "Delete failed",
     "clearFailed": "Clear failed",
     "selectBinary": "Select binary file",
-    "selectFileFailed": "Select file failed"
+    "selectFileFailed": "Select file failed",
+    "syncing": "Syncing API...",
+    "syncSuccess": "Sync success",
+    "syncFailed": "Sync failed"
   },
   "response": {
     "status": "Status",
@@ -179,7 +182,9 @@
     "selector": "Workspace:",
     "notSelected": "Not selected",
     "noWorkspace": "No workspace",
-    "lastOpened": "Last opened:"
+    "lastOpened": "Last opened:",
+    "lastSync": "Synced:",
+    "lastUpdate": "Updated:"
   },
   "environment": {
     "selector": "Environment:",
@@ -234,8 +239,7 @@
     "deleteWorkspace": "Delete Workspace",
     "deleteEnvironment": "Delete Environment",
     "deleteCollection": "Delete Collection",
-    "syncWorkspace": "Sync APIs",
-    "updateWorkspace": "Update APIs"
+    "syncWorkspace": "Sync API"
   },
   "workspaceType": {
     "local": "Local Workspace",

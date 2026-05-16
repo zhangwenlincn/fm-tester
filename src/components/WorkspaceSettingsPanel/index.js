@@ -1,4 +1,4 @@
-import { ref, reactive, watch } from 'vue'
+import { ref, reactive, watch, computed } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { showToast } from '../../composables/useToast.js'
 
@@ -9,6 +9,15 @@ export function useWorkspaceSettingsSetup(props, emit) {
     name: props.workspace?.name || '',
     preScript: '',
     postScript: ''
+  })
+  
+  // 工作区信息（包含 Git 相关信息）
+  const workspaceInfo = computed(() => {
+    const ws = props.workspace
+    return {
+      isGit: ws?.workspace_type === 'git',
+      lastSyncAt: ws?.last_sync_at || null
+    }
   })
   
   // 初始化数据
@@ -84,6 +93,7 @@ export function useWorkspaceSettingsSetup(props, emit) {
   
   return {
     localSettings,
+    workspaceInfo,
     handleScriptUpdate,
     saveSettings
   }

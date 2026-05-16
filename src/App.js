@@ -179,6 +179,7 @@ export function useAppSetup() {
     showWorkspaceInfo: responseModule.showWorkspaceInfo,
     selectedWorkspace: responseModule.selectedWorkspace,
     onSelectWorkspace: responseModule.onSelectWorkspace,
+    onWorkspaceUpdated: responseModule.onUpdateSelectedWorkspace,
 
     // 标签页
     tabs,

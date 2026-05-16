@@ -25,7 +25,8 @@ const emit = defineEmits([
   'workspaceDeleted',
   'selectSavedResponse',
   'selectHistory',
-  'selectWorkspace'
+  'selectWorkspace',
+  'workspaceUpdated'
 ])
 
 // 使用 composable
@@ -45,9 +46,10 @@ const {
   handleRenameApi,
   handleSelectEnvironment,
   handleEnvironmentUpdated,
-  handleSelectWorkspace,
+handleSelectWorkspace,
   handleCreateWorkspace,
   handleWorkspaceDeleted,
+  handleWorkspaceUpdated,
   handleSelectSavedResponse,
   handleSelectHistory,
   loadWorkspaces,
@@ -109,6 +111,7 @@ defineExpose({
         @select-workspace="handleSelectWorkspace"
         @create-workspace="handleCreateWorkspace"
         @workspace-deleted="handleWorkspaceDeleted"
+        @workspace-updated="handleWorkspaceUpdated"
       />
       
       <!-- 历史面板 -->
