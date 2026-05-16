@@ -188,6 +188,8 @@ export function useAppSetup() {
     showCollectionSettings: tabsModule.showCollectionSettings,
     onCollectionSettingsSaved: tabsModule.onCollectionSettingsSaved,
     closeTab: tabsModule.closeTab,
+    closeAllTabs: tabsModule.closeAllTabs,
+    closeOtherTabs: tabsModule.closeOtherTabs,
     onDeleteApis: tabsModule.onDeleteApis,
     onDeleteCollection: tabsModule.onDeleteCollection,
 

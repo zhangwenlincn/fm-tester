@@ -88,6 +88,8 @@ const {
   onNavChange,
   closeWorkspaceDialog,
   closeTab,
+  closeAllTabs,
+  closeOtherTabs,
   selectApi,
   sendRequest,
   saveRequest,
@@ -122,6 +124,8 @@ const {
         :workspace="currentWorkspace"
         @update:active-tab="activeTab = $event"
         @close-tab="closeTab"
+        @close-all-tabs="closeAllTabs"
+        @close-other-tabs="closeOtherTabs"
         @select-collection="selectCollection"
         @select-api="selectApi"
       />

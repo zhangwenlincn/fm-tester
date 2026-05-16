@@ -12,12 +12,24 @@ export function useTabsBarSetup(props, emit) {
   }
 
   const closeTab = (index, event) => {
-    event.stopPropagation()
+    if (event) {
+      event.stopPropagation()
+    }
     emit('closeTab', index)
+  }
+
+  const closeAllTabs = () => {
+    emit('closeAllTabs')
+  }
+
+  const closeOtherTabs = (keepIndex) => {
+    emit('closeOtherTabs', keepIndex)
   }
 
   return {
     selectTab,
-    closeTab
+    closeTab,
+    closeAllTabs,
+    closeOtherTabs
   }
 }

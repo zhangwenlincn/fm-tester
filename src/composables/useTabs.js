@@ -309,6 +309,56 @@ export function useTabs(currentWorkspace, currentNavKey, sidebarRef, currentRequ
     await saveOpenTabs()
   }
 
+  // 关闭所有标签页
+  const closeAllTabs = async () => {
+    loading.value = false
+    tabs.value = []
+    collectionTabsData.value = {}
+    activeTab.value = 0
+    currentRequest.method = 'GET'
+    currentRequest.url = ''
+    currentRequest.headers = []
+    currentRequest.body = ''
+    currentRequest.bodyType = 'raw'
+    currentRequest.formData = []
+    currentRequest.binaryFile = null
+    response.value = null
+    if (sidebarRef.value) {
+      sidebarRef.value.setSelectedApi(null)
+    }
+    await saveOpenTabs()
+  }
+
+  // 关闭其他标签页（保留指定索引的标签页）
+  const closeOtherTabs = async (keepIndex = null) => {
+    if (tabs.value.length <= 1) return
+
+    loading.value = false
+    // 如果没有指定保留索引，则保留当前激活的标签页
+    const targetIndex = keepIndex !== null ? keepIndex : activeTab.value
+    const targetTab = tabs.value[targetIndex]
+
+    if (!targetTab) return
+
+    // 清理其他集合标签页的数据
+    for (let i = 0; i < tabs.value.length; i++) {
+      if (i !== targetIndex && tabs.value[i].tabType === 'collection') {
+        delete collectionTabsData.value[tabs.value[i].id]
+      }
+    }
+
+    // 只保留目标标签页
+    tabs.value = [targetTab]
+    activeTab.value = 0
+
+    // 通知侧边栏选中当前 API
+    if (targetTab?.tabType === 'api' && sidebarRef.value) {
+      sidebarRef.value.setSelectedApi(targetTab.id)
+    }
+
+    await saveOpenTabs()
+  }
+
   const onDeleteApis = (apiIds) => {
     for (const apiId of apiIds) {
       const index = tabs.value.findIndex(t => t.id === apiId && t.tabType === 'api')
@@ -412,6 +462,8 @@ export function useTabs(currentWorkspace, currentNavKey, sidebarRef, currentRequ
     selectCollection,
     onCollectionSettingsSaved,
     closeTab,
+    closeAllTabs,
+    closeOtherTabs,
     onDeleteApis,
     onDeleteCollection,
     onUpdateRequestTab,
