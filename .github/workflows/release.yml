@@ -52,23 +52,7 @@ jobs:
         with:
           tagName: ${{ github.ref_name }}
           releaseName: 'FM Tester ${{ github.ref_name }}'
-          releaseBody: 'See the assets to download and install this version.'
-          releaseDraft: true
-          prerelease: false
-          args: ${{ matrix.args }}
-
-  # 单独创建 Release（当所有构建完成后）
-  create-release:
-    needs: build
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
-
-    steps:
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
-        with:
-          name: 'FM Tester ${{ github.ref_name }}'
-          body: |
+          releaseBody: |
             ## 安装说明
 
             ### Windows
@@ -86,7 +70,6 @@ jobs:
 
             ## 更新日志
             查看 [commits](https://github.com/${{ github.repository }}/commits/${{ github.ref_name }}) 了解详情。
-          draft: false
+          releaseDraft: false
           prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          args: ${{ matrix.args }}
