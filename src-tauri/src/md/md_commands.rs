@@ -277,19 +277,21 @@ fn build_doc_prompt(
     // 保存的响应示例
     if !saved_responses.is_empty() {
         parts.push("\n## 保存的响应示例".to_string());
-        parts.push("以下是已保存的响应数据，可作为参考：".to_string());
+        parts.push("以下是已保存的响应数据，**请完整分析响应结构并生成详细的响应参数说明**：".to_string());
         for (i, resp) in saved_responses.iter().take(3).enumerate() {
             parts.push(format!("\n### 示例 {}: {}", i + 1, resp.name));
             parts.push(format!("- 状态码：{}", resp.response.status));
             let body = &resp.response.body;
-            let truncated = if body.len() > 500 {
-                format!("{}...", &body[..500])
+            // 增加截断限制到 3000 字符，确保响应结构完整
+            let truncated = if body.len() > 3000 {
+                format!("{}...\n\n**注意**：响应体较长，已截断显示，但请根据可见部分推断完整的响应结构。", &body[..3000])
             } else {
                 body.clone()
             };
             parts.push("- 响应体：".to_string());
             parts.push(format!("\n{}", truncated));
         }
+        parts.push("\n**要求**：请仔细分析上述响应数据的 JSON 结构，为每个字段生成详细的参数说明（字段名、类型、含义、是否必返回）。".to_string());
     }
     
     // 历史请求记录
@@ -302,8 +304,9 @@ fn build_doc_prompt(
             parts.push(format!("- 状态码：{} {}", entry.status, entry.status_text));
             parts.push(format!("- 响应时间：{}ms", entry.time));
             let body = &entry.response_body;
-            let truncated = if body.len() > 300 {
-                format!("{}...", &body[..300])
+            // 增加截断限制到 2000 字符
+            let truncated = if body.len() > 2000 {
+                format!("{}...\n\n**注意**：响应体已截断，请根据可见部分分析响应结构。", &body[..2000])
             } else {
                 body.clone()
             };
@@ -318,13 +321,24 @@ fn build_doc_prompt(
     parts.push("1. 接口概述（**必须包含请求PATH**）".to_string());
     parts.push("2. 请求参数说明".to_string());
     parts.push("3. 请求示例（**PATH必须正确**）".to_string());
-    parts.push("4. 响应参数说明".to_string());
-    parts.push("5. 响应示例".to_string());
+    parts.push("4. **响应参数说明**（**必须完整**）：".to_string());
+    parts.push("   - 列出响应 JSON 中的所有字段".to_string());
+    parts.push("   - 说明每个字段的类型（string/number/boolean/object/array/null）".to_string());
+    parts.push("   - 说明每个字段的含义和用途".to_string());
+    parts.push("   - 标注是否为必返回字段".to_string());
+    parts.push("   - 对于嵌套对象，逐层展开说明".to_string());
+    parts.push("   - 对于数组类型，说明数组元素的类型和结构".to_string());
+    parts.push("5. **响应示例**（**必须完整**）：".to_string());
+    parts.push("   - 提供至少一个完整的 JSON 响应示例".to_string());
+    parts.push("   - 示例应包含所有重要字段".to_string());
+    parts.push("   - 使用真实的响应数据作为参考".to_string());
     parts.push("6. 错误码说明（如果有）".to_string());
     parts.push("7. 使用注意事项".to_string());
     parts.push("\n**特别提醒**：".to_string());
     parts.push("- 文档中所有请求示例的PATH必须与上述请求路径保持一致。".to_string());
     parts.push("- **不需要显示完整的请求URL**，只显示请求PATH即可。".to_string());
+    parts.push("- **响应参数说明必须覆盖响应 JSON 中的所有可见字段**，不可遗漏。".to_string());
+    parts.push("- **响应示例必须足够完整**，展示接口的完整返回结构。".to_string());
     parts.push("\n请直接输出Markdown格式的文档内容，无需其他说明。".to_string());
     
     parts.join("\n")
