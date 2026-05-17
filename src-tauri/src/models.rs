@@ -12,6 +12,9 @@ pub struct AiSettings {
     /// 选中的模型
     #[serde(default)]
     pub model: String,
+    /// 自定义请求头
+    #[serde(default)]
+    pub custom_headers: Vec<Header>,
 }
 
 fn default_ai_endpoint() -> String {
@@ -24,6 +27,7 @@ impl Default for AiSettings {
             api_endpoint: "https://api.openai.com/v1".to_string(),
             api_key: "".to_string(),
             model: "".to_string(),
+            custom_headers: Vec::new(),
         }
     }
 }

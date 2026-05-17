@@ -13,6 +13,7 @@ export function useAiSettingsSetup(props, emit) {
   const aiModels = ref([])
   const loadingModels = ref(false)
   const showModelDropdown = ref(false)
+  const customHeaders = ref([])
 
   // 加载设置
   const loadSettings = async () => {
@@ -24,6 +25,17 @@ export function useAiSettingsSetup(props, emit) {
         aiApiEndpoint.value = settings.ai.api_endpoint || 'https://api.openai.com/v1'
         aiApiKey.value = settings.ai.api_key || ''
         aiModel.value = settings.ai.model || ''
+        // 加载自定义请求头
+        if (settings.ai.custom_headers && settings.ai.custom_headers.length > 0) {
+          customHeaders.value = settings.ai.custom_headers.map(h => ({
+            key: h.key || '',
+            value: h.value || '',
+            enabled: h.enabled ?? true,
+            description: h.description || ''
+          }))
+        } else {
+          customHeaders.value = []
+        }
       }
     } catch (e) {
       console.error('Failed to load AI settings:', e)
@@ -44,7 +56,8 @@ export function useAiSettingsSetup(props, emit) {
       loadingModels.value = true
       const models = await invoke('get_ai_models', {
         apiEndpoint: aiApiEndpoint.value,
-        apiKey: aiApiKey.value
+        apiKey: aiApiKey.value,
+        customHeaders: getEnabledHeaders()
       })
       aiModels.value = models || []
     } catch (e) {
@@ -53,6 +66,18 @@ export function useAiSettingsSetup(props, emit) {
     } finally {
       loadingModels.value = false
     }
+  }
+
+  // 获取启用的请求头
+  const getEnabledHeaders = () => {
+    return customHeaders.value
+      .filter(h => h.enabled && h.key.trim())
+      .map(h => ({
+        key: h.key,
+        value: h.value,
+        enabled: h.enabled,
+        description: h.description?.trim() || null
+      }))
   }
 
   // 选择模型
@@ -79,6 +104,21 @@ export function useAiSettingsSetup(props, emit) {
     }
   }
 
+  // 添加请求头
+  const addHeader = () => {
+    customHeaders.value.push({
+      key: '',
+      value: '',
+      enabled: true,
+      description: ''
+    })
+  }
+
+  // 移除请求头
+  const removeHeader = (index) => {
+    customHeaders.value.splice(index, 1)
+  }
+
   // 保存设置
   const saveSettings = async () => {
     try {
@@ -87,7 +127,13 @@ export function useAiSettingsSetup(props, emit) {
         timeout: 60, // 保持默认值
         aiApiEndpoint: aiApiEndpoint.value,
         aiApiKey: aiApiKey.value,
-        aiModel: aiModel.value
+        aiModel: aiModel.value,
+        aiCustomHeaders: customHeaders.value.filter(h => h.key.trim()).map(h => ({
+          key: h.key,
+          value: h.value,
+          enabled: h.enabled,
+          description: h.description?.trim() || null
+        }))
       })
       
       emit('saved')
@@ -121,10 +167,13 @@ export function useAiSettingsSetup(props, emit) {
     aiModels,
     loadingModels,
     showModelDropdown,
+    customHeaders,
     fetchModels,
     selectModel,
     toggleModelDropdown,
     closeModelDropdown,
+    addHeader,
+    removeHeader,
     loading,
     saveSettings,
     close

@@ -280,3 +280,123 @@
   color: #d9d9d9;
   cursor: not-allowed;
 }
+
+/* 自定义请求头样式 */
+.custom-headers-section {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #e8e8e8;
+}
+
+.headers-toolbar {
+  margin-top: 12px;
+  margin-bottom: 12px;
+}
+
+.add-header-btn {
+  padding: 6px 12px;
+  border: 1px solid #1890ff;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #fff;
+  color: #1890ff;
+}
+
+.add-header-btn:hover:not(:disabled) {
+  background: #1890ff;
+  color: #fff;
+}
+
+.add-header-btn:disabled {
+  border-color: #d9d9d9;
+  color: #d9d9d9;
+  cursor: not-allowed;
+}
+
+.headers-list {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.header-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.header-row:last-child {
+  border-bottom: none;
+}
+
+.header-checkbox {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.header-key-input,
+.header-value-input {
+  height: 28px;
+  padding: 4px 8px;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  font-size: 13px;
+  transition: all 0.2s;
+}
+
+.header-key-input {
+  width: 120px;
+}
+
+.header-value-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.header-key-input:focus,
+.header-value-input:focus {
+  outline: none;
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
+}
+
+.header-key-input:disabled,
+.header-value-input:disabled {
+  background: #f5f5f5;
+  cursor: not-allowed;
+}
+
+.remove-header-btn {
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  color: #8c8c8c;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.remove-header-btn:hover:not(:disabled) {
+  background: #ff4d4f;
+  color: #fff;
+}
+
+.remove-header-btn:disabled {
+  color: #d9d9d9;
+  cursor: not-allowed;
+}
+
+.empty-headers {
+  font-size: 13px;
+  color: #8c8c8c;
+  padding: 12px 0;
+}

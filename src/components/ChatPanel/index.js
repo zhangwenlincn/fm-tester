@@ -36,7 +36,8 @@ export function useChatSetup(props) {
   const aiConfig = ref({
     endpoint: '',
     key: '',
-    model: ''
+    model: '',
+    customHeaders: []
   })
   
   // 检查工作区状态
@@ -53,7 +54,8 @@ export function useChatSetup(props) {
         aiConfig.value = {
           endpoint: settings.ai.api_endpoint || '',
           key: settings.ai.api_key || '',
-          model: settings.ai.model || ''
+          model: settings.ai.model || '',
+          customHeaders: settings.ai.custom_headers || []
         }
       }
     } catch (e) {
@@ -168,7 +170,13 @@ export function useChatSetup(props) {
         apiEndpoint: aiConfig.value.endpoint,
         apiKey: aiConfig.value.key,
         model: aiConfig.value.model,
-        messages: chatMessages
+        messages: chatMessages,
+        customHeaders: aiConfig.value.customHeaders.filter(h => h.enabled && h.key.trim()).map(h => ({
+          key: h.key,
+          value: h.value,
+          enabled: h.enabled,
+          description: h.description?.trim() || null
+        }))
       })
       
       // 标记流式完成

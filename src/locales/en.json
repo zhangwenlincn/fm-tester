@@ -202,7 +202,9 @@
     "aiFetchModels": "Fetch Models",
     "aiFetchingModels": "Fetching...",
     "aiModelSelectPlaceholder": "Select model",
-    "aiModelManualPlaceholder": "Or enter model name manually"
+    "aiModelManualPlaceholder": "Or enter model name manually",
+    "aiCustomHeaders": "Custom Headers",
+    "aiCustomHeadersDesc": "Add custom headers for AI services that require additional authentication or special configuration"
   },
   "workspace": {
     "selector": "Workspace:",

@@ -202,7 +202,9 @@
     "aiFetchModels": "获取模型列表",
     "aiFetchingModels": "获取中...",
     "aiModelSelectPlaceholder": "选择模型",
-    "aiModelManualPlaceholder": "或手动输入模型名称"
+    "aiModelManualPlaceholder": "或手动输入模型名称",
+    "aiCustomHeaders": "自定义请求头",
+    "aiCustomHeadersDesc": "添加自定义请求头，用于需要额外认证或特殊配置的 AI 服务"
   },
   "workspace": {
     "selector": "工作区:",

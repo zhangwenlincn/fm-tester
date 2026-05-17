@@ -1,6 +1,7 @@
 use reqwest;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter};
+use crate::models::Header;
 
 /// 模型信息
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -18,7 +19,11 @@ pub struct ModelsResponse {
 
 /// 获取 AI 模型列表
 #[tauri::command]
-pub async fn get_ai_models(api_endpoint: String, api_key: String) -> Result<Vec<String>, String> {
+pub async fn get_ai_models(
+    api_endpoint: String,
+    api_key: String,
+    custom_headers: Option<Vec<Header>>,
+) -> Result<Vec<String>, String> {
     if api_endpoint.is_empty() {
         return Err("API endpoint is empty".to_string());
     }
@@ -29,10 +34,21 @@ pub async fn get_ai_models(api_endpoint: String, api_key: String) -> Result<Vec<
     let url = format!("{}/models", api_endpoint.trim_end_matches('/'));
     
     let client = reqwest::Client::new();
-    let response = client
+    let mut request = client
         .get(&url)
         .header("Authorization", format!("Bearer {}", api_key))
-        .timeout(std::time::Duration::from_secs(30))
+        .timeout(std::time::Duration::from_secs(30));
+    
+    // 添加自定义请求头
+    if let Some(headers) = custom_headers {
+        for header in headers {
+            if header.enabled {
+                request = request.header(&header.key, &header.value);
+            }
+        }
+    }
+    
+    let response = request
         .send()
         .await
         .map_err(|e| format!("Request failed: {}", e))?;
@@ -98,6 +114,7 @@ pub async fn chat_ai(
     api_key: String,
     model: String,
     messages: Vec<ChatMessage>,
+    custom_headers: Option<Vec<Header>>,
 ) -> Result<String, String> {
     if api_endpoint.is_empty() {
         return Err("API endpoint is empty".to_string());
@@ -118,12 +135,23 @@ pub async fn chat_ai(
     };
 
     let client = reqwest::Client::new();
-    let response = client
+    let mut request = client
         .post(&url)
         .header("Authorization", format!("Bearer {}", api_key))
         .header("Content-Type", "application/json")
         .json(&request_body)
-        .timeout(std::time::Duration::from_secs(120))
+        .timeout(std::time::Duration::from_secs(120));
+    
+    // 添加自定义请求头
+    if let Some(headers) = custom_headers {
+        for header in headers {
+            if header.enabled {
+                request = request.header(&header.key, &header.value);
+            }
+        }
+    }
+    
+    let response = request
         .send()
         .await
         .map_err(|e| format!("Request failed: {}", e))?;
