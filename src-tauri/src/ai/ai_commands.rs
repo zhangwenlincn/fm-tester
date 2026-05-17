@@ -104,6 +104,9 @@ pub struct ChatDelta {
     pub role: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub content: Option<String>,
+    /// 思考过程内容（如 DeepSeek 的 reasoning_content）
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reasoning_content: Option<String>,
 }
 
 /// AI 聊天（流式）
@@ -166,6 +169,7 @@ pub async fn chat_ai(
     use futures_util::StreamExt;
     let mut stream = response.bytes_stream();
     let mut full_content = String::new();
+    let mut full_reasoning = String::new();
     let mut buffer = String::new();
 
     while let Some(chunk) = stream.next().await {
@@ -186,6 +190,13 @@ pub async fn chat_ai(
                 let data = &line[6..];
                 if let Ok(stream_resp) = serde_json::from_str::<ChatStreamResponse>(data) {
                     for choice in &stream_resp.choices {
+                        // 处理思考过程内容
+                        if let Some(reasoning) = &choice.delta.reasoning_content {
+                            full_reasoning.push_str(reasoning);
+                            // 发送思考过程事件到前端
+                            app.emit("ai-chat-reasoning", reasoning).ok();
+                        }
+                        // 处理正常内容
                         if let Some(content) = &choice.delta.content {
                             full_content.push_str(content);
                             // 发送流式事件到前端

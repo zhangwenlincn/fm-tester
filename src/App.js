@@ -153,6 +153,11 @@ export function useAppSetup() {
   const handleNewChatSession = () => {
     chatSessionId.value = null
   }
+  
+  // 处理会话创建完成（设置sessionId以便显示）
+  const handleSessionCreated = (sessionId) => {
+    chatSessionId.value = sessionId
+  }
 
   // 工作区切换后的额外处理
   const handleWorkspaceSwitch = async (ws) => {
@@ -312,6 +317,7 @@ export function useAppSetup() {
     chatSessionId,
     onSelectChatSession: handleSelectChatSession,
     onNewChatSession: handleNewChatSession,
+    onSessionCreated: handleSessionCreated,
 
     // 设置
     showSettingsPanel: settings.showSettingsPanel,

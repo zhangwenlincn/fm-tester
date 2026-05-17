@@ -6,17 +6,28 @@ const props = defineProps({
   workspace: Object
 })
 
-const emit = defineEmits(['select-session', 'new-session'])
+const emit = defineEmits(['select-session', 'new-session', 'session-created'])
 
 const {
   t,
   sessions,
   activeSessionId,
   loading,
+  renamingSessionId,
+  renamingTitle,
+  showContextMenu,
+  contextMenuPosition,
+  contextMenuSession,
   selectSession,
   createNewSession,
-  deleteSession,
-  loadSessions
+  loadSessions,
+  startRename,
+  cancelRename,
+  confirmRename,
+  handleContextMenu,
+  closeContextMenu,
+  handleRenameFromMenu,
+  handleDeleteFromMenu
 } = useChatHistorySetup(props, emit)
 </script>
 
@@ -36,15 +47,28 @@ const {
         class="session-item"
         :class="{ active: activeSessionId === session.id }"
         @click="selectSession(session)"
+        @contextmenu.prevent="handleContextMenu(session, $event)"
       >
         <div class="session-info">
-          <div class="session-title">{{ session.title || t('chat.sessionTitle', { date: session.created_at }) }}</div>
-          <div class="session-date">{{ session.created_at }}</div>
-          <div class="session-count">{{ t('chat.messageCount', { count: session.messages.length }) }}</div>
+          <!-- 重命名模式 -->
+          <template v-if="renamingSessionId === session.id">
+            <input 
+              v-model="renamingTitle"
+              class="rename-input"
+              :placeholder="t('chat.sessionTitle', { date: session.created_at })"
+              @keyup.enter="confirmRename(session)"
+              @keyup.escape="cancelRename"
+              @blur="confirmRename(session)"
+              ref="renameInput"
+            />
+          </template>
+          <!-- 正常显示模式 -->
+          <template v-else>
+            <div class="session-title">{{ session.title || t('chat.sessionTitle', { date: session.created_at }) }}</div>
+            <div class="session-date">{{ session.created_at }}</div>
+            <div class="session-count">{{ t('chat.messageCount', { count: session.messages.length }) }}</div>
+          </template>
         </div>
-        <button class="delete-btn" @click.stop="deleteSession(session.id)" :title="t('common.delete')">
-          ✕
-        </button>
       </div>
     </div>
     
@@ -57,4 +81,21 @@ const {
       {{ t('common.loading') }}
     </div>
   </div>
+  
+  <!-- 右键菜单（放在面板外部，确保fixed定位相对于视口） -->
+  <Teleport to="body">
+    <div 
+      v-if="showContextMenu"
+      class="chat-context-menu"
+      :style="{ top: contextMenuPosition.y + 'px', left: contextMenuPosition.x + 'px' }"
+      @click.stop
+    >
+      <div class="context-menu-item" @click.stop="handleRenameFromMenu">
+        {{ t('common.rename') }}
+      </div>
+      <div class="context-menu-item danger" @click.stop="handleDeleteFromMenu">
+        {{ t('common.delete') }}
+      </div>
+    </div>
+  </Teleport>
 </template>

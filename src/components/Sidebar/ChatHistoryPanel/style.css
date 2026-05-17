@@ -87,28 +87,6 @@
   color: #bfbfbf;
 }
 
-.delete-btn {
-  width: 20px;
-  height: 20px;
-  border: none;
-  border-radius: 4px;
-  background: transparent;
-  color: #bfbfbf;
-  font-size: 12px;
-  cursor: pointer;
-  opacity: 0;
-  transition: all 0.2s;
-}
-
-.session-item:hover .delete-btn {
-  opacity: 1;
-}
-
-.delete-btn:hover {
-  background: #ff4d4f;
-  color: #fff;
-}
-
 .empty-sessions {
   display: flex;
   flex-direction: column;
@@ -145,4 +123,45 @@
   height: 100%;
   color: #8c8c8c;
   font-size: 14px;
+}
+
+.rename-input {
+  width: 100%;
+  padding: 4px 8px;
+  border: 1px solid #1890ff;
+  border-radius: 4px;
+  font-size: 14px;
+  outline: none;
+  background: #fff;
+}
+
+/* 右键菜单样式（全局，因为Teleport到body） */
+.chat-context-menu {
+  position: fixed;
+  background: #fff;
+  border: 1px solid #e8e8e8;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 9999;
+  min-width: 120px;
+}
+
+.chat-context-menu .context-menu-item {
+  padding: 8px 16px;
+  font-size: 14px;
+  color: #262626;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.chat-context-menu .context-menu-item:hover {
+  background: #f5f5f5;
+}
+
+.chat-context-menu .context-menu-item.danger {
+  color: #ff4d4f;
+}
+
+.chat-context-menu .context-menu-item.danger:hover {
+  background: #fff1f0;
 }

@@ -101,6 +101,7 @@ pub fn run() {
             clear_chat_history,
             get_chat_sessions,
             delete_chat_session,
+            rename_chat_session,
 // Script
             save_script,
             get_script,

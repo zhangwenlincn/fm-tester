@@ -268,7 +268,9 @@
     "ai": "AI",
     "inputPlaceholder": "输入消息...",
     "sendHint": "Ctrl + Enter 发送",
-    "error": "发送失败"
+    "error": "发送失败",
+    "thinking": "思考ing",
+    "stop": "停止"
   },
   "savedResponse": {
     "originalUrl": "原始 URL:",

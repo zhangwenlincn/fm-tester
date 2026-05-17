@@ -28,7 +28,8 @@ const emit = defineEmits([
   'selectWorkspace',
   'workspaceUpdated',
   'selectChatSession',
-  'newChatSession'
+  'newChatSession',
+  'sessionCreated'
 ])
 
 // 使用 composable
@@ -56,6 +57,7 @@ const {
   handleSelectHistory,
   handleSelectChatSession,
   handleNewChatSession,
+  handleSessionCreated,
   loadWorkspaces,
   loadCollections,
   loadEnvironments,
@@ -135,6 +137,7 @@ defineExpose({
         :workspace="props.workspace"
         @select-session="handleSelectChatSession"
         @new-session="handleNewChatSession"
+        @session-created="handleSessionCreated"
       />
       
       <!-- 其他面板 -->

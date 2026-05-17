@@ -53,6 +53,7 @@ export function useSidebarSetup(props, emit) {
   // 处理聊天会话事件
   const handleSelectChatSession = (session) => emit('selectChatSession', session)
   const handleNewChatSession = () => emit('newChatSession')
+  const handleSessionCreated = (sessionId) => emit('sessionCreated', sessionId)
   
   // 加载方法
   const loadWorkspaces = async () => {
@@ -153,6 +154,7 @@ export function useSidebarSetup(props, emit) {
     handleSelectHistory,
     handleSelectChatSession,
     handleNewChatSession,
+    handleSessionCreated,
     
     loadWorkspaces,
     loadCollections,

@@ -5,5 +5,6 @@ pub use chat_commands::{
     get_chat_history,
     clear_chat_history,
     get_chat_sessions,
-    delete_chat_session
+    delete_chat_session,
+    rename_chat_session
 };

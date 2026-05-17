@@ -268,7 +268,9 @@
     "ai": "AI",
     "inputPlaceholder": "Type a message...",
     "sendHint": "Ctrl + Enter to send",
-    "error": "Failed to send"
+    "error": "Failed to send",
+    "thinking": "Thinking...",
+    "stop": "Stop"
   },
   "savedResponse": {
     "originalUrl": "Original URL:",

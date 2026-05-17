@@ -2,12 +2,16 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
 use std::collections::HashMap;
+use tauri::{AppHandle, Emitter};
 
 /// 聊天消息
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ChatMessage {
     pub role: String,
     pub content: String,
+    /// 思考过程内容
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reasoning: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub timestamp: Option<String>,
 }
@@ -57,6 +61,7 @@ fn write_chat_config(workspace_path: &str, config: &ChatConfig) -> Result<(), St
 /// 保存聊天记录
 #[tauri::command]
 pub fn save_chat_history(
+    app: AppHandle,
     workspace_path: String,
     session_id: Option<String>,
     messages: Vec<ChatMessage>,
@@ -72,18 +77,24 @@ pub fn save_chat_history(
         chrono::Utc::now().format("%Y%m%d%H%M%S").to_string()
     });
 
+    // 获取现有标题（如果是更新已有会话）
+    let existing_title = config.sessions.get(&session_id).and_then(|s| s.title.clone());
+    
     // 创建或更新会话
     let session = ChatSession {
         id: session_id.clone(),
-        created_at: chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+        created_at: chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
         messages,
-        title: None,
+        title: existing_title,
     };
 
     config.sessions.insert(session_id.clone(), session);
     config.active_session_id = Some(session_id.clone());
 
     write_chat_config(&workspace_path, &config)?;
+
+    // 发送事件通知前端刷新会话列表
+    app.emit("chat-session-saved", &session_id).ok();
 
     Ok(session_id)
 }
@@ -174,4 +185,26 @@ pub fn delete_chat_session(
     write_chat_config(&workspace_path, &config)?;
     
     Ok(())
+}
+
+/// 重命名聊天会话
+#[tauri::command]
+pub fn rename_chat_session(
+    workspace_path: String,
+    session_id: String,
+    new_title: String,
+) -> Result<(), String> {
+    if workspace_path.is_empty() {
+        return Err("Workspace path is empty".to_string());
+    }
+
+    let mut config = read_chat_config(&workspace_path);
+    
+    if let Some(session) = config.sessions.get_mut(&session_id) {
+        session.title = Some(new_title);
+        write_chat_config(&workspace_path, &config)?;
+        Ok(())
+    } else {
+        Err("Session not found".to_string())
+    }
 }

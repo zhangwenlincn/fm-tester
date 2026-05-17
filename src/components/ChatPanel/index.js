@@ -29,6 +29,9 @@ export function useChatSetup(props) {
   // 是否完成渲染（用于区分流式和最终显示）
   const streamingDone = ref({})
   
+  // 是否中断发送
+  const abortSending = ref(false)
+  
   // 当前会话ID
   const sessionId = ref(null)
   
@@ -73,6 +76,7 @@ export function useChatSetup(props) {
     if (!sessionId.value) {
       messages.value = []
       streamingDone.value = {}
+      reasoningExpanded.value = {}
       return
     }
     
@@ -85,21 +89,25 @@ export function useChatSetup(props) {
       if (history && history.length > 0) {
         messages.value = history.map(m => ({
           role: m.role,
-          content: m.content
+          content: m.content,
+          reasoning: m.reasoning || ''
         }))
-        // 标记历史记录已完成
+        // 标记历史记录已完成，思考过程默认折叠
         history.forEach((_, index) => {
           streamingDone.value[index] = true
+          reasoningExpanded.value[index] = false
         })
       } else {
         // 会话无历史记录时清空
         messages.value = []
         streamingDone.value = {}
+        reasoningExpanded.value = {}
       }
     } catch (e) {
       console.error('Failed to load chat history:', e)
       messages.value = []
       streamingDone.value = {}
+      reasoningExpanded.value = {}
     }
   }
   
@@ -111,6 +119,7 @@ export function useChatSetup(props) {
       const chatMessages = messages.value.map(m => ({
         role: m.role,
         content: m.content,
+        reasoning: m.reasoning || null,
         timestamp: new Date().toISOString()
       }))
       
@@ -140,6 +149,9 @@ export function useChatSetup(props) {
   const sendMessage = async () => {
     if (!inputMessage.value.trim() || sending.value || !hasWorkspace.value) return
     
+    // 重置中断状态
+    abortSending.value = false
+    
     // 添加用户消息
     const userMessage = inputMessage.value.trim()
     messages.value.push({ role: 'user', content: userMessage })
@@ -150,7 +162,7 @@ export function useChatSetup(props) {
     sending.value = true
     
     // 准备 AI 响应消息
-    messages.value.push({ role: 'assistant', content: '' })
+    messages.value.push({ role: 'assistant', content: '', reasoning: '' })
     
     // 记录当前AI消息索引
     const aiIndex = messages.value.length - 1
@@ -179,8 +191,16 @@ export function useChatSetup(props) {
         }))
       })
       
+      // 如果被中断，不更新内容
+      if (abortSending.value) {
+        return
+      }
+      
       // 标记流式完成
       streamingDone.value[aiIndex] = true
+      
+      // 思考完成后自动折叠
+      reasoningExpanded.value[aiIndex] = false
       
       // 更新 AI 响应（确保内容完整）
       messages.value[aiIndex].content = result
@@ -188,6 +208,10 @@ export function useChatSetup(props) {
       // 保存聊天记录
       await saveChatHistory()
     } catch (e) {
+      // 如果是主动中断，不显示错误
+      if (abortSending.value) {
+        return
+      }
       console.error('Chat error:', e)
       messages.value[messages.value.length - 1].content = `${t('chat.error')}: ${e}`
     } finally {
@@ -196,12 +220,34 @@ export function useChatSetup(props) {
     }
   }
   
+  // 停止发送
+  const stopSending = () => {
+    abortSending.value = true
+    sending.value = false
+    
+    // 标记当前消息为完成
+    if (messages.value.length > 0) {
+      const lastIndex = messages.value.length - 1
+      if (messages.value[lastIndex].role === 'assistant') {
+        streamingDone.value[lastIndex] = true
+        // 如果有思考内容，折叠它
+        if (messages.value[lastIndex].reasoning) {
+          reasoningExpanded.value[lastIndex] = false
+        }
+      }
+    }
+    
+    // 保存聊天记录
+    saveChatHistory()
+  }
+  
   // 清空消息
   const clearMessages = async () => {
     if (!hasWorkspace.value) return
     
     messages.value = []
     streamingDone.value = {}
+    reasoningExpanded.value = {}
     
     // 清空聊天记录
     try {
@@ -217,6 +263,10 @@ export function useChatSetup(props) {
   
   // 流式响应监听
   let streamUnlisten = null
+  let reasoningUnlisten = null
+  
+  // 思考过程展开状态（每条消息的展开状态）
+  const reasoningExpanded = ref({})
   
   // 监听工作区变化
   watch(() => props.workspacePath, async (newPath) => {
@@ -227,6 +277,7 @@ export function useChatSetup(props) {
     } else {
       messages.value = []
       streamingDone.value = {}
+      reasoningExpanded.value = {}
       sessionId.value = null
     }
   })
@@ -251,6 +302,9 @@ export function useChatSetup(props) {
     
     // 监听流式响应事件
     streamUnlisten = await listen('ai-chat-stream', (event) => {
+      // 如果已中断，不再处理事件
+      if (abortSending.value) return
+      
       if (messages.value.length > 0) {
         const lastIndex = messages.value.length - 1
         if (messages.value[lastIndex].role === 'assistant') {
@@ -263,6 +317,25 @@ export function useChatSetup(props) {
         }
       }
     })
+    
+    // 监听思考过程事件
+    reasoningUnlisten = await listen('ai-chat-reasoning', (event) => {
+      // 如果已中断，不再处理事件
+      if (abortSending.value) return
+      
+      if (messages.value.length > 0) {
+        const lastIndex = messages.value.length - 1
+        if (messages.value[lastIndex].role === 'assistant') {
+          messages.value[lastIndex] = {
+            ...messages.value[lastIndex],
+            reasoning: (messages.value[lastIndex].reasoning || '') + event.payload
+          }
+          // 默认展开思考过程
+          reasoningExpanded.value[lastIndex] = true
+          scrollToBottom()
+        }
+      }
+    })
   })
   
   // 清理
@@ -270,12 +343,20 @@ export function useChatSetup(props) {
     if (streamUnlisten) {
       streamUnlisten()
     }
+    if (reasoningUnlisten) {
+      reasoningUnlisten()
+    }
   })
   
   // 渲染markdown
   const renderMarkdown = (content) => {
     if (!content) return ''
     return marked.parse(content)
+  }
+  
+  // 切换思考过程展开/折叠
+  const toggleReasoning = (index) => {
+    reasoningExpanded.value[index] = !reasoningExpanded.value[index]
   }
   
   return {
@@ -286,8 +367,11 @@ export function useChatSetup(props) {
     sending,
     streamingDone,
     hasWorkspace,
+    reasoningExpanded,
     sendMessage,
+    stopSending,
     clearMessages,
-    renderMarkdown
+    renderMarkdown,
+    toggleReasoning
   }
 }

@@ -110,6 +110,7 @@ const {
   chatSessionId,
   onSelectChatSession,
   onNewChatSession,
+  onSessionCreated,
   showSettingsPanel,
   openSettings,
   closeSettings,
@@ -170,6 +171,7 @@ const {
         @workspace-updated="onWorkspaceUpdated"
         @select-chat-session="onSelectChatSession"
         @new-chat-session="onNewChatSession"
+        @session-created="onSessionCreated"
       />
       
       <!-- 中间内容区 -->

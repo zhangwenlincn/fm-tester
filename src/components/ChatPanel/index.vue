@@ -21,9 +21,12 @@ const {
   sending,
   streamingDone,
   hasWorkspace,
+  reasoningExpanded,
   sendMessage,
+  stopSending,
   clearMessages,
-  renderMarkdown
+  renderMarkdown,
+  toggleReasoning
 } = useChatSetup(props)
 </script>
 
@@ -58,6 +61,25 @@ const {
           <div class="message-role">
             {{ msg.role === 'user' ? t('chat.you') : t('chat.ai') }}
           </div>
+          <!-- 思考过程显示（仅AI消息） -->
+          <div 
+            v-if="msg.role === 'assistant' && msg.reasoning" 
+            class="reasoning-section"
+          >
+            <div 
+              class="reasoning-header"
+              @click="toggleReasoning(index)"
+            >
+              <span class="reasoning-icon">{{ reasoningExpanded[index] ? '▼' : '▶' }}</span>
+              <span class="reasoning-title">{{ t('chat.thinking') }}</span>
+            </div>
+            <div 
+              v-if="reasoningExpanded[index]"
+              class="reasoning-content"
+            >
+              {{ msg.reasoning }}
+            </div>
+          </div>
           <div class="message-content" :class="{ 'loading-content': msg.role === 'assistant' && !msg.content && sending }">
             <template v-if="msg.role === 'assistant' && !msg.content && sending">
               <span class="loading-dot"></span>
@@ -88,14 +110,26 @@ const {
         @keydown.enter.ctrl="sendMessage"
       ></textarea>
       <div class="input-actions">
-        <button 
-          class="send-btn"
-          :disabled="!inputMessage.trim() || sending || loading || !hasWorkspace"
-          @click="sendMessage"
-        >
-          {{ t('buttons.send') }}
-        </button>
         <span class="input-hint">{{ t('chat.sendHint') }}</span>
+        <div class="action-buttons">
+          <!-- 停止按钮（发送中时显示） -->
+          <button 
+            v-if="sending"
+            class="stop-btn"
+            @click="stopSending"
+          >
+            {{ t('chat.stop') }}
+          </button>
+          <!-- 发送按钮 -->
+          <button 
+            v-else
+            class="send-btn"
+            :disabled="!inputMessage.trim() || loading || !hasWorkspace"
+            @click="sendMessage"
+          >
+            {{ t('buttons.send') }}
+          </button>
+        </div>
       </div>
     </div>
   </div>
