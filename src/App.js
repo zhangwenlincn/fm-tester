@@ -1,4 +1,5 @@
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
+import { invoke } from '@tauri-apps/api/core'
 import { useWorkspace } from './composables/useWorkspace.js'
 import { useEnvironment } from './composables/useEnvironment.js'
 import { useTabs } from './composables/useTabs.js'
@@ -166,6 +167,26 @@ export function useAppSetup() {
     await sidebarRef.value?.loadWorkspaces()
   }
 
+  // 更新选中的工作区数据（同步/更新后刷新）
+  const handleWorkspaceUpdated = async (ws) => {
+    // 如果传入了工作区，更新选中的工作区
+    if (ws) {
+      responseModule.selectedWorkspace.value = ws
+    }
+    // 否则从后端重新获取最新数据
+    if (responseModule.selectedWorkspace.value) {
+      try {
+        const workspaces = await invoke('get_workspaces')
+        const updated = workspaces?.find(w => w.id === responseModule.selectedWorkspace.value.id)
+        if (updated) {
+          responseModule.selectedWorkspace.value = updated
+        }
+      } catch (e) {
+        console.error('更新工作区数据失败:', e)
+      }
+    }
+  }
+
   // 返回所有需要的状态和方法
   return {
     // 工作区
@@ -183,7 +204,7 @@ export function useAppSetup() {
     showWorkspaceInfo: responseModule.showWorkspaceInfo,
     selectedWorkspace: responseModule.selectedWorkspace,
     onSelectWorkspace: responseModule.onSelectWorkspace,
-    onWorkspaceUpdated: responseModule.onUpdateSelectedWorkspace,
+    onWorkspaceUpdated: handleWorkspaceUpdated,
 
     // 标签页
     tabs,

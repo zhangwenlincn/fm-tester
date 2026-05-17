@@ -7,7 +7,6 @@ export function useSettingsSetup(props, emit) {
   const timeout = ref(60)
   const gitUpdateInterval = ref(300)
   const loading = ref(false)
-  const saved = ref(false)
 
   // 加载设置
   const loadSettings = async () => {
@@ -34,15 +33,10 @@ export function useSettingsSetup(props, emit) {
       timeout.value = settings.request_timeout
       gitUpdateInterval.value = settings.git_update_check_interval
       
-      saved.value = true
       emit('saved')
-      // 保存成功后自动关闭
-      setTimeout(() => {
-        emit('close')
-      }, 100)
+      emit('close')
     } catch (e) {
       console.error('Failed to save settings:', e)
-      saved.value = false
     } finally {
       loading.value = false
     }
@@ -62,7 +56,6 @@ export function useSettingsSetup(props, emit) {
     timeout,
     gitUpdateInterval,
     loading,
-    saved,
     saveSettings,
     close
   }

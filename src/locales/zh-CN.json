@@ -164,6 +164,7 @@
     "syncing": "正在同步接口...",
     "syncSuccess": "同步成功",
     "syncFailed": "同步失败",
+    "alreadyLatest": "已是最新的，无需同步",
     "branchListFailed": "获取分支列表失败",
     "branchSwitchSuccess": "切换分支成功",
     "branchSwitchFailed": "切换分支失败",

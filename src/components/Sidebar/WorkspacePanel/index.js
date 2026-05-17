@@ -102,9 +102,16 @@ export function useWorkspacePanelSetup(props, emit) {
     unlistenGitSyncLog = await listen('git-sync-log', (event) => {
       const { logType, message, data, error } = event.payload
       if (logType === 'error') {
-        console.error('Git 同步错误:', message, error)
+        console.error('Git 同步错误:', message, error || '')
+      } else if (logType === 'success') {
+        showToast(t('toast.syncSuccess'), 'success')
+        console.log('Git 同步:', message, data ? JSON.stringify(data) : '')
       } else {
-        console.log('Git 同步:', message, data)
+        // info 类型日志，检查是否需要特殊提示
+        if (message.includes('已是最新的') || message.includes('没有更改需要提交')) {
+          showToast(t('toast.alreadyLatest'), 'info')
+        }
+        console.log('Git 同步:', message, data ? JSON.stringify(data) : '')
       }
     })
   })
@@ -136,13 +143,13 @@ export function useWorkspacePanelSetup(props, emit) {
     showToast(t('toast.syncing'), 'info')
     try {
       await invoke('sync_git_workspace_full', { workspaceId: ws.id })
-      showToast(t('toast.syncSuccess'), 'success')
       // 同步后刷新数据
       await loadWorkspaces()
       // 找到更新后的工作区并通知父组件
       const updatedWs = workspaces.value.find(w => w.id === ws.id)
       if (updatedWs) {
         emit('selectWorkspace', updatedWs)
+        emit('workspaceUpdated', updatedWs)
       }
     } catch (e) {
       console.error('同步工作区失败:', e)

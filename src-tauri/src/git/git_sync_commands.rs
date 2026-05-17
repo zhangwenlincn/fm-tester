@@ -823,6 +823,20 @@ pub async fn sync_git_workspace_full(
                     );
                     return Err(err_msg);
                 }
+            } else if let Ok(output) = pull_result {
+                // 检查是否已经是最新的
+                if output.contains("Already up to date") || output.contains("Already up-to-date") {
+                    emit_log(
+                        &app,
+                        GitSyncLog {
+                            log_type: "info".to_string(),
+                            timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+                            message: "远程仓库已是最新的".to_string(),
+                            data: None,
+                            error: None,
+                        },
+                    );
+                }
             }
         }
     }
@@ -900,8 +914,29 @@ pub async fn sync_git_workspace_full(
         // Git commit（如果有更改）
         let status = run_git_command(vec!["status", "--porcelain"], Some(&workspace_path)).unwrap_or_default();
         if !status.is_empty() {
+            emit_log(
+                &app,
+                GitSyncLog {
+                    log_type: "info".to_string(),
+                    timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+                    message: "提交本地更改".to_string(),
+                    data: None,
+                    error: None,
+                },
+            );
             let message = commit_message.unwrap_or_else(|| "Update".to_string());
             let _ = run_git_command(vec!["commit", "-m", &message], Some(&workspace_path));
+        } else {
+            emit_log(
+                &app,
+                GitSyncLog {
+                    log_type: "info".to_string(),
+                    timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+                    message: "本地没有更改需要提交".to_string(),
+                    data: None,
+                    error: None,
+                },
+            );
         }
         
         // Git push

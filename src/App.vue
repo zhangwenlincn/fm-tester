@@ -88,6 +88,7 @@ const {
   openCreateWorkspace,
   onWorkspaceCreated,
   onWorkspaceDeleted,
+  onWorkspaceUpdated,
   onSwitchWorkspace,
   loadWorkspaces,
   onNavChange,

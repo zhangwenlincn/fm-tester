@@ -40,9 +40,6 @@ const {
         <span class="time-item">
           <Icon name="sync" :size="14" />
           <span class="time-value">{{ workspaceInfo.lastSyncAt }}</span>
-          <span v-if="workspaceInfo.needUpdate" class="update-indicator">
-            <Icon name="update" :size="14" />
-          </span>
         </span>
       </div>
     </div>

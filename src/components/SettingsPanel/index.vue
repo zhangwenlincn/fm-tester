@@ -11,7 +11,7 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'saved'])
 
-const { t, timeout, gitUpdateInterval, loading, saved, saveSettings, close } = useSettingsSetup(props, emit)
+const { t, timeout, gitUpdateInterval, loading, saveSettings, close } = useSettingsSetup(props, emit)
 </script>
 
 <template>
@@ -75,11 +75,10 @@ const { t, timeout, gitUpdateInterval, loading, saved, saveSettings, close } = u
       <button class="cancel-btn" @click="close">{{ t('common.cancel') }}</button>
       <button 
         class="save-btn" 
-        :class="{ saved: saved }"
         :disabled="loading"
         @click="saveSettings"
       >
-        {{ saved ? t('toast.saved') : t('common.save') }}
+        {{ t('common.save') }}
       </button>
     </div>
   </div>

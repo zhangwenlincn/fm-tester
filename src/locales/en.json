@@ -164,6 +164,7 @@
     "syncing": "Syncing API...",
     "syncSuccess": "Sync success",
     "syncFailed": "Sync failed",
+    "alreadyLatest": "Already up to date, no sync needed",
     "branchListFailed": "Failed to get branch list",
     "branchSwitchSuccess": "Branch switched",
     "branchSwitchFailed": "Failed to switch branch",
