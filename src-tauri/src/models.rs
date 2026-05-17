@@ -1,5 +1,33 @@
 use serde::{Deserialize, Serialize};
 
+/// AI 设置
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AiSettings {
+    /// API 端点地址（OpenAI 协议）
+    #[serde(default = "default_ai_endpoint")]
+    pub api_endpoint: String,
+    /// API Key
+    #[serde(default)]
+    pub api_key: String,
+    /// 选中的模型
+    #[serde(default)]
+    pub model: String,
+}
+
+fn default_ai_endpoint() -> String {
+    "https://api.openai.com/v1".to_string()
+}
+
+impl Default for AiSettings {
+    fn default() -> Self {
+        Self {
+            api_endpoint: "https://api.openai.com/v1".to_string(),
+            api_key: "".to_string(),
+            model: "".to_string(),
+        }
+    }
+}
+
 /// 全局应用设置
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppSettings {
@@ -12,6 +40,9 @@ pub struct AppSettings {
     /// Git 工作区更新检查间隔（秒），0 表示禁用
     #[serde(default = "default_git_update_interval")]
     pub git_update_check_interval: u64,
+    /// AI 设置
+    #[serde(default)]
+    pub ai: AiSettings,
 }
 
 fn default_timeout() -> u64 {
@@ -32,6 +63,7 @@ impl Default for AppSettings {
             request_timeout: 60,
             language: "zh-CN".to_string(),
             git_update_check_interval: 300,
+            ai: AiSettings::default(),
         }
     }
 }

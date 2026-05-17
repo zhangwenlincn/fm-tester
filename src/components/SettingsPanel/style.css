@@ -183,3 +183,53 @@
   border-color: #1890ff;
   color: #1890ff;
 }
+
+/* AI 设置相关样式 */
+.setting-input.full-width {
+  width: 100%;
+  text-align: left;
+}
+
+.setting-input-wrapper {
+  display: flex;
+  align-items: center;
+}
+
+.model-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.model-input-wrapper .setting-select {
+  width: 150px;
+}
+
+.model-input-wrapper .model-manual-input {
+  width: 150px;
+  text-align: left;
+}
+
+.fetch-models-btn {
+  padding: 6px 12px;
+  border: 1px solid #1890ff;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #fff;
+  color: #1890ff;
+  white-space: nowrap;
+}
+
+.fetch-models-btn:hover:not(:disabled) {
+  background: #1890ff;
+  color: #fff;
+}
+
+.fetch-models-btn:disabled {
+  border-color: #d9d9d9;
+  color: #d9d9d9;
+  cursor: not-allowed;
+}

@@ -15,6 +15,9 @@ pub fn update_settings(
     timeout: u64,
     language: Option<String>,
     git_update_check_interval: Option<u64>,
+    ai_api_endpoint: Option<String>,
+    ai_api_key: Option<String>,
+    ai_model: Option<String>,
 ) -> Result<AppSettings, String> {
     let mut settings = read_settings();
     settings.request_timeout = timeout;
@@ -23,6 +26,15 @@ pub fn update_settings(
     }
     if let Some(interval) = git_update_check_interval {
         settings.git_update_check_interval = interval;
+    }
+    if let Some(endpoint) = ai_api_endpoint {
+        settings.ai.api_endpoint = endpoint;
+    }
+    if let Some(key) = ai_api_key {
+        settings.ai.api_key = key;
+    }
+    if let Some(model) = ai_model {
+        settings.ai.model = model;
     }
     write_settings(&settings)?;
     

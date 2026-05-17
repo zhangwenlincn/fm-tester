@@ -100,17 +100,23 @@ export function useWorkspacePanelSetup(props, emit) {
     
     // 监听 Git 同步日志事件
     unlistenGitSyncLog = await listen('git-sync-log', (event) => {
-      const { logType, message, data, error } = event.payload
+      const { logType, message, data, error, pulled, pushed } = event.payload
       if (logType === 'error') {
         console.error('Git 同步错误:', message, error || '')
+        showToast(`${t('toast.syncFailed')}: ${error || message}`, 'error')
       } else if (logType === 'success') {
-        showToast(t('toast.syncSuccess'), 'success')
+        // 根据 pulled/pushed 状态显示不同提示
+        if (pulled && pushed) {
+          showToast(t('toast.syncPulledAndPushed'), 'success')
+        } else if (pulled && !pushed) {
+          showToast(t('toast.syncPulledOnly'), 'info')
+        } else if (!pulled && pushed) {
+          showToast(t('toast.syncPushedOnly'), 'success')
+        } else {
+          showToast(t('toast.syncNoChanges'), 'info')
+        }
         console.log('Git 同步:', message, data ? JSON.stringify(data) : '')
       } else {
-        // info 类型日志，检查是否需要特殊提示
-        if (message.includes('已是最新的') || message.includes('没有更改需要提交')) {
-          showToast(t('toast.alreadyLatest'), 'info')
-        }
         console.log('Git 同步:', message, data ? JSON.stringify(data) : '')
       }
     })

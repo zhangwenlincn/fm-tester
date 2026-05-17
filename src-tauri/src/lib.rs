@@ -1,3 +1,4 @@
+mod ai;
 mod collection;
 mod cookie;
 mod environment;
@@ -11,6 +12,7 @@ mod script;
 mod settings;
 mod workspace;
 
+pub use ai::*;
 pub use collection::*;
 pub use cookie::*;
 pub use environment::*;
@@ -88,6 +90,8 @@ pub fn run() {
             // Settings
             get_settings,
             update_settings,
+            // AI
+            get_ai_models,
 // Script
             save_script,
             get_script,

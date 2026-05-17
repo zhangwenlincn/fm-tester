@@ -18,6 +18,10 @@ struct GitSyncLog {
     data: Option<serde_json::Value>,
     #[serde(skip_serializing_if = "Option::is_none")]
     error: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pulled: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pushed: Option<bool>,
 }
 
 /// 发送日志事件
@@ -96,15 +100,17 @@ pub async fn sync_git_workspace(
     emit_log(
         &app,
         GitSyncLog {
-            log_type: "info".to_string(),
-            timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
-            message: "开始同步工作区到 Git 仓库".to_string(),
-            data: Some(serde_json::json!({
-                "workspacePath": workspace_path,
-                "repoUrl": repo_url
-            })),
-            error: None,
-        },
+                    log_type: "info".to_string(),
+                    timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+                    message: "开始同步工作区到 Git 仓库".to_string(),
+                    data: Some(serde_json::json!({
+                        "workspacePath": workspace_path,
+                        "repoUrl": repo_url
+                    })),
+                    error: None,
+                    pulled: None,
+                    pushed: None,
+                },
     );
 
     // 检查是否是 git 仓库
@@ -112,12 +118,14 @@ pub async fn sync_git_workspace(
         emit_log(
             &app,
             GitSyncLog {
-                log_type: "info".to_string(),
-                timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
-                message: "工作区路径不是 Git 仓库，开始克隆".to_string(),
-                data: None,
-                error: None,
-            },
+                        log_type: "info".to_string(),
+                        timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+                        message: "工作区路径不是 Git 仓库，开始克隆".to_string(),
+                        data: None,
+                        error: None,
+                        pulled: None,
+                        pushed: None,
+                    },
         );
 
         // 确保父目录存在（git clone 会自动创建目标目录）
@@ -188,12 +196,14 @@ pub async fn sync_git_workspace(
         emit_log(
             &app,
             GitSyncLog {
-                log_type: "info".to_string(),
-                timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
-                message: format!("正在克隆仓库: {}", repo_url),
-                data: None,
-                error: None,
-            },
+                        log_type: "info".to_string(),
+                        timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+                        message: format!("正在克隆仓库: {}", repo_url),
+                        data: None,
+                        error: None,
+                        pulled: None,
+                        pushed: None,
+                    },
         );
 
         let clone_result = run_git_command(vec!["clone", &auth_url, &workspace_path], None);
@@ -202,12 +212,14 @@ pub async fn sync_git_workspace(
             emit_log(
                 &app,
                 GitSyncLog {
-                    log_type: "error".to_string(),
-                    timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
-                    message: err_msg.clone(),
-                    data: None,
-                    error: Some(err_msg.clone()),
-                },
+                            log_type: "error".to_string(),
+                            timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+                            message: err_msg.clone(),
+                            data: None,
+                            error: Some(err_msg.clone()),
+                            pulled: None,
+                            pushed: None,
+                        },
             );
             return Err(err_msg);
         }
@@ -215,23 +227,27 @@ pub async fn sync_git_workspace(
         emit_log(
             &app,
             GitSyncLog {
-                log_type: "success".to_string(),
-                timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
-                message: "仓库克隆成功".to_string(),
-                data: None,
-                error: None,
-            },
+                        log_type: "success".to_string(),
+                        timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+                        message: "仓库克隆成功".to_string(),
+                        data: None,
+                        error: None,
+                        pulled: None,
+                        pushed: None,
+                    },
         );
     } else {
         emit_log(
             &app,
             GitSyncLog {
-                log_type: "info".to_string(),
-                timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
-                message: "工作区已是 Git 仓库，开始同步更改".to_string(),
-                data: None,
-                error: None,
-            },
+                        log_type: "info".to_string(),
+                        timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+                        message: "工作区已是 Git 仓库，开始同步更改".to_string(),
+                        data: None,
+                        error: None,
+                        pulled: None,
+                        pushed: None,
+                    },
         );
     }
 
@@ -241,12 +257,14 @@ pub async fn sync_git_workspace(
         emit_log(
             &app,
             GitSyncLog {
-                log_type: "info".to_string(),
-                timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
-                message: "创建空的 collections.yaml 文件".to_string(),
-                data: None,
-                error: None,
-            },
+                        log_type: "info".to_string(),
+                        timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+                        message: "创建空的 collections.yaml 文件".to_string(),
+                        data: None,
+                        error: None,
+                        pulled: None,
+                        pushed: None,
+                    },
         );
         
         // 创建空的 collections.yaml
@@ -259,12 +277,14 @@ pub async fn sync_git_workspace(
     emit_log(
         &app,
         GitSyncLog {
-            log_type: "info".to_string(),
-            timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
-            message: "配置 Git 用户信息".to_string(),
-            data: None,
-            error: None,
-        },
+                    log_type: "info".to_string(),
+                    timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+                    message: "配置 Git 用户信息".to_string(),
+                    data: None,
+                    error: None,
+                    pulled: None,
+                    pushed: None,
+                },
     );
 
     let _ = run_git_command(vec!["config", "user.name", "FM Tester"], Some(&workspace_path));
@@ -274,12 +294,14 @@ pub async fn sync_git_workspace(
     emit_log(
         &app,
         GitSyncLog {
-            log_type: "info".to_string(),
-            timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
-            message: "添加所有配置文件到 Git".to_string(),
-            data: None,
-            error: None,
-        },
+                    log_type: "info".to_string(),
+                    timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+                    message: "添加所有配置文件到 Git".to_string(),
+                    data: None,
+                    error: None,
+                    pulled: None,
+                    pushed: None,
+                },
     );
 
     // 添加所有文件（包括子目录中的 yaml 文件）
@@ -290,12 +312,14 @@ pub async fn sync_git_workspace(
         emit_log(
             &app,
             GitSyncLog {
-                log_type: "error".to_string(),
-                timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
-                message: err_msg.clone(),
-                data: None,
-                error: Some(err_msg.clone()),
-            },
+                        log_type: "error".to_string(),
+                        timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+                        message: err_msg.clone(),
+                        data: None,
+                        error: Some(err_msg.clone()),
+                        pulled: None,
+                        pushed: None,
+                    },
         );
         return Err(err_msg);
     }
@@ -307,12 +331,14 @@ pub async fn sync_git_workspace(
             emit_log(
                 &app,
                 GitSyncLog {
-                    log_type: "info".to_string(),
-                    timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
-                    message: "没有更改需要提交".to_string(),
-                    data: None,
-                    error: None,
-                },
+                            log_type: "info".to_string(),
+                            timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+                            message: "没有更改需要提交".to_string(),
+                            data: None,
+                            error: None,
+                            pulled: None,
+                            pushed: None,
+                        },
             );
             // 即使没有更改，也更新同步时间
             let mut config = read_config();
@@ -333,12 +359,14 @@ pub async fn sync_git_workspace(
     emit_log(
         &app,
         GitSyncLog {
-            log_type: "info".to_string(),
-            timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
-            message: format!("提交更改: {}", message),
-            data: None,
-            error: None,
-        },
+                    log_type: "info".to_string(),
+                    timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+                    message: format!("提交更改: {}", message),
+                    data: None,
+                    error: None,
+                    pulled: None,
+                    pushed: None,
+                },
     );
 
     let commit_result = run_git_command(vec!["commit", "-m", &message], Some(&workspace_path));
@@ -347,12 +375,14 @@ pub async fn sync_git_workspace(
             emit_log(
                 &app,
                 GitSyncLog {
-                    log_type: "info".to_string(),
-                    timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
-                    message: "没有更改需要提交".to_string(),
-                    data: None,
-                    error: None,
-                },
+                            log_type: "info".to_string(),
+                            timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+                            message: "没有更改需要提交".to_string(),
+                            data: None,
+                            error: None,
+                            pulled: None,
+                            pushed: None,
+                        },
             );
             return Ok(());
         }
@@ -360,12 +390,14 @@ pub async fn sync_git_workspace(
         emit_log(
             &app,
             GitSyncLog {
-                log_type: "error".to_string(),
-                timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
-                message: err_msg.clone(),
-                data: None,
-                error: Some(err_msg.clone()),
-            },
+                        log_type: "error".to_string(),
+                        timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+                        message: err_msg.clone(),
+                        data: None,
+                        error: Some(err_msg.clone()),
+                        pulled: None,
+                        pushed: None,
+                    },
         );
         return Err(err_msg);
     }
@@ -374,12 +406,14 @@ pub async fn sync_git_workspace(
     emit_log(
         &app,
             GitSyncLog {
-                log_type: "info".to_string(),
-                timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
-                message: "推送到远程仓库".to_string(),
-                data: None,
-                error: None,
-            },
+                        log_type: "info".to_string(),
+                        timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+                        message: "推送到远程仓库".to_string(),
+                        data: None,
+                        error: None,
+                        pulled: None,
+                        pushed: None,
+                    },
         );
 
     // 如果提供了凭据，设置远程 URL
@@ -427,12 +461,14 @@ pub async fn sync_git_workspace(
         emit_log(
             &app,
             GitSyncLog {
-                log_type: "error".to_string(),
-                timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
-                message: err_msg.clone(),
-                data: None,
-                error: Some(err_msg.clone()),
-            },
+                        log_type: "error".to_string(),
+                        timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+                        message: err_msg.clone(),
+                        data: None,
+                        error: Some(err_msg.clone()),
+                        pulled: None,
+                        pushed: None,
+                    },
         );
         return Err(err_msg);
     }
@@ -440,12 +476,14 @@ pub async fn sync_git_workspace(
     emit_log(
         &app,
         GitSyncLog {
-            log_type: "success".to_string(),
-            timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
-            message: "工作区同步成功".to_string(),
-            data: None,
-            error: None,
-        },
+                    log_type: "success".to_string(),
+                    timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+                    message: "工作区同步成功".to_string(),
+                    data: None,
+                    error: None,
+                    pulled: None,
+                    pushed: None,
+                },
     );
 
     // 更新工作区的最新同步时间
@@ -495,14 +533,16 @@ pub async fn update_git_workspace(
     emit_log(
         &app,
         GitSyncLog {
-            log_type: "info".to_string(),
-            timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
-            message: "开始从 Git 仓库更新工作区".to_string(),
-            data: Some(serde_json::json!({
-                "workspacePath": workspace_path
-            })),
-            error: None,
-        },
+                    log_type: "info".to_string(),
+                    timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+                    message: "开始从 Git 仓库更新工作区".to_string(),
+                    data: Some(serde_json::json!({
+                        "workspacePath": workspace_path
+                    })),
+                    error: None,
+                    pulled: None,
+                    pushed: None,
+                },
     );
 
     // 检查工作区路径是否存在
@@ -511,12 +551,14 @@ pub async fn update_git_workspace(
         emit_log(
             &app,
             GitSyncLog {
-                log_type: "error".to_string(),
-                timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
-                message: err_msg.clone(),
-                data: None,
-                error: Some(err_msg.clone()),
-            },
+                        log_type: "error".to_string(),
+                        timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+                        message: err_msg.clone(),
+                        data: None,
+                        error: Some(err_msg.clone()),
+                        pulled: None,
+                        pushed: None,
+                    },
         );
         return Err(err_msg);
     }
@@ -527,12 +569,14 @@ pub async fn update_git_workspace(
         emit_log(
             &app,
             GitSyncLog {
-                log_type: "error".to_string(),
-                timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
-                message: err_msg.clone(),
-                data: None,
-                error: Some(err_msg.clone()),
-            },
+                        log_type: "error".to_string(),
+                        timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+                        message: err_msg.clone(),
+                        data: None,
+                        error: Some(err_msg.clone()),
+                        pulled: None,
+                        pushed: None,
+                    },
         );
         return Err(err_msg);
     }
@@ -542,12 +586,14 @@ pub async fn update_git_workspace(
         emit_log(
             &app,
             GitSyncLog {
-                log_type: "info".to_string(),
-                timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
-                message: "配置 Git 认证信息".to_string(),
-                data: None,
-                error: None,
-            },
+                        log_type: "info".to_string(),
+                        timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+                        message: "配置 Git 认证信息".to_string(),
+                        data: None,
+                        error: None,
+                        pulled: None,
+                        pushed: None,
+                    },
         );
 
         let remote_url_result = run_git_command(vec!["remote", "get-url", "origin"], Some(&workspace_path));
@@ -591,12 +637,14 @@ pub async fn update_git_workspace(
     emit_log(
         &app,
         GitSyncLog {
-            log_type: "info".to_string(),
-            timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
-            message: "从远程仓库获取更新".to_string(),
-            data: None,
-            error: None,
-        },
+                    log_type: "info".to_string(),
+                    timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+                    message: "从远程仓库获取更新".to_string(),
+                    data: None,
+                    error: None,
+                    pulled: None,
+                    pushed: None,
+                },
     );
 
     let fetch_result = run_git_command(vec!["fetch", "origin"], Some(&workspace_path));
@@ -605,12 +653,14 @@ pub async fn update_git_workspace(
         emit_log(
             &app,
             GitSyncLog {
-                log_type: "error".to_string(),
-                timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
-                message: err_msg.clone(),
-                data: None,
-                error: Some(err_msg.clone()),
-            },
+                        log_type: "error".to_string(),
+                        timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+                        message: err_msg.clone(),
+                        data: None,
+                        error: Some(err_msg.clone()),
+                        pulled: None,
+                        pushed: None,
+                    },
         );
         return Err(err_msg);
     }
@@ -619,12 +669,14 @@ pub async fn update_git_workspace(
     emit_log(
         &app,
         GitSyncLog {
-            log_type: "info".to_string(),
-            timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
-            message: "检查本地更改状态".to_string(),
-            data: None,
-            error: None,
-        },
+                    log_type: "info".to_string(),
+                    timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+                    message: "检查本地更改状态".to_string(),
+                    data: None,
+                    error: None,
+                    pulled: None,
+                    pushed: None,
+                },
     );
 
     let status_result = run_git_command(vec!["status", "--porcelain"], Some(&workspace_path));
@@ -633,14 +685,16 @@ pub async fn update_git_workspace(
             emit_log(
                 &app,
                 GitSyncLog {
-                    log_type: "warning".to_string(),
-                    timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
-                    message: "本地有未提交的更改，可能产生冲突".to_string(),
-                    data: Some(serde_json::json!({
-                        "status": status
-                    })),
-                    error: None,
-                },
+                            log_type: "warning".to_string(),
+                            timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+                            message: "本地有未提交的更改，可能产生冲突".to_string(),
+                            data: Some(serde_json::json!({
+                                "status": status
+                            })),
+                            error: None,
+                            pulled: None,
+                            pushed: None,
+                        },
             );
         }
     }
@@ -649,12 +703,14 @@ pub async fn update_git_workspace(
     emit_log(
         &app,
         GitSyncLog {
-            log_type: "info".to_string(),
-            timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
-            message: "拉取远程更改".to_string(),
-            data: None,
-            error: None,
-        },
+                    log_type: "info".to_string(),
+                    timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+                    message: "拉取远程更改".to_string(),
+                    data: None,
+                    error: None,
+                    pulled: None,
+                    pushed: None,
+                },
     );
 
     let pull_result = run_git_command(vec!["pull", "origin", "HEAD"], Some(&workspace_path));
@@ -664,14 +720,16 @@ pub async fn update_git_workspace(
             emit_log(
                 &app,
                 GitSyncLog {
-                    log_type: "error".to_string(),
-                    timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
-                    message: err_msg.clone(),
-                    data: Some(serde_json::json!({
-                        "hasConflict": true
-                    })),
-                    error: Some(err_msg.clone()),
-                },
+                            log_type: "error".to_string(),
+                            timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+                            message: err_msg.clone(),
+                            data: Some(serde_json::json!({
+                                "hasConflict": true
+                            })),
+                            error: Some(err_msg.clone()),
+                            pulled: None,
+                            pushed: None,
+                        },
             );
             return Err(err_msg);
         }
@@ -680,12 +738,14 @@ pub async fn update_git_workspace(
         emit_log(
             &app,
             GitSyncLog {
-                log_type: "error".to_string(),
-                timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
-                message: err_msg.clone(),
-                data: None,
-                error: Some(err_msg.clone()),
-            },
+                        log_type: "error".to_string(),
+                        timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+                        message: err_msg.clone(),
+                        data: None,
+                        error: Some(err_msg.clone()),
+                        pulled: None,
+                        pushed: None,
+                    },
         );
         return Err(err_msg);
     }
@@ -693,12 +753,14 @@ pub async fn update_git_workspace(
     emit_log(
         &app,
         GitSyncLog {
-            log_type: "success".to_string(),
-            timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
-            message: "工作区更新成功".to_string(),
-            data: None,
-            error: None,
-        },
+                    log_type: "success".to_string(),
+                    timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+                    message: "工作区更新成功".to_string(),
+                    data: None,
+                    error: None,
+                    pulled: None,
+                    pushed: None,
+                },
     );
 
     // 更新工作区的最新更新时间
@@ -722,6 +784,10 @@ pub async fn sync_git_workspace_full(
     workspace_id: String,
     commit_message: Option<String>,
 ) -> Result<(), String> {
+    // 跟踪拉取和推送状态
+    let mut pulled = false;
+    let mut pushed = false;
+    
     // 先拉取远程更改
     emit_log(
         &app,
@@ -731,6 +797,8 @@ pub async fn sync_git_workspace_full(
             message: "开始同步：先拉取远程更改".to_string(),
             data: None,
             error: None,
+            pulled: None,
+            pushed: None,
         },
     );
     
@@ -799,12 +867,14 @@ pub async fn sync_git_workspace_full(
             emit_log(
                 &app,
                 GitSyncLog {
-                    log_type: "info".to_string(),
-                    timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
-                    message: "拉取远程更改".to_string(),
-                    data: None,
-                    error: None,
-                },
+                            log_type: "info".to_string(),
+                            timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+                            message: "拉取远程更改".to_string(),
+                            data: None,
+                            error: None,
+                            pulled: None,
+                            pushed: None,
+                        },
             );
             
             let pull_result = run_git_command(vec!["pull", "origin", "HEAD"], Some(&workspace_path));
@@ -819,6 +889,8 @@ pub async fn sync_git_workspace_full(
                             message: err_msg.clone(),
                             data: None,
                             error: Some(err_msg.clone()),
+                            pulled: None,
+                            pushed: None,
                         },
                     );
                     return Err(err_msg);
@@ -831,11 +903,29 @@ pub async fn sync_git_workspace_full(
                         GitSyncLog {
                             log_type: "info".to_string(),
                             timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
-                            message: "远程仓库已是最新的".to_string(),
+                            message: "远程无新更改".to_string(),
                             data: None,
                             error: None,
+                            pulled: Some(false),
+                            pushed: None,
                         },
                     );
+                    pulled = false;
+                } else {
+                    // 有实际拉取更新
+                    emit_log(
+                        &app,
+                        GitSyncLog {
+                            log_type: "info".to_string(),
+                            timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+                            message: "拉取远程更改成功".to_string(),
+                            data: None,
+                            error: None,
+                            pulled: Some(true),
+                            pushed: None,
+                        },
+                    );
+                    pulled = true;
                 }
             }
         }
@@ -850,6 +940,8 @@ pub async fn sync_git_workspace_full(
             message: "推送本地更改".to_string(),
             data: None,
             error: None,
+            pulled: None,
+            pushed: None,
         },
     );
     
@@ -922,10 +1014,16 @@ pub async fn sync_git_workspace_full(
                     message: "提交本地更改".to_string(),
                     data: None,
                     error: None,
+                    pulled: None,
+                    pushed: None,
                 },
             );
             let message = commit_message.unwrap_or_else(|| "Update".to_string());
-            let _ = run_git_command(vec!["commit", "-m", &message], Some(&workspace_path));
+            let commit_result = run_git_command(vec!["commit", "-m", &message], Some(&workspace_path));
+            // 如果 commit 成功，说明有本地更改
+            if commit_result.is_ok() {
+                pushed = true;
+            }
         } else {
             emit_log(
                 &app,
@@ -935,6 +1033,8 @@ pub async fn sync_git_workspace_full(
                     message: "本地没有更改需要提交".to_string(),
                     data: None,
                     error: None,
+                    pulled: None,
+                    pushed: Some(false),
                 },
             );
         }
@@ -963,16 +1063,47 @@ pub async fn sync_git_workspace_full(
         if let Err(e) = push_result {
             return Err(format!("推送失败: {}", e));
         }
+        // push 成功后，如果有本地更改才算真正推送了
+        if pushed {
+            emit_log(
+                &app,
+                GitSyncLog {
+                    log_type: "info".to_string(),
+                    timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+                    message: "推送成功".to_string(),
+                    data: None,
+                    error: None,
+                    pulled: None,
+                    pushed: Some(true),
+                },
+            );
+        }
     }
+    
+    // 构建最终同步结果消息
+    let final_message = if pulled && pushed {
+        "已拉取远程更新并推送本地更改".to_string()
+    } else if pulled && !pushed {
+        "已拉取远程更新".to_string()
+    } else if !pulled && pushed {
+        "已推送本地更改".to_string()
+    } else {
+        "已是最新的，无需同步".to_string()
+    };
     
     emit_log(
         &app,
         GitSyncLog {
             log_type: "success".to_string(),
             timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
-            message: "同步完成".to_string(),
-            data: None,
+            message: final_message,
+            data: Some(serde_json::json!({
+                "pulled": pulled,
+                "pushed": pushed
+            })),
             error: None,
+            pulled: Some(pulled),
+            pushed: Some(pushed),
         },
     );
     

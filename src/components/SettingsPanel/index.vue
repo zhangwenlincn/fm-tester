@@ -11,7 +11,20 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'saved'])
 
-const { t, timeout, gitUpdateInterval, loading, saveSettings, close } = useSettingsSetup(props, emit)
+const { 
+  t, 
+  timeout, 
+  gitUpdateInterval, 
+  aiApiEndpoint, 
+  aiApiKey, 
+  aiModel, 
+  aiModels, 
+  loadingModels, 
+  fetchModels,
+  loading, 
+  saveSettings, 
+  close 
+} = useSettingsSetup(props, emit)
 </script>
 
 <template>
@@ -67,6 +80,73 @@ const { t, timeout, gitUpdateInterval, loading, saveSettings, close } = useSetti
         
         <div class="setting-description">
           {{ t('settings.gitUpdateIntervalDesc') }}
+        </div>
+      </div>
+      
+      <!-- AI 设置 -->
+      <div class="settings-section">
+        <div class="section-title">{{ t('settings.aiSection') }}</div>
+        
+        <div class="setting-item">
+          <span class="setting-label">{{ t('settings.aiApiEndpoint') }}</span>
+          <input 
+            type="text" 
+            class="setting-input full-width"
+            v-model="aiApiEndpoint"
+            :disabled="loading"
+            placeholder="https://api.openai.com/v1"
+          />
+        </div>
+        
+        <div class="setting-description">
+          {{ t('settings.aiApiEndpointDesc') }}
+        </div>
+        
+        <div class="setting-item">
+          <span class="setting-label">{{ t('settings.aiApiKey') }}</span>
+          <input 
+            type="password" 
+            class="setting-input full-width"
+            v-model="aiApiKey"
+            :disabled="loading"
+            placeholder="sk-..."
+          />
+        </div>
+        
+        <div class="setting-description">
+          {{ t('settings.aiApiKeyDesc') }}
+        </div>
+        
+        <div class="setting-item">
+          <span class="setting-label">{{ t('settings.aiModel') }}</span>
+          <div class="model-input-wrapper">
+            <select 
+              class="setting-select"
+              v-model="aiModel"
+              :disabled="loading || loadingModels"
+            >
+              <option value="" disabled>{{ t('settings.aiModelSelectPlaceholder') }}</option>
+              <option v-for="model in aiModels" :key="model" :value="model">{{ model }}</option>
+            </select>
+            <input 
+              type="text" 
+              class="setting-input model-manual-input"
+              v-model="aiModel"
+              :disabled="loading"
+              placeholder="{{ t('settings.aiModelManualPlaceholder') }}"
+            />
+          </div>
+          <button 
+            class="fetch-models-btn"
+            :disabled="loading || loadingModels || !aiApiEndpoint || !aiApiKey"
+            @click="fetchModels"
+          >
+            {{ loadingModels ? t('settings.aiFetchingModels') : t('settings.aiFetchModels') }}
+          </button>
+        </div>
+        
+        <div class="setting-description">
+          {{ t('settings.aiModelDesc') }}
         </div>
       </div>
     </div>
