@@ -482,6 +482,10 @@ const localRequest = ref({
   }
 
   const sendRequest = () => {
+    // 如果请求体不为空，切换到 body tab
+    if (localRequest.value.bodyType !== 'none' && activeTab.value !== 'body') {
+      activeTab.value = 'body'
+    }
     emit('send', localRequest.value)
   }
 
