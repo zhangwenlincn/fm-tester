@@ -13,6 +13,10 @@ const props = defineProps({
   apiId: {
     type: String,
     default: ''
+  },
+  apiData: {
+    type: Object,
+    default: null
   }
 })
 
@@ -21,8 +25,13 @@ const {
   docMode,
   renderedDocHtml,
   docEditorContainer,
+  generating,
+  generatingTime,
+  lastUpdatedAt,
   toggleDocMode,
-  saveDoc
+  saveDoc,
+  generateDocWithAI,
+  cancelBackendGeneration
 } = useDocPanelSetup(props)
 </script>
 
@@ -30,10 +39,34 @@ const {
   <div class="doc-panel">
     <!-- 工具栏 -->
     <div class="doc-toolbar">
-      <button class="toggle-btn" @click="toggleDocMode">
-        {{ docMode === 'view' ? t('common.edit') : t('tabs.docs') }}
-      </button>
-      <button v-if="docMode === 'edit'" class="save-btn" @click="saveDoc">{{ t('common.save') }}</button>
+      <div class="toolbar-left">
+        <button 
+          v-if="generating"
+          class="cancel-btn"
+          @click="cancelBackendGeneration"
+        >
+          {{ t('docPanel.cancel') }} {{ generatingTime }}s
+        </button>
+        <div v-else class="ai-generate-wrapper">
+          <button 
+            class="ai-generate-btn" 
+            :disabled="!apiId"
+            @click="generateDocWithAI"
+          >
+            <Icon name="sparkles" :size="14" />
+            {{ t('docPanel.aiGenerate') }}
+          </button>
+        </div>
+        <span v-if="lastUpdatedAt" class="last-updated">
+          {{ t('docPanel.lastUpdated') }}: {{ lastUpdatedAt }}
+        </span>
+      </div>
+      <div class="toolbar-right">
+        <button class="toggle-btn" :disabled="generating" @click="toggleDocMode">
+          {{ docMode === 'view' ? t('common.edit') : t('tabs.docs') }}
+        </button>
+        <button v-if="docMode === 'edit'" class="save-btn" @click="saveDoc">{{ t('common.save') }}</button>
+      </div>
     </div>
     
     <!-- 展示模式 -->
@@ -42,7 +75,7 @@ const {
       <div v-else class="doc-empty">
         <span class="empty-icon"><Icon name="file" :size="48" /></span>
         <p>{{ t('empty.noDoc') }}</p>
-        <button class="edit-btn" @click="toggleDocMode">{{ t('common.edit') }}</button>
+        <button class="edit-btn" :disabled="generating" @click="toggleDocMode">{{ t('common.edit') }}</button>
       </div>
     </div>
     

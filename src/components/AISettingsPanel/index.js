@@ -13,6 +13,7 @@ export function useAiSettingsSetup(props, emit) {
   const aiModels = ref([])
   const loadingModels = ref(false)
   const showModelDropdown = ref(false)
+  const aiTimeout = ref(600) // 默认 10 分钟
   const customHeaders = ref([])
 
   // 加载设置
@@ -25,6 +26,7 @@ export function useAiSettingsSetup(props, emit) {
         aiApiEndpoint.value = settings.ai.api_endpoint || 'https://api.openai.com/v1'
         aiApiKey.value = settings.ai.api_key || ''
         aiModel.value = settings.ai.model || ''
+        aiTimeout.value = settings.ai.timeout || 600
         // 加载自定义请求头
         if (settings.ai.custom_headers && settings.ai.custom_headers.length > 0) {
           customHeaders.value = settings.ai.custom_headers.map(h => ({
@@ -128,6 +130,7 @@ export function useAiSettingsSetup(props, emit) {
         aiApiEndpoint: aiApiEndpoint.value,
         aiApiKey: aiApiKey.value,
         aiModel: aiModel.value,
+        aiTimeout: parseInt(aiTimeout.value) || 600,
         aiCustomHeaders: customHeaders.value.filter(h => h.key.trim()).map(h => ({
           key: h.key,
           value: h.value,
@@ -167,6 +170,7 @@ export function useAiSettingsSetup(props, emit) {
     aiModels,
     loadingModels,
     showModelDropdown,
+    aiTimeout,
     customHeaders,
     fetchModels,
     selectModel,

@@ -205,7 +205,10 @@
     "aiModelSelectPlaceholder": "选择模型",
     "aiModelManualPlaceholder": "或手动输入模型名称",
     "aiCustomHeaders": "自定义请求头",
-    "aiCustomHeadersDesc": "添加自定义请求头，用于需要额外认证或特殊配置的 AI 服务"
+    "aiCustomHeadersDesc": "添加自定义请求头，用于需要额外认证或特殊配置的 AI 服务",
+    "aiTimeout": "超时时间",
+    "aiTimeoutUnit": "秒",
+    "aiTimeoutDesc": "设置 AI 请求的最大等待时间，超过该时间请求将自动取消。默认值为 600 秒（10 分钟）。"
   },
   "workspace": {
     "selector": "工作区:",
@@ -272,6 +275,18 @@
     "error": "发送失败",
     "thinking": "思考ing",
     "stop": "停止"
+  },
+  "docPanel": {
+    "aiGenerate": "AI生成",
+    "generating": "生成中",
+    "cancel": "取消",
+    "noAiConfig": "请先配置 AI 设置",
+    "generateSuccess": "文档生成成功",
+    "generateFailed": "文档生成失败",
+    "generateAndSaved": "文档生成并保存成功",
+    "generateSuccessAutoSaveFailed": "文档生成成功，但自动保存失败",
+    "generationCancelled": "已取消生成",
+    "lastUpdated": "最后编辑"
   },
   "savedResponse": {
     "originalUrl": "原始 URL:",

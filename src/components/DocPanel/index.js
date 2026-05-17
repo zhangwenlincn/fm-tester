@@ -1,7 +1,8 @@
-import { ref, computed, watch, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import * as monaco from 'monaco-editor'
 import { invoke } from '@tauri-apps/api/core'
+import { listen } from '@tauri-apps/api/event'
 import { marked } from 'marked'
 import { showToast } from '../../composables/useToast.js'
 
@@ -13,6 +14,23 @@ export function useDocPanelSetup(props) {
   
   // 文档模式：'view' 展示模式 | 'edit' 编辑模式
   const docMode = ref('view')
+  
+  // AI生成状态
+  const generating = ref(false)
+  
+  // 生成计时（本地计时）
+  const generatingTime = ref(0)
+  
+  // 最新编辑保存时间
+  const lastUpdatedAt = ref(null)
+  
+  // 计时器
+  let generatingTimer = null
+  
+  // 事件监听器
+  let unlistenStart = null
+  let unlistenComplete = null
+  let unlistenError = null
   
   // Monaco 编辑器容器
   const docEditorContainer = ref(null)
@@ -29,6 +47,26 @@ export function useDocPanelSetup(props) {
       return content
     }
   })
+  
+  // 开始本地计时
+  const startTimer = (initialSeconds = 0) => {
+    generatingTime.value = initialSeconds
+    if (generatingTimer) {
+      clearInterval(generatingTimer)
+    }
+    generatingTimer = setInterval(() => {
+      generatingTime.value++
+    }, 1000)
+  }
+  
+  // 停止计时
+  const stopTimer = () => {
+    if (generatingTimer) {
+      clearInterval(generatingTimer)
+      generatingTimer = null
+    }
+    generatingTime.value = 0
+  }
   
   // 加载 API 文档
   const loadApiDoc = async () => {
@@ -48,6 +86,21 @@ export function useDocPanelSetup(props) {
     } catch (e) {
       console.error('加载 API 文档失败:', e)
       docContent.value = ''
+    }
+  }
+  
+  // 加载文档元数据（最新编辑保存时间）
+  const loadDocMetadata = async () => {
+    if (!props.workspacePath || !props.apiId) return
+    try {
+      const metadata = await invoke('get_api_doc_metadata', {
+        workspacePath: props.workspacePath,
+        apiId: props.apiId
+      })
+      lastUpdatedAt.value = metadata.updated_at || null
+    } catch (e) {
+      console.error('加载文档元数据失败:', e)
+      lastUpdatedAt.value = null
     }
   }
   
@@ -88,6 +141,9 @@ export function useDocPanelSetup(props) {
   
   // 切换文档模式
   const toggleDocMode = () => {
+    // AI生成中不允许切换到编辑模式
+    if (generating.value) return
+    
     if (docMode.value === 'view') {
       docMode.value = 'edit'
       // 切换到编辑模式时初始化编辑器
@@ -117,6 +173,10 @@ export function useDocPanelSetup(props) {
         apiId: props.apiId,
         content: docContent.value
       })
+      // 刷新元数据（最新编辑保存时间）
+      await loadDocMetadata()
+      // 自动切换到查看模式
+      docMode.value = 'view'
       showToast(t('toast.saved'), 'success')
     } catch (e) {
       console.error('保存 API 文档失败:', e)
@@ -124,20 +184,122 @@ export function useDocPanelSetup(props) {
     }
   }
   
+  // AI生成文档（调用后端命令）
+  const generateDocWithAI = async () => {
+    if (!props.workspacePath || !props.apiId || generating.value) return
+    
+    generating.value = true
+    startTimer(0)
+    
+    try {
+      // 直接调用后端命令，后端会处理所有逻辑并发送事件
+      await invoke('generate_api_doc_with_ai', {
+        workspacePath: props.workspacePath,
+        apiId: props.apiId
+      })
+    } catch (e) {
+      console.error('AI生成文档失败:', e)
+      generating.value = false
+      stopTimer()
+      // 如果是"生成已取消"，不显示错误
+      if (e !== '生成已取消') {
+        showToast(`${t('docPanel.generateFailed')}: ${e}`, 'error')
+      }
+    }
+  }
+  
+  // 取消后端生成任务
+  const cancelBackendGeneration = async () => {
+    try {
+      await invoke('cancel_doc_generation', {
+        apiId: props.apiId
+      })
+      generating.value = false
+      stopTimer()
+      showToast(t('docPanel.generationCancelled'), 'info')
+    } catch (e) {
+      console.error('取消生成失败:', e)
+    }
+  }
+  
   // 监听 apiId 变化，加载文档
-  watch(() => props.apiId, (newId, oldId) => {
+  watch(() => props.apiId, async (newId, oldId) => {
     if (newId && newId !== oldId) {
-      // 切换 API 时重置为展示模式
+      // 切换 API 时重置显示状态
       docMode.value = 'view'
+      generating.value = false
+      stopTimer()
+      lastUpdatedAt.value = null
+      
       loadApiDoc()
+      loadDocMetadata()
+      
+      // 首次调用检查后端是否有正在进行的生成任务
+      try {
+        const status = await invoke('get_doc_generation_status', {
+          apiId: newId
+        })
+        // 如果后端正在生成，则显示生成状态并继续计时
+        if (status.generating) {
+          generating.value = true
+          startTimer(status.elapsed_seconds || 0)
+        }
+      } catch (e) {
+        // 忽略错误
+      }
     }
   }, { immediate: true })
   
-  // 组件卸载时销毁编辑器
+  // 初始化事件监听
+  onMounted(async () => {
+    // 监听生成开始事件
+    unlistenStart = await listen('doc-generation-start', (event) => {
+      if (event.payload === props.apiId) {
+        generating.value = true
+        startTimer(0)
+      }
+    })
+    
+    // 监听生成完成事件
+    unlistenComplete = await listen('doc-generation-complete', (event) => {
+      generating.value = false
+      stopTimer()
+      docContent.value = event.payload || ''
+      // 切换到编辑模式
+      docMode.value = 'edit'
+      setTimeout(() => {
+        if (docEditorContainer.value) {
+          if (!docEditor) {
+            initDocEditor()
+          } else {
+            docEditor.layout()
+            docEditor.setValue(docContent.value)
+          }
+        }
+      }, 50)
+      showToast(t('docPanel.generateAndSaved'), 'success')
+      // 刷新元数据
+      loadDocMetadata()
+    })
+    
+    // 监听生成错误事件
+    unlistenError = await listen('doc-generation-error', (event) => {
+      generating.value = false
+      stopTimer()
+      showToast(`${t('docPanel.generateFailed')}: ${event.payload}`, 'error')
+    })
+  })
+  
+  // 组件卸载时清理
   onUnmounted(() => {
     if (docEditor) {
       docEditor.dispose()
     }
+    stopTimer()
+    // 清理事件监听
+    if (unlistenStart) unlistenStart()
+    if (unlistenComplete) unlistenComplete()
+    if (unlistenError) unlistenError()
   })
   
   return {
@@ -145,7 +307,13 @@ export function useDocPanelSetup(props) {
     docMode,
     renderedDocHtml,
     docEditorContainer,
+    generating,
+    generatingTime,
+    lastUpdatedAt,
     toggleDocMode,
-    saveDoc
+    saveDoc,
+    generateDocWithAI,
+    cancelBackendGeneration,
+    loadDocMetadata
   }
 }

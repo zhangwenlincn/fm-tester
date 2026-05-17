@@ -19,6 +19,7 @@ pub fn update_settings(
     ai_api_key: Option<String>,
     ai_model: Option<String>,
     ai_custom_headers: Option<Vec<Header>>,
+    ai_timeout: Option<u64>,
 ) -> Result<AppSettings, String> {
     let mut settings = read_settings();
     settings.request_timeout = timeout;
@@ -39,6 +40,9 @@ pub fn update_settings(
     }
     if let Some(headers) = ai_custom_headers {
         settings.ai.custom_headers = headers;
+    }
+    if let Some(ai_timeout_val) = ai_timeout {
+        settings.ai.timeout = ai_timeout_val;
     }
     write_settings(&settings)?;
     

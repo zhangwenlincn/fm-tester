@@ -2,6 +2,74 @@ use reqwest;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter};
 use crate::models::Header;
+use crate::settings::read_settings;
+use std::sync::{Arc, Mutex};
+use std::collections::HashMap;
+use std::time::Instant;
+
+/// 生成任务状态（用于取消检查）
+#[derive(Debug, Clone)]
+pub struct GenerationTaskState {
+    pub cancelled: bool,
+    pub start_time: Instant,
+}
+
+lazy_static::lazy_static! {
+    pub static ref GENERATION_TASK_STATE: Arc<Mutex<HashMap<String, GenerationTaskState>>> = Arc::new(Mutex::new(HashMap::new()));
+}
+
+/// 初始化生成任务状态
+pub fn init_generation_task(task_id: &str) {
+    let mut state = GENERATION_TASK_STATE.lock().unwrap();
+    state.insert(task_id.to_string(), GenerationTaskState {
+        cancelled: false,
+        start_time: Instant::now(),
+    });
+}
+
+/// 检查生成任务是否被取消
+pub fn is_generation_cancelled(task_id: &str) -> bool {
+    let state = GENERATION_TASK_STATE.lock().unwrap();
+    if let Some(task) = state.get(task_id) {
+        task.cancelled
+    } else {
+        false
+    }
+}
+
+/// 取消生成任务
+pub fn cancel_generation_task(task_id: &str) {
+    let mut state = GENERATION_TASK_STATE.lock().unwrap();
+    if let Some(task) = state.get_mut(task_id) {
+        task.cancelled = true;
+    }
+}
+
+/// 清理生成任务状态
+pub fn cleanup_generation_task(task_id: &str) {
+    let mut state = GENERATION_TASK_STATE.lock().unwrap();
+    state.remove(task_id);
+}
+
+/// 获取生成任务耗时
+pub fn get_generation_elapsed_seconds(task_id: &str) -> u64 {
+    let state = GENERATION_TASK_STATE.lock().unwrap();
+    if let Some(task) = state.get(task_id) {
+        task.start_time.elapsed().as_secs()
+    } else {
+        0
+    }
+}
+
+/// 检查生成任务是否存在且未取消
+pub fn is_generation_running(task_id: &str) -> bool {
+    let state = GENERATION_TASK_STATE.lock().unwrap();
+    if let Some(task) = state.get(task_id) {
+        !task.cancelled
+    } else {
+        false
+    }
+}
 
 /// 模型信息
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -119,6 +187,25 @@ pub async fn chat_ai(
     messages: Vec<ChatMessage>,
     custom_headers: Option<Vec<Header>>,
 ) -> Result<String, String> {
+    // 从设置中读取超时配置
+    let settings = read_settings();
+    let timeout = settings.ai.timeout;
+    
+    // 内部调用，无取消检查
+    chat_ai_internal(app, api_endpoint, api_key, model, messages, custom_headers, None, timeout).await
+}
+
+/// AI 聊天内部实现（支持取消检查）
+pub async fn chat_ai_internal(
+    app: AppHandle,
+    api_endpoint: String,
+    api_key: String,
+    model: String,
+    messages: Vec<ChatMessage>,
+    custom_headers: Option<Vec<Header>>,
+    task_id: Option<String>,
+    timeout: u64,
+) -> Result<String, String> {
     if api_endpoint.is_empty() {
         return Err("API endpoint is empty".to_string());
     }
@@ -143,7 +230,7 @@ pub async fn chat_ai(
         .header("Authorization", format!("Bearer {}", api_key))
         .header("Content-Type", "application/json")
         .json(&request_body)
-        .timeout(std::time::Duration::from_secs(120));
+        .timeout(std::time::Duration::from_secs(timeout));
     
     // 添加自定义请求头
     if let Some(headers) = custom_headers {
@@ -173,6 +260,13 @@ pub async fn chat_ai(
     let mut buffer = String::new();
 
     while let Some(chunk) = stream.next().await {
+        // 检查是否被取消
+        if let Some(id) = &task_id {
+            if is_generation_cancelled(id) {
+                return Err("生成已取消".to_string());
+            }
+        }
+        
         let chunk = chunk.map_err(|e| format!("Stream error: {}", e))?;
         let chunk_text = String::from_utf8_lossy(&chunk);
         buffer.push_str(&chunk_text);

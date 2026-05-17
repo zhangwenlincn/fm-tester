@@ -400,3 +400,15 @@
   color: #8c8c8c;
   padding: 12px 0;
 }
+
+/* 超时时间样式 */
+.timeout-input {
+  width: 100px;
+  text-align: center;
+}
+
+.timeout-unit {
+  font-size: 14px;
+  color: #595959;
+  margin-left: 8px;
+}

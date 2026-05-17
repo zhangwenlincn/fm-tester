@@ -347,6 +347,7 @@ const {
         <DocPanel
           :workspacePath="workspacePath"
           :apiId="apiId"
+          :apiData="localRequest"
         />
       </div>
       

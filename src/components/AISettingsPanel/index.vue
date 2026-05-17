@@ -19,6 +19,7 @@ const {
   aiModels, 
   loadingModels, 
   showModelDropdown,
+  aiTimeout,
   customHeaders,
   fetchModels,
   selectModel,
@@ -114,6 +115,24 @@ const {
         
         <div class="setting-description">
           {{ t('settings.aiModelDesc') }}
+        </div>
+        
+        <!-- AI 超时时间 -->
+        <div class="setting-item">
+          <span class="setting-label">{{ t('settings.aiTimeout') }}</span>
+          <input 
+            type="number" 
+            class="setting-input timeout-input"
+            v-model="aiTimeout"
+            :disabled="loading"
+            min="1"
+            max="3600"
+          />
+          <span class="timeout-unit">{{ t('settings.aiTimeoutUnit') }}</span>
+        </div>
+        
+        <div class="setting-description">
+          {{ t('settings.aiTimeoutDesc') }}
         </div>
         
         <!-- 自定义请求头 -->

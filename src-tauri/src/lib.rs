@@ -113,6 +113,10 @@ pub fn run() {
             // API Doc
             get_api_doc,
             save_api_doc,
+            generate_api_doc_with_ai,
+            get_doc_generation_status,
+            cancel_doc_generation,
+            get_api_doc_metadata,
             // Git Credentials
             save_git_credentials,
             get_git_credentials,

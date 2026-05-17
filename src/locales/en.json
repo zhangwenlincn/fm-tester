@@ -205,7 +205,10 @@
     "aiModelSelectPlaceholder": "Select model",
     "aiModelManualPlaceholder": "Or enter model name manually",
     "aiCustomHeaders": "Custom Headers",
-    "aiCustomHeadersDesc": "Add custom headers for AI services that require additional authentication or special configuration"
+    "aiCustomHeadersDesc": "Add custom headers for AI services that require additional authentication or special configuration",
+    "aiTimeout": "Timeout",
+    "aiTimeoutUnit": "seconds",
+    "aiTimeoutDesc": "Set the maximum wait time for AI requests. Requests will be cancelled if timeout. Default is 600 seconds (10 minutes)."
   },
   "workspace": {
     "selector": "Workspace:",
@@ -272,6 +275,18 @@
     "error": "Failed to send",
     "thinking": "Thinking...",
     "stop": "Stop"
+  },
+  "docPanel": {
+    "aiGenerate": "AI Generate",
+    "generating": "Generating",
+    "cancel": "Cancel",
+    "noAiConfig": "Please configure AI settings first",
+    "generateSuccess": "Documentation generated",
+    "generateFailed": "Failed to generate documentation",
+    "generateAndSaved": "Documentation generated and saved",
+    "generateSuccessAutoSaveFailed": "Documentation generated, but auto-save failed",
+    "generationCancelled": "Generation cancelled",
+    "lastUpdated": "Last edited"
   },
   "savedResponse": {
     "originalUrl": "Original URL:",

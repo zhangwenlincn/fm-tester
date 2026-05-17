@@ -15,10 +15,17 @@ pub struct AiSettings {
     /// 自定义请求头
     #[serde(default)]
     pub custom_headers: Vec<Header>,
+    /// AI 请求超时时间（秒），默认 600秒（10分钟）
+    #[serde(default = "default_ai_timeout")]
+    pub timeout: u64,
 }
 
 fn default_ai_endpoint() -> String {
     "https://api.openai.com/v1".to_string()
+}
+
+fn default_ai_timeout() -> u64 {
+    600 // 默认 10 分钟
 }
 
 impl Default for AiSettings {
@@ -28,6 +35,7 @@ impl Default for AiSettings {
             api_key: "".to_string(),
             model: "".to_string(),
             custom_headers: Vec::new(),
+            timeout: 600,
         }
     }
 }
