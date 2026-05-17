@@ -226,7 +226,11 @@ fn build_doc_prompt(
     } else {
         url.clone()
     };
-    parts.push(format!("- 请求PATH：{}", path));
+    
+    // 着重提示请求PATH
+    parts.push("\n### 请求路径".to_string());
+    parts.push(format!("**重要**：请求PATH为 `{}`", path));
+    parts.push("请确保文档中明确标注此路径，并在示例中使用正确的路径。".to_string());
     
     // 请求头
     if let Some(headers) = &api_data.headers {
@@ -311,13 +315,16 @@ fn build_doc_prompt(
     // 输出要求
     parts.push("\n## 输出要求".to_string());
     parts.push("请生成一份完整的接口文档，包括：".to_string());
-    parts.push("1. 接口概述".to_string());
+    parts.push("1. 接口概述（**必须包含请求PATH**）".to_string());
     parts.push("2. 请求参数说明".to_string());
-    parts.push("3. 请求示例".to_string());
+    parts.push("3. 请求示例（**PATH必须正确**）".to_string());
     parts.push("4. 响应参数说明".to_string());
     parts.push("5. 响应示例".to_string());
     parts.push("6. 错误码说明（如果有）".to_string());
     parts.push("7. 使用注意事项".to_string());
+    parts.push("\n**特别提醒**：".to_string());
+    parts.push("- 文档中所有请求示例的PATH必须与上述请求路径保持一致。".to_string());
+    parts.push("- **不需要显示完整的请求URL**，只显示请求PATH即可。".to_string());
     parts.push("\n请直接输出Markdown格式的文档内容，无需其他说明。".to_string());
     
     parts.join("\n")
