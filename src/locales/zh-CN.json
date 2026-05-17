@@ -321,6 +321,12 @@
   "script": {
     "preScript": "前置脚本",
     "postScript": "后置脚本",
+    "aiOptimize": "AI 优化",
+    "aiOptimizing": "优化中...",
+    "aiOptimizeSuccess": "脚本优化成功",
+    "aiOptimizeFailed": "脚本优化失败",
+    "aiNoConfig": "请先配置 AI 设置",
+    "aiOptimizeDesc": "将当前脚本发送给 AI 进行优化或生成",
     "apiRef": {
       "title": "脚本 API 参考",
       "preScriptSection": "前置脚本",

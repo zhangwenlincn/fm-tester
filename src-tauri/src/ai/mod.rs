@@ -4,6 +4,7 @@ pub use ai_commands::{
     get_ai_models, 
     chat_ai, 
     chat_ai_internal,
+    optimize_script_ai,
     ChatMessage,
     init_generation_task,
     is_generation_cancelled,

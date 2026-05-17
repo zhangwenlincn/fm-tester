@@ -304,3 +304,88 @@ pub async fn chat_ai_internal(
 
     Ok(full_content)
 }
+
+/// AI 优化脚本
+#[tauri::command]
+pub async fn optimize_script_ai(
+    app: AppHandle,
+    api_endpoint: String,
+    api_key: String,
+    model: String,
+    script_content: String,
+    script_type: String,
+    custom_headers: Option<Vec<Header>>,
+) -> Result<String, String> {
+    if api_endpoint.is_empty() {
+        return Err("API endpoint is empty".to_string());
+    }
+    if api_key.is_empty() {
+        return Err("API key is empty".to_string());
+    }
+    if model.is_empty() {
+        return Err("Model is empty".to_string());
+    }
+
+    // 构建系统提示
+    let system_prompt = if script_type == "pre" {
+        "你是一个API测试脚本专家。请优化或完善用户提供的前置脚本（Pre-request Script）。
+
+前置脚本在请求发送前执行，可以使用以下 fm API：
+- fm.environment.get(key) / fm.environment.set(key, value) / fm.environment.getAll() - 环境变量操作
+- fm.collection.get(key) / fm.collection.set(key, value) / fm.collection.getAll() - 集合变量操作
+- fm.request.getUrl() / fm.request.setUrl(url) - 获取/设置请求URL
+- fm.request.getBaseUrl() / fm.request.setBaseUrl(baseUrl) - 获取/设置baseUrl
+- fm.request.getPath() / fm.request.setPath(path) - 获取/设置请求路径
+- fm.request.getMethod() / fm.request.setMethod(method) - 获取/设置请求方法
+- fm.request.getHeader(key) / fm.request.setHeader(key, value) / fm.request.removeHeader(key) / fm.request.getHeaders() - 请求头操作
+- fm.request.getBody() / fm.request.setBody(body) - 获取/设置请求体
+- fm.log(message) - 输出日志到Console
+- fm.assert(condition, message) - 断言检查
+- fm.sleep(ms) - 异步等待（毫秒）
+
+请根据用户的需求或现有脚本，优化、完善或生成JavaScript脚本代码。
+只返回纯JavaScript代码，不要包含任何解释或markdown格式。"
+    } else {
+        "你是一个API测试脚本专家。请优化或完善用户提供的后置脚本（Post-request Script）。
+
+后置脚本在响应返回后执行，可以使用以下 fm API（包括前置脚本所有API）：
+- fm.response.getStatus() - 获取响应状态码
+- fm.response.getStatusText() - 获取响应状态文本
+- fm.response.getHeader(key) / fm.response.getHeaders() - 获取响应头
+- fm.response.getBody() - 获取响应体（字符串）
+- fm.response.getJson() - 获取响应体（JSON对象）
+- fm.response.getTime() - 获取响应时间（ms）
+- fm.response.getSize() - 获取响应大小（bytes）
+- fm.environment.get(key) / fm.environment.set(key, value) / fm.environment.getAll() - 环境变量操作
+- fm.collection.get(key) / fm.collection.set(key, value) / fm.collection.getAll() - 集合变量操作
+- fm.log(message) - 输出日志到Console
+- fm.assert(condition, message) - 断言检查
+- fm.sleep(ms) - 异步等待（毫秒）
+
+请根据用户的需求或现有脚本，优化、完善或生成JavaScript脚本代码。
+只返回纯JavaScript代码，不要包含任何解释或markdown格式。"
+    };
+
+    // 构建消息
+    let messages = vec![
+        ChatMessage {
+            role: "system".to_string(),
+            content: system_prompt.to_string(),
+        },
+        ChatMessage {
+            role: "user".to_string(),
+            content: if script_content.trim().is_empty() {
+                "请帮我生成一个基础的脚本模板。".to_string()
+            } else {
+                format!("请优化或完善以下脚本：\n\n{}", script_content)
+            },
+        },
+    ];
+
+    // 从设置中读取超时配置
+    let settings = read_settings();
+    let timeout = settings.ai.timeout;
+
+    // 调用内部聊天函数
+    chat_ai_internal(app, api_endpoint, api_key, model, messages, custom_headers, None, timeout).await
+}

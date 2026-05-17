@@ -97,6 +97,7 @@ pub fn run() {
             // AI
             get_ai_models,
             chat_ai,
+            optimize_script_ai,
             // Chat History
             save_chat_history,
             get_chat_history,

@@ -1,7 +1,10 @@
 <script setup>
 import { ref, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { invoke } from '@tauri-apps/api/core'
+import { listen } from '@tauri-apps/api/event'
 import * as monaco from 'monaco-editor'
+import { showToast } from '../../composables/useToast'
 
 const { t } = useI18n()
 
@@ -15,6 +18,16 @@ const scriptType = ref('pre')
 const editorContainer = ref(null)
 let editor = null
 let completionProvider = null
+
+// AI 优化相关状态
+const aiOptimizing = ref(false)
+const aiConfig = ref({
+  endpoint: '',
+  key: '',
+  model: '',
+  customHeaders: []
+})
+let streamUnlisten = null
 
 // fm API 自动补全定义
 const getFmCompletions = (isPostScript) => {
@@ -338,7 +351,85 @@ const saveScript = () => {
   emit('save')
 }
 
+// 加载 AI 配置
+const loadAiConfig = async () => {
+  try {
+    const settings = await invoke('get_settings')
+    if (settings.ai) {
+      aiConfig.value = {
+        endpoint: settings.ai.api_endpoint || '',
+        key: settings.ai.api_key || '',
+        model: settings.ai.model || '',
+        customHeaders: settings.ai.custom_headers || []
+      }
+    }
+  } catch (e) {
+    console.error('Failed to load AI config:', e)
+  }
+}
+
+// AI 优化脚本
+const optimizeWithAi = async () => {
+  if (!editor) return
+  
+  // 检查 AI 配置
+  if (!aiConfig.value.endpoint || !aiConfig.value.key || !aiConfig.value.model) {
+    showToast(t('script.aiNoConfig'), 'warning')
+    return
+  }
+  
+  aiOptimizing.value = true
+  const currentContent = editor.getValue()
+  
+  try {
+    // 监听流式响应
+    streamUnlisten = await listen('ai-chat-stream', (event) => {
+      if (editor) {
+        // 实时更新编辑器内容
+        const currentValue = editor.getValue()
+        editor.setValue(currentValue + event.payload)
+      }
+    })
+    
+    // 清空编辑器准备接收新内容
+    editor.setValue('')
+    
+    // 调用后端 AI 优化
+    const result = await invoke('optimize_script_ai', {
+      apiEndpoint: aiConfig.value.endpoint,
+      apiKey: aiConfig.value.key,
+      model: aiConfig.value.model,
+      scriptContent: currentContent,
+      scriptType: scriptType.value,
+      customHeaders: aiConfig.value.customHeaders.filter(h => h.enabled && h.key.trim()).map(h => ({
+        key: h.key,
+        value: h.value,
+        enabled: h.enabled,
+        description: h.description?.trim() || null
+      }))
+    })
+    
+    // 设置最终结果（防止流式更新遗漏）
+    editor.setValue(result)
+    
+    // 提示成功
+    showToast(t('script.aiOptimizeSuccess'), 'success')
+  } catch (e) {
+    console.error('AI optimize error:', e)
+    // 恢复原始内容
+    editor.setValue(currentContent)
+    showToast(t('script.aiOptimizeFailed') + ': ' + e, 'error')
+  } finally {
+    aiOptimizing.value = false
+    if (streamUnlisten) {
+      streamUnlisten()
+      streamUnlisten = null
+    }
+  }
+}
+
 onMounted(() => {
+  loadAiConfig()
   nextTick(() => {
     setTimeout(() => {
       // 确保容器有尺寸
@@ -355,6 +446,9 @@ onMounted(() => {
 onUnmounted(() => {
   editor?.dispose()
   completionProvider?.dispose()
+  if (streamUnlisten) {
+    streamUnlisten()
+  }
 })
 </script>
 
@@ -368,6 +462,14 @@ onUnmounted(() => {
     <div class="editor-wrapper">
       <div class="editor-header">
         <button class="save-btn" @click="saveScript">{{ t('common.save') }}</button>
+        <button 
+          class="ai-btn" 
+          :disabled="aiOptimizing" 
+          @click="optimizeWithAi"
+          :title="t('script.aiOptimizeDesc')"
+        >
+          {{ aiOptimizing ? t('script.aiOptimizing') : t('script.aiOptimize') }}
+        </button>
       </div>
       <div ref="editorContainer" class="editor-container"></div>
     </div>

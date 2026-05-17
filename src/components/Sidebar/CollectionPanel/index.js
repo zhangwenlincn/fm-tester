@@ -16,15 +16,10 @@ export function useCollectionPanelSetup(props, emit) {
   const selectedApi = ref(null)
   const selectedCollectionId = ref(null) // 选中的集合 ID
   const searchQuery = ref('')
-  const showCreateDialog = ref(false)
-  const createDialogParent = ref(null)
-  const newItemName = ref('')
 
-  // 重命名
-  const showRenameDialog = ref(false)
-  const renameItem = ref(null)
-  const renameItemType = ref('')
-  const renameItemName = ref('')
+  // Inline 编辑状态（用于新建和重命名）
+  const editingItem = ref(null) // { tempId, parentId, type: 'collection'|'api', isNew: boolean }
+  const editingName = ref('')
 
   // 右键菜单
   const contextMenu = ref({
@@ -306,33 +301,27 @@ export function useCollectionPanelSetup(props, emit) {
 
     if (action === 'new-collection') {
       if (type === 'root') {
-        openRootCreateDialog()
+        // 根级别新建集合
+        startInlineEdit(null, 'collection', 0)
       } else if (canCreateSubCollection(depth)) {
-        openCreateDialog(item)
+        // 在集合下新建子集合
+        startInlineEdit(item.id, 'collection', depth + 1)
       }
     } else if (action === 'new-api') {
-      // 直接创建接口，不弹对话框
-      if (!props.workspace?.path) return
-      try {
-        const newApi = await invoke('create_api', {
-          workspacePath: props.workspace.path,
-          name: t('buttons.newApi'),
-          method: 'GET',
-          url: '',
-          parentId: type === 'root' ? null : item?.id
-        })
-        await loadCollections()
-        // 创建后立即打开
-        emit('selectApi', newApi)
-      } catch (e) {
-        console.error('创建接口失败:', e)
+      // 新建接口：使用 inline 编辑
+      if (type === 'root') {
+        startInlineEdit(null, 'api', 0)
+      } else {
+        startInlineEdit(item.id, 'api', depth + 1)
       }
-    } else if (action === 'rename') {
-      // 打开重命名对话框
-      renameItem.value = item
-      renameItemType.value = type
-      renameItemName.value = item.name
-      showRenameDialog.value = true
+} else if (action === 'rename') {
+      // 集合和 API 重命名都使用 inline 编辑
+      if (type === 'collection') {
+        startInlineEdit(item.id, 'collection', depth, false)
+      } else {
+        // API 重命名
+        startInlineEdit(item.id, 'api', depth, false)
+      }
     } else if (action === 'delete') {
       deleteItem(item)
     } else if (action === 'delete-saved-response') {
@@ -356,58 +345,176 @@ export function useCollectionPanelSetup(props, emit) {
     }
   }
 
-  // 重命名
-  const handleRename = async () => {
-    if (!props.workspace?.path) return
-    if (!renameItemName.value.trim()) return
+  // ============ Inline 编辑功能 ============
 
-    try {
-      if (renameItemType.value === 'collection') {
-        await invoke('update_collection', {
-          workspacePath: props.workspace.path,
-          id: renameItem.value.id,
-          name: renameItemName.value,
-          description: renameItem.value.description
-        })
-      } else {
-        await invoke('update_api', {
-          workspacePath: props.workspace.path,
-          id: renameItem.value.id,
-          name: renameItemName.value,
-          method: null,
-          url: null,
-          headers: null,
-          body: null,
-          bodyType: null
-        })
-        // 通知父组件更新 tabs 中的名称
-        emit('renameApi', { id: renameItem.value.id, name: renameItemName.value })
+  // 开始 inline 编辑（新建或重命名）
+  const startInlineEdit = (parentId, itemType, depth, isNew = true) => {
+    const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+    
+    // 如果是新建子集合，先展开父集合（同步，确保 computed 能立即响应）
+    if (isNew && parentId) {
+      expandedItems.value[parentId] = true
+    }
+    
+    // 设置编辑状态
+    editingItem.value = {
+      tempId,
+      parentId,
+      type: itemType,
+      depth,
+      isNew
+    }
+    
+    // 新建时有默认名称，重命名时使用原名称
+    if (isNew) {
+      editingName.value = itemType === 'collection' ? t('buttons.newCollection') : t('buttons.newApi')
+    } else {
+      editingName.value = findItemById(parentId)?.name || ''
+    }
+    
+    // 异步保存展开状态（不阻塞）
+    if (isNew && parentId) {
+      saveExpandState()
+    }
+  }
+
+  // 通过 ID 查找项
+  const findItemById = (id) => {
+    const search = (items) => {
+      for (const item of items) {
+        if (item.id === id) return item
+        if (item.type === 'collection' && item.children) {
+          const found = search(item.children)
+          if (found) return found
+        }
       }
-      await loadCollections()
-      showRenameDialog.value = false
-    } catch (e) {
-      console.error('重命名失败:', e)
+      return null
     }
+    return search(collections.value)
   }
 
-  // 创建集合
-  const handleCreate = async () => {
-    if (!props.workspace?.path) return
-    if (!newItemName.value.trim()) return
-
+  // 完成编辑（保存）
+  const finishInlineEdit = async () => {
+    if (!editingItem.value) return
+    
+    const { parentId, type, isNew, tempId } = editingItem.value
+    const name = editingName.value.trim()
+    
+    // 名字为空时取消
+    if (!name) {
+      cancelInlineEdit()
+      return
+    }
+    
+    if (!props.workspace?.path) {
+      cancelInlineEdit()
+      return
+    }
+    
     try {
-      await invoke('create_collection', {
-        workspacePath: props.workspace.path,
-        name: newItemName.value,
-        description: null,
-        parentId: createDialogParent.value?.id || null
-      })
-      await loadCollections()
-      showCreateDialog.value = false
+      if (isNew) {
+        // 新建
+        if (type === 'collection') {
+          const newCollection = await invoke('create_collection', {
+            workspacePath: props.workspace.path,
+            name,
+            description: null,
+            parentId
+          })
+          
+          await loadCollections()
+          cancelInlineEdit()
+          
+          // 确保父集合展开
+          if (parentId) {
+            expandedItems.value[parentId] = true
+            await saveExpandState()
+          }
+          
+          // 选中新创建的集合
+          selectCollectionItem(newCollection)
+          
+          showToast(t('toast.saved'), 'success')
+        } else if (type === 'api') {
+          // 新建接口
+          const newApi = await invoke('create_api', {
+            workspacePath: props.workspace.path,
+            name,
+            method: 'GET',
+            url: '',
+            parentId
+          })
+          
+          await loadCollections()
+          cancelInlineEdit()
+          
+          // 确保父集合展开
+          if (parentId) {
+            expandedItems.value[parentId] = true
+            await saveExpandState()
+          }
+          
+          // 选中新创建的接口并打开请求面板
+          selectApiItem(newApi)
+          
+          showToast(t('toast.saved'), 'success')
+        }
+      } else {
+        // 重命名
+        if (type === 'collection') {
+          const item = findItemById(parentId)
+          if (item) {
+            await invoke('update_collection', {
+              workspacePath: props.workspace.path,
+              id: parentId,
+              name,
+              description: item.description
+            })
+          }
+          await loadCollections()
+          cancelInlineEdit()
+        } else if (type === 'api') {
+          // API 重命名
+          await invoke('update_api', {
+            workspacePath: props.workspace.path,
+            id: parentId,
+            name,
+            method: null,
+            url: null,
+            headers: null,
+            body: null,
+            bodyType: null
+          })
+          // 通知父组件更新 tabs 中的名称
+          emit('renameApi', { id: parentId, name })
+          await loadCollections()
+          cancelInlineEdit()
+        }
+      }
     } catch (e) {
-      console.error('创建失败:', e)
+      console.error('保存失败:', e)
+      showToast(t('toast.saveFailed'), 'error')
     }
   }
+
+  // 取消编辑
+  const cancelInlineEdit = () => {
+    editingItem.value = null
+    editingName.value = ''
+  }
+
+  // 编辑输入框键盘事件
+  const handleEditKeydown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      finishInlineEdit()
+    } else if (e.key === 'Escape') {
+      e.preventDefault()
+      cancelInlineEdit()
+    }
+  }
+
+  // ============ End Inline 编辑功能 ============
 
   // 递归收集集合下的所有接口 ID
   const collectApiIds = (item) => {
@@ -497,6 +604,11 @@ export function useCollectionPanelSetup(props, emit) {
   }
 
   const onMouseDown = (e, row) => {
+    // 如果有正在编辑的项，先完成编辑
+    if (editingItem.value && editingItem.value.tempId !== row.item.id) {
+      finishInlineEdit()
+    }
+    
     // 只响应左键
     if (e.button !== 0) return
     dragStartY = e.clientY
@@ -732,27 +844,70 @@ export function useCollectionPanelSetup(props, emit) {
   // 计算扁平化的树列表（用于渲染）
   const flatTreeList = computed(() => {
     const result = []
+    
     const processItems = (items, depth = 0, parentId = null) => {
       for (const item of items) {
         const isCollection = item.type === 'collection'
         const hasChildren = item.children && item.children.length > 0
         const expanded = isExpanded(item.id)
-
+        
+        // 检查这个项是否正在编辑（重命名）
+        const isRenaming = editingItem.value && !editingItem.value.isNew && editingItem.value.parentId === item.id
+        
         result.push({
           item,
           isCollection,
           hasChildren,
           expanded,
           depth,
-          parentId
+          parentId,
+          isEditing: isRenaming
         })
+
+        // 如果这个集合正在新建子项，在展开子列表前插入临时项
+        if (isCollection && editingItem.value?.isNew && editingItem.value.parentId === item.id) {
+          result.push({
+            item: {
+              id: editingItem.value.tempId,
+              type: editingItem.value.type,
+              name: '',
+              children: []
+            },
+            isCollection: editingItem.value.type === 'collection',
+            hasChildren: false,
+            expanded: false,
+            depth: depth + 1,
+            parentId: item.id,
+            isEditing: true
+          })
+        }
 
         if (hasChildren && expanded) {
           processItems(item.children, depth + 1, item.id)
         }
       }
     }
+    
     processItems(collections.value)
+    
+    // 根级别新建项：在列表末尾添加
+    if (editingItem.value?.isNew && editingItem.value.parentId === null) {
+      result.push({
+        item: {
+          id: editingItem.value.tempId,
+          type: editingItem.value.type,
+          name: '',
+          children: []
+        },
+        isCollection: editingItem.value.type === 'collection',
+        hasChildren: false,
+        expanded: false,
+        depth: 0,
+        parentId: null,
+        isEditing: true
+      })
+    }
+    
     return result
   })
 
@@ -766,6 +921,10 @@ export function useCollectionPanelSetup(props, emit) {
   // 全局点击关闭右键菜单
   const handleGlobalClick = () => {
     closeContextMenu()
+    // 如果有正在编辑的项，完成编辑
+    if (editingItem.value) {
+      finishInlineEdit()
+    }
   }
 
   onMounted(() => {
@@ -783,13 +942,11 @@ return {
     selectedApi,
     selectedCollectionId,
     searchQuery,
-    showCreateDialog,
-    createDialogParent,
-    newItemName,
-    showRenameDialog,
-    renameItem,
-    renameItemType,
-    renameItemName,
+    editingItem,
+    editingName,
+    finishInlineEdit,
+    cancelInlineEdit,
+    handleEditKeydown,
     contextMenu,
     expandedResponses,
     loadCollections,
@@ -799,15 +956,11 @@ return {
     selectCollectionItem,
     setSelectedApiId,
     setSelectedCollectionId,
-    openRootCreateDialog,
-    openCreateDialog,
     canCreateSubCollection,
     openContextMenu,
     closeContextMenu,
     openSavedResponseContextMenu,
     handleContextAction,
-    handleRename,
-    handleCreate,
     deleteItem,
     getMethodClass,
     toggleResponses,

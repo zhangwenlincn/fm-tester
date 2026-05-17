@@ -1,5 +1,6 @@
 <script setup>
 import { useI18n } from 'vue-i18n'
+import { nextTick, ref, watch } from 'vue'
 import { useCollectionPanelSetup } from './index.js'
 import Icon from '../../Icon/index.vue'
 
@@ -11,6 +12,9 @@ const props = defineProps({
 
 const emit = defineEmits(['selectApi', 'deleteApis', 'deleteCollection', 'renameApi', 'selectSavedResponse', 'selectCollection'])
 
+// inline 编辑输入框 ref
+const inlineEditInput = ref(null)
+
 // 使用 composable
 const {
   collections,
@@ -18,13 +22,11 @@ const {
   selectedApi,
   selectedCollectionId,
   searchQuery,
-  showCreateDialog,
-  createDialogParent,
-  newItemName,
-  showRenameDialog,
-  renameItem,
-  renameItemType,
-  renameItemName,
+  editingItem,
+  editingName,
+  finishInlineEdit,
+  cancelInlineEdit,
+  handleEditKeydown,
   contextMenu,
   expandedResponses,
   loadCollections,
@@ -34,15 +36,11 @@ const {
   selectCollectionItem,
   setSelectedApiId,
   setSelectedCollectionId,
-  openRootCreateDialog,
-  openCreateDialog,
   canCreateSubCollection,
   openContextMenu,
   closeContextMenu,
   openSavedResponseContextMenu,
   handleContextAction,
-  handleRename,
-  handleCreate,
   deleteItem,
   getMethodClass,
   toggleResponses,
@@ -54,6 +52,24 @@ const {
   treeListRef,
   onMouseDown
 } = useCollectionPanelSetup(props, emit)
+
+// inline 编辑开始时自动聚焦并选中文本
+watch(editingItem, (val) => {
+  if (val) {
+    nextTick(() => {
+      if (inlineEditInput.value) {
+        inlineEditInput.value.focus()
+        inlineEditInput.value.select()
+      }
+    })
+  }
+})
+
+// 点击编辑输入框外部时保存编辑
+const handleEditBlur = () => {
+  // 立即执行保存（mousedown 会先触发 finishInlineEdit）
+  finishInlineEdit()
+}
 
 // 暴露方法给父组件
 defineExpose({
@@ -68,9 +84,6 @@ defineExpose({
     <!-- 面板头部 -->
     <div class="panel-header">
       <span class="panel-title">{{ t('panels.collections') }}</span>
-      <div class="panel-actions">
-        <span class="action-btn" :title="t('buttons.newCollection')" @click="openRootCreateDialog">+</span>
-      </div>
     </div>
 
     <!-- 搜索框 -->
@@ -110,19 +123,37 @@ defineExpose({
             'dragging': dragState.draggingId === row.item.id,
             'drag-over-before': dragState.dragOverId === row.item.id && dragState.dragPosition === 'before',
             'drag-over-after': dragState.dragOverId === row.item.id && dragState.dragPosition === 'after',
-            'drag-over-into': dragState.dragOverId === row.item.id && dragState.dragPosition === 'into'
+            'drag-over-into': dragState.dragOverId === row.item.id && dragState.dragPosition === 'into',
+            'editing': row.isEditing
           }"
           :style="{ paddingLeft: (16 + row.depth * 16) + 'px' }"
           @mousedown="(e) => onMouseDown(e, row)"
           @contextmenu.prevent="(e) => openContextMenu(e, row.item, row.depth, 'collection')"
         >
-          <span class="folder-icon" @click.stop="selectCollectionItem(row.item)">
-            <Icon :name="row.expanded ? 'folder-open' : 'folder'" :size="14" />
-          </span>
-          <span class="folder-name" @click.stop="selectCollectionItem(row.item)">{{ row.item.name }}</span>
-          <span class="expand-arrow" :class="{ expanded: row.expanded }" @click.stop="toggleExpand(row.item.id)">
-            <Icon name="arrow-right" :size="12" />
-          </span>
+          <!-- 编辑模式 -->
+          <template v-if="row.isEditing">
+            <span class="folder-icon"><Icon name="folder" :size="14" /></span>
+            <input
+              :ref="(el) => inlineEditInput = el"
+              v-model="editingName"
+              class="inline-edit-input"
+              :placeholder="t('placeholder.name')"
+              @keydown="handleEditKeydown"
+              @blur="handleEditBlur"
+              @mousedown.stop
+              @click.stop
+            />
+          </template>
+          <!-- 正常显示 -->
+          <template v-else>
+            <span class="folder-icon" @click.stop="selectCollectionItem(row.item)">
+              <Icon :name="row.expanded ? 'folder-open' : 'folder'" :size="14" />
+            </span>
+            <span class="folder-name" @click.stop="selectCollectionItem(row.item)">{{ row.item.name }}</span>
+            <span class="expand-arrow" :class="{ expanded: row.expanded }" @click.stop="toggleExpand(row.item.id)">
+              <Icon name="arrow-right" :size="12" />
+            </span>
+          </template>
         </div>
 
         <!-- API 项 -->
@@ -134,24 +165,44 @@ defineExpose({
             selected: selectedApi === row.item.id,
             'dragging': dragState.draggingId === row.item.id,
             'drag-over-before': dragState.dragOverId === row.item.id && dragState.dragPosition === 'before',
-            'drag-over-after': dragState.dragOverId === row.item.id && dragState.dragPosition === 'after'
+            'drag-over-after': dragState.dragOverId === row.item.id && dragState.dragPosition === 'after',
+            'editing': row.isEditing
           }"
           :style="{ paddingLeft: (16 + row.depth * 16) + 'px' }"
           @mousedown="(e) => onMouseDown(e, row)"
-          @click="selectApiItem(row.item)"
           @contextmenu.prevent="(e) => openContextMenu(e, row.item, row.depth, 'api')"
         >
-          <span class="method-tag" :class="getMethodClass(row.item.method)">{{ row.item.method }}</span>
-          <span class="item-name">{{ row.item.name }}</span>
-          <!-- 如果有保存响应，显示展开箭头（在右边） -->
-          <span
-            v-if="row.item.saved_responses && row.item.saved_responses.length > 0"
-            class="expand-arrow"
-            :class="{ expanded: expandedResponses[row.item.id] }"
-            @click.stop="toggleResponses(row.item.id)"
-          >
-            <Icon name="arrow-right" :size="12" />
-          </span>
+          <!-- 编辑模式 -->
+          <template v-if="row.isEditing">
+            <!-- 新建时显示 GET，重命名时显示原来的 method -->
+            <span class="method-tag" :class="getMethodClass(row.item.id.startsWith('temp-') ? 'GET' : row.item.method)">
+              {{ row.item.id.startsWith('temp-') ? 'GET' : row.item.method }}
+            </span>
+            <input
+              :ref="(el) => inlineEditInput = el"
+              v-model="editingName"
+              class="inline-edit-input"
+              :placeholder="t('placeholder.name')"
+              @keydown="handleEditKeydown"
+              @blur="handleEditBlur"
+              @mousedown.stop
+              @click.stop
+            />
+          </template>
+          <!-- 正常显示 -->
+          <template v-else>
+            <span class="method-tag" :class="getMethodClass(row.item.method)">{{ row.item.method }}</span>
+            <span class="item-name" @click="selectApiItem(row.item)">{{ row.item.name }}</span>
+            <!-- 如果有保存响应，显示展开箭头（在右边） -->
+            <span
+              v-if="row.item.saved_responses && row.item.saved_responses.length > 0"
+              class="expand-arrow"
+              :class="{ expanded: expandedResponses[row.item.id] }"
+              @click.stop="toggleResponses(row.item.id)"
+            >
+              <Icon name="arrow-right" :size="12" />
+            </span>
+          </template>
         </div>
 
         <!-- 保存响应子列表 -->
@@ -179,55 +230,6 @@ defineExpose({
         class="tree-list-footer"
         :class="{ 'drag-over-root': dragState.dragPosition === 'root' }"
       ></div>
-    </div>
-
-    <!-- 创建对话框 -->
-    <div v-if="showCreateDialog" class="create-dialog-overlay" @click.self="showCreateDialog = false">
-      <div class="create-dialog">
-        <div class="dialog-header">
-          <span>{{ t('dialogs.newCollection') }}</span>
-          <span class="dialog-close" @click="showCreateDialog = false">×</span>
-        </div>
-
-        <div class="dialog-body">
-          <div class="dialog-row">
-            <label>{{ t('common.name') }}</label>
-            <input v-model="newItemName" type="text" :placeholder="t('placeholder.name')" />
-          </div>
-
-          <div v-if="createDialogParent" class="dialog-row">
-            <label>{{ t('dialogs.parent') }}</label>
-            <span class="parent-name">{{ createDialogParent.name }}</span>
-          </div>
-        </div>
-
-        <div class="dialog-footer">
-          <button class="btn-cancel" @click="showCreateDialog = false">{{ t('common.cancel') }}</button>
-          <button class="btn-confirm" @click="handleCreate">{{ t('common.confirm') }}</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- 重命名对话框 -->
-    <div v-if="showRenameDialog" class="create-dialog-overlay" @click.self="showRenameDialog = false">
-      <div class="create-dialog">
-        <div class="dialog-header">
-          <span>{{ t('dialogs.rename') }}</span>
-          <span class="dialog-close" @click="showRenameDialog = false">×</span>
-        </div>
-
-        <div class="dialog-body">
-          <div class="dialog-row">
-            <label>{{ t('common.name') }}</label>
-            <input v-model="renameItemName" type="text" :placeholder="t('placeholder.name')" />
-          </div>
-        </div>
-
-        <div class="dialog-footer">
-          <button class="btn-cancel" @click="showRenameDialog = false">{{ t('common.cancel') }}</button>
-          <button class="btn-confirm" @click="handleRename">{{ t('common.confirm') }}</button>
-        </div>
-      </div>
     </div>
 
     <!-- 右键菜单遮罩 -->

@@ -47,6 +47,7 @@
 .editor-header {
   display: flex;
   justify-content: flex-end;
+  gap: 8px;
   margin-bottom: 8px;
 }
 
@@ -63,6 +64,26 @@
 .save-btn:hover {
   color: #fff;
   background: #1890ff;
+}
+
+.ai-btn {
+  padding: 4px 12px;
+  font-size: 12px;
+  color: #722ed1;
+  background: #fff;
+  border: 1px solid #722ed1;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.ai-btn:hover:not(:disabled) {
+  color: #fff;
+  background: #722ed1;
+}
+
+.ai-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .editor-container {

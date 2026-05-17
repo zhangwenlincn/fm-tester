@@ -321,6 +321,12 @@
   "script": {
     "preScript": "Pre-request Script",
     "postScript": "Post-request Script",
+    "aiOptimize": "AI Optimize",
+    "aiOptimizing": "Optimizing...",
+    "aiOptimizeSuccess": "Script optimized",
+    "aiOptimizeFailed": "Failed to optimize script",
+    "aiNoConfig": "Please configure AI settings first",
+    "aiOptimizeDesc": "Send current script to AI for optimization or generation",
     "apiRef": {
       "title": "Script API Reference",
       "preScriptSection": "Pre-request Script",
