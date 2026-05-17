@@ -27,6 +27,7 @@
     "help": "帮助",
     "about": "关于",
     "preferences": "偏好设置",
+    "aiSettings": "AI 设置",
     "scriptApiRef": "脚本 API 参考"
   },
   "tabs": {
@@ -197,6 +198,7 @@
     "aiApiKeyDesc": "您的 AI 服务 API 密钥，将安全存储在本地配置文件中",
     "aiModel": "模型",
     "aiModelDesc": "选择或输入要使用的 AI 模型名称",
+    "aiModelPlaceholder": "输入或选择模型",
     "aiFetchModels": "获取模型列表",
     "aiFetchingModels": "获取中...",
     "aiModelSelectPlaceholder": "选择模型",
@@ -247,9 +249,24 @@
     "environments": "环境",
     "workspaces": "工作区",
     "history": "历史",
+    "chat": "AI 对话",
     "features": "功能",
     "performance": "性能",
     "toolbox": "工具箱"
+  },
+  "chat": {
+    "emptyHint": "开始与 AI 对话...",
+    "sidebarHint": "AI 对话已加载，请查看右侧主区域",
+    "noWorkspaceHint": "请先选择工作区才能使用 AI 对话",
+    "sessionTitle": "聊天 - {date}",
+    "messageCount": "{count} 条消息",
+    "noSessions": "暂无聊天记录",
+    "newSession": "新建聊天",
+    "you": "你",
+    "ai": "AI",
+    "inputPlaceholder": "输入消息...",
+    "sendHint": "Ctrl + Enter 发送",
+    "error": "发送失败"
   },
   "savedResponse": {
     "originalUrl": "原始 URL:",

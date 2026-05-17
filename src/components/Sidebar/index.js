@@ -1,27 +1,34 @@
-import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 
-// 导航项配置（从 IconNav 导入）
-import { navItems } from './IconNav/index.js'
+// 导航项配置
+export const navItems = [
+  { icon: "collection", nameKey: "nav.collections", key: "collection" },
+  { icon: "environment", nameKey: "nav.environments", key: "environment" },
+  { icon: "workspace", nameKey: "nav.workspaces", key: "workspace" },
+  { icon: "history", nameKey: "nav.history", key: "history" },
+  { icon: "chat", nameKey: "nav.chat", key: "chat" },
+  { icon: "function", nameKey: "nav.features", key: "function" },
+  { icon: "performance", nameKey: "nav.performance", key: "performance" },
+  { icon: "toolbox", nameKey: "nav.toolbox", key: "toolbox" },
+]
 
 // 导出 composable 函数
 export function useSidebarSetup(props, emit) {
-  // 当前激活的导航索引
-  const activeNav = ref(0)
+  // 当前激活的导航 key
+  const activeNavKey = ref('collection')
   
-  // 子组件引用（用于调用子组件方法）
+  // 子组件引用
   const collectionPanelRef = ref(null)
   const environmentPanelRef = ref(null)
   const workspacePanelRef = ref(null)
   const historyPanelRef = ref(null)
+  const chatHistoryPanelRef = ref(null)
   
   // 处理导航切换
   const handleNavChange = (key) => {
-    const index = navItems.findIndex(item => item.key === key)
-    if (index !== -1) {
-      activeNav.value = index
-      emit('navChange', key)
-    }
+    activeNavKey.value = key
+    emit('navChange', key)
   }
   
   // 处理子组件事件转发
@@ -43,7 +50,11 @@ export function useSidebarSetup(props, emit) {
   // 处理历史选择事件
   const handleSelectHistory = (entry) => emit('selectHistory', entry)
   
-  // 加载方法（暴露给父组件）
+  // 处理聊天会话事件
+  const handleSelectChatSession = (session) => emit('selectChatSession', session)
+  const handleNewChatSession = () => emit('newChatSession')
+  
+  // 加载方法
   const loadWorkspaces = async () => {
     if (workspacePanelRef.value) {
       await workspacePanelRef.value.loadWorkspaces()
@@ -68,21 +79,27 @@ export function useSidebarSetup(props, emit) {
     }
   }
   
-  // 设置选中 API（用于标签页联动）
+  const loadChatSessions = async () => {
+    if (chatHistoryPanelRef.value) {
+      await chatHistoryPanelRef.value.loadSessions()
+    }
+  }
+  
+  // 设置选中 API
   const setSelectedApi = (apiId) => {
     if (collectionPanelRef.value) {
       collectionPanelRef.value.setSelectedApiId(apiId)
     }
   }
 
-  // 设置选中集合（用于标签页联动）
+  // 设置选中集合
   const setSelectedCollection = (collectionId) => {
     if (collectionPanelRef.value) {
       collectionPanelRef.value.setSelectedCollectionId(collectionId)
     }
   }
   
-  // 监听工作区变化，通知子组件加载数据
+  // 监听工作区变化
   watch(() => props.workspace, async (ws) => {
     if (ws) {
       await loadCollections()
@@ -96,8 +113,7 @@ export function useSidebarSetup(props, emit) {
   })
   
   // 监听导航切换，加载对应数据
-  watch(activeNav, async (index) => {
-    const key = navItems[index]?.key
+  watch(activeNavKey, async (key) => {
     if (key === 'workspace') {
       await loadWorkspaces()
     } else if (key === 'collection') {
@@ -106,21 +122,21 @@ export function useSidebarSetup(props, emit) {
       await loadEnvironments()
     } else if (key === 'history') {
       await loadHistory()
+    } else if (key === 'chat') {
+      await loadChatSessions()
     }
   })
   
   return {
-    // 状态
-    activeNav,
+    activeNavKey,
     navItems,
     
-    // 子组件引用
     collectionPanelRef,
     environmentPanelRef,
     workspacePanelRef,
     historyPanelRef,
+    chatHistoryPanelRef,
     
-    // 事件处理
     handleNavChange,
     handleSelectApi,
     handleSelectCollection,
@@ -135,12 +151,14 @@ export function useSidebarSetup(props, emit) {
     handleWorkspaceUpdated,
     handleSelectSavedResponse,
     handleSelectHistory,
+    handleSelectChatSession,
+    handleNewChatSession,
     
-    // 暴露给父组件的方法
     loadWorkspaces,
     loadCollections,
     loadEnvironments,
     loadHistory,
+    loadChatSessions,
     setSelectedApi,
     setSelectedCollection
   }

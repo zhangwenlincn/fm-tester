@@ -23,14 +23,14 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['switchWorkspace', 'switchEnvironment', 'openSettings'])
+const emit = defineEmits(['switchWorkspace', 'switchEnvironment', 'openSettings', 'openAiSettings'])
 
 // 菜单配置 - 使用 computed 以响应语言变化
 const menus = computed(() => [
   { name: t('menu.file') },
   { name: t('menu.language'), items: supportedLocales.map(l => l.name) },
   { name: t('menu.theme') },
-  { name: t('menu.settings'), items: [t('menu.preferences')] },
+  { name: t('menu.settings'), items: [t('menu.preferences'), t('menu.aiSettings')] },
   { name: t('menu.plugin') },
   { name: t('menu.help'), items: [t('menu.scriptApiRef')] },
   { name: t('menu.about') }
@@ -103,6 +103,11 @@ const handleMenuItemClick = (menuName, item) => {
   // 设置菜单 - 偏好设置
   if (menuName === t('menu.settings') && item === t('menu.preferences')) {
     emit('openSettings')
+  }
+  
+  // 设置菜单 - AI 设置
+  if (menuName === t('menu.settings') && item === t('menu.aiSettings')) {
+    emit('openAiSettings')
   }
   
   // 帮助菜单 - 脚本 API 参考

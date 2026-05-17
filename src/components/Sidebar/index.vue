@@ -1,12 +1,12 @@
 <script setup>
 import { useI18n } from 'vue-i18n'
-import { useSidebarSetup } from './index.js'
+import { useSidebarSetup, navItems } from './index.js'
 import IconNav from './IconNav/index.vue'
 import CollectionPanel from './CollectionPanel/index.vue'
 import EnvironmentPanel from './EnvironmentPanel/index.vue'
 import WorkspacePanel from './WorkspacePanel/index.vue'
 import HistoryPanel from './HistoryPanel/index.vue'
-
+import ChatHistoryPanel from './ChatHistoryPanel/index.vue'
 
 const props = defineProps({
   workspace: Object
@@ -26,18 +26,20 @@ const emit = defineEmits([
   'selectSavedResponse',
   'selectHistory',
   'selectWorkspace',
-  'workspaceUpdated'
+  'workspaceUpdated',
+  'selectChatSession',
+  'newChatSession'
 ])
 
 // 使用 composable
 const { t } = useI18n()
 const {
-  activeNav,
-  navItems,
+  activeNavKey,
   collectionPanelRef,
   environmentPanelRef,
   workspacePanelRef,
   historyPanelRef,
+  chatHistoryPanelRef,
   handleNavChange,
   handleSelectApi,
   handleSelectCollection,
@@ -46,16 +48,19 @@ const {
   handleRenameApi,
   handleSelectEnvironment,
   handleEnvironmentUpdated,
-handleSelectWorkspace,
+  handleSelectWorkspace,
   handleCreateWorkspace,
   handleWorkspaceDeleted,
   handleWorkspaceUpdated,
   handleSelectSavedResponse,
   handleSelectHistory,
+  handleSelectChatSession,
+  handleNewChatSession,
   loadWorkspaces,
   loadCollections,
   loadEnvironments,
   loadHistory,
+  loadChatSessions,
   setSelectedApi,
   setSelectedCollection
 } = useSidebarSetup(props, emit)
@@ -66,6 +71,7 @@ defineExpose({
   loadCollections,
   loadEnvironments,
   loadHistory,
+  loadChatSessions,
   setSelectedApi,
   setSelectedCollection
 })
@@ -75,7 +81,7 @@ defineExpose({
   <div class="sidebar">
     <!-- 图标导航 -->
     <IconNav 
-      :active-index="activeNav"
+      :active-key="activeNavKey"
       @nav-change="handleNavChange"
     />
     
@@ -83,7 +89,7 @@ defineExpose({
     <div class="panel-container">
       <!-- 集合面板 -->
       <CollectionPanel 
-        v-if="navItems[activeNav]?.key === 'collection'"
+        v-if="activeNavKey === 'collection'"
         ref="collectionPanelRef"
         :workspace="props.workspace"
         @select-api="handleSelectApi"
@@ -96,7 +102,7 @@ defineExpose({
       
       <!-- 环境面板 -->
       <EnvironmentPanel 
-        v-if="navItems[activeNav]?.key === 'environment'"
+        v-if="activeNavKey === 'environment'"
         ref="environmentPanelRef"
         :workspace="props.workspace"
         @select-environment="handleSelectEnvironment"
@@ -105,7 +111,7 @@ defineExpose({
       
       <!-- 工作区面板 -->
       <WorkspacePanel 
-        v-if="navItems[activeNav]?.key === 'workspace'"
+        v-if="activeNavKey === 'workspace'"
         ref="workspacePanelRef"
         :workspace="props.workspace"
         @select-workspace="handleSelectWorkspace"
@@ -116,22 +122,28 @@ defineExpose({
       
       <!-- 历史面板 -->
       <HistoryPanel 
-        v-if="navItems[activeNav]?.key === 'history'"
+        v-if="activeNavKey === 'history'"
         ref="historyPanelRef"
         :workspace="props.workspace"
         @select-history="handleSelectHistory"
       />
       
-      <!-- 其他面板（功能、性能、工具箱） -->
+      <!-- 聊天会话面板 -->
+      <ChatHistoryPanel 
+        v-if="activeNavKey === 'chat'"
+        ref="chatHistoryPanelRef"
+        :workspace="props.workspace"
+        @select-session="handleSelectChatSession"
+        @new-session="handleNewChatSession"
+      />
+      
+      <!-- 其他面板 -->
       <div 
-        v-if="navItems[activeNav]?.key !== 'collection' && 
-              navItems[activeNav]?.key !== 'workspace' && 
-              navItems[activeNav]?.key !== 'environment' &&
-              navItems[activeNav]?.key !== 'history'"
+        v-if="['function', 'performance', 'toolbox'].includes(activeNavKey)"
         class="other-panel"
       >
         <div class="panel-header">
-          <span class="panel-title">{{ t(navItems[activeNav]?.nameKey) }}</span>
+          <span class="panel-title">{{ t(navItems.find(n => n.key === activeNavKey)?.nameKey || '') }}</span>
         </div>
         <div class="empty-panel">
           {{ t('common.developing') }}

@@ -1,4 +1,5 @@
 mod ai;
+mod chat;
 mod collection;
 mod cookie;
 mod environment;
@@ -13,6 +14,7 @@ mod settings;
 mod workspace;
 
 pub use ai::*;
+pub use chat::*;
 pub use collection::*;
 pub use cookie::*;
 pub use environment::*;
@@ -92,6 +94,13 @@ pub fn run() {
             update_settings,
             // AI
             get_ai_models,
+            chat_ai,
+            // Chat History
+            save_chat_history,
+            get_chat_history,
+            clear_chat_history,
+            get_chat_sessions,
+            delete_chat_session,
 // Script
             save_script,
             get_script,

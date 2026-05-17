@@ -16,6 +16,8 @@ import HistoryDetailPanel from './components/HistoryDetailPanel/index.vue'
 import CollectionSettingsPanel from './components/CollectionSettingsPanel/index.vue'
 import WorkspaceSettingsPanel from './components/WorkspaceSettingsPanel/index.vue'
 import SettingsPanel from './components/SettingsPanel/index.vue'
+import AISettingsPanel from './components/AISettingsPanel/index.vue'
+import ChatPanel from './components/ChatPanel/index.vue'
 import Toast from './components/Toast/index.vue'
 
 // 使用 composable
@@ -104,9 +106,16 @@ const {
   onDeleteApis,
   onDeleteCollection,
   onUpdateRequestTab,
+  showChatPanel,
+  chatSessionId,
+  onSelectChatSession,
+  onNewChatSession,
   showSettingsPanel,
   openSettings,
-  closeSettings
+  closeSettings,
+  showAiSettingsPanel,
+  openAiSettings,
+  closeAiSettings
 } = useAppSetup()
 </script>
 
@@ -123,6 +132,7 @@ const {
         @switch-workspace="onSwitchWorkspace"
         @switch-environment="onSwitchEnvironment"
         @open-settings="openSettings"
+        @open-ai-settings="openAiSettings"
       />
       <TabsBar
         :tabs="displayTabs"
@@ -158,6 +168,8 @@ const {
         @select-history="onSelectHistory"
         @select-workspace="onSelectWorkspace"
         @workspace-updated="onWorkspaceUpdated"
+        @select-chat-session="onSelectChatSession"
+        @new-chat-session="onNewChatSession"
       />
       
       <!-- 中间内容区 -->
@@ -219,6 +231,14 @@ const {
         />
       </div>
       
+      <!-- Chat 面板 -->
+      <div class="content-area" v-else-if="showChatPanel">
+        <ChatPanel 
+          :workspace-path="currentWorkspace?.path || ''"
+          :session-id="chatSessionId"
+        />
+      </div>
+      
       <!-- 空状态提示 -->
       <div class="empty-content" v-else>
         <div class="empty-message">
@@ -270,6 +290,12 @@ const {
     <SettingsPanel
       :visible="showSettingsPanel"
       @close="closeSettings"
+    />
+    
+    <!-- AI 设置面板 -->
+    <AISettingsPanel
+      :visible="showAiSettingsPanel"
+      @close="closeAiSettings"
     />
 
     <!-- Toast 提示 -->

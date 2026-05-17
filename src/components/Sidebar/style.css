@@ -47,3 +47,21 @@
   padding: 16px;
   text-align: center;
 }
+
+/* Chat 提示面板 */
+.chat-hint-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.hint-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #8c8c8c;
+  font-size: 13px;
+  padding: 16px;
+  text-align: center;
+}

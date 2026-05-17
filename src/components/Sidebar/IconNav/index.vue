@@ -1,36 +1,28 @@
 <script setup>
-import { watch } from 'vue'
 import { useIconNavSetup } from './index.js'
 import Icon from '../../Icon/index.vue'
 
 const props = defineProps({
-  activeIndex: {
-    type: Number,
-    default: 0
+  activeKey: {
+    type: String,
+    default: 'collection'
   }
 })
 
 const emit = defineEmits(['navChange'])
 
-const { navItems, activeNav, selectNav, getNavName } = useIconNavSetup(props, emit)
-
-// 监听 activeIndex 变化，同步更新
-watch(() => props.activeIndex, (newIndex) => {
-  if (newIndex !== undefined && newIndex !== activeNav.value) {
-    activeNav.value = newIndex
-  }
-}, { immediate: true })
+const { navItems, selectNav, getNavName } = useIconNavSetup(props, emit)
 </script>
 
 <template>
   <div class="icon-nav">
     <div 
-      v-for="(item, index) in navItems" 
+      v-for="item in navItems" 
       :key="item.key"
       class="nav-item"
-      :class="{ active: activeNav === index }"
+      :class="{ active: props.activeKey === item.key }"
       :title="getNavName(item)"
-      @click="selectNav(index)"
+      @click="selectNav(item.key)"
     >
       <span class="nav-icon"><Icon :name="item.icon" /></span>
     </div>

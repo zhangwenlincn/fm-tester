@@ -27,6 +27,7 @@
     "help": "Help",
     "about": "About",
     "preferences": "Preferences",
+    "aiSettings": "AI Settings",
     "scriptApiRef": "Script API Reference"
   },
   "tabs": {
@@ -197,6 +198,7 @@
     "aiApiKeyDesc": "Your AI service API key, will be securely stored in local config file",
     "aiModel": "Model",
     "aiModelDesc": "Select or enter the AI model name to use",
+    "aiModelPlaceholder": "Enter or select model",
     "aiFetchModels": "Fetch Models",
     "aiFetchingModels": "Fetching...",
     "aiModelSelectPlaceholder": "Select model",
@@ -247,9 +249,24 @@
     "environments": "Environments",
     "workspaces": "Workspaces",
     "history": "History",
+    "chat": "AI Chat",
     "features": "Features",
     "performance": "Performance",
     "toolbox": "Toolbox"
+  },
+  "chat": {
+    "emptyHint": "Start chatting with AI...",
+    "sidebarHint": "AI Chat is loaded, please check the main area on the right",
+    "noWorkspaceHint": "Please select a workspace first to use AI Chat",
+    "sessionTitle": "Chat - {date}",
+    "messageCount": "{count} messages",
+    "noSessions": "No chat history",
+    "newSession": "New Chat",
+    "you": "You",
+    "ai": "AI",
+    "inputPlaceholder": "Type a message...",
+    "sendHint": "Ctrl + Enter to send",
+    "error": "Failed to send"
   },
   "savedResponse": {
     "originalUrl": "Original URL:",

@@ -1,4 +1,4 @@
-import { ref, reactive, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, watch } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { useWorkspace } from './composables/useWorkspace.js'
 import { useEnvironment } from './composables/useEnvironment.js'
@@ -97,6 +97,11 @@ export function useAppSetup() {
   // 设置 activeTab watcher
   requestModule.setupActiveTabWatcher()
 
+  // 监听导航变化，更新 Chat 面板状态
+  watch(currentNavKey, () => {
+    showChatPanel.value = currentNavKey.value === 'chat'
+  })
+
   // 生命周期钩子
   onMounted(async () => {
     document.addEventListener('contextmenu', (e) => {
@@ -126,6 +131,27 @@ export function useAppSetup() {
     if (navKey === 'environment') {
       await environment.loadEnvironments()
     }
+  }
+
+  // Chat 面板显示状态
+  const showChatPanel = ref(false)
+  
+  // Chat会话状态
+  const chatSessionId = ref(null)
+  
+  // 监听导航变化，更新 Chat 面板状态
+  const updateChatPanelState = () => {
+    showChatPanel.value = currentNavKey.value === 'chat'
+  }
+  
+  // 处理选择聊天会话
+  const handleSelectChatSession = (session) => {
+    chatSessionId.value = session.id
+  }
+  
+  // 处理新建聊天会话
+  const handleNewChatSession = () => {
+    chatSessionId.value = null
   }
 
   // 工作区切换后的额外处理
@@ -280,10 +306,19 @@ export function useAppSetup() {
     // 导航
     currentNavKey,
     onNavChange,
+    
+    // Chat
+    showChatPanel,
+    chatSessionId,
+    onSelectChatSession: handleSelectChatSession,
+    onNewChatSession: handleNewChatSession,
 
     // 设置
     showSettingsPanel: settings.showSettingsPanel,
     openSettings: settings.openSettings,
-    closeSettings: settings.closeSettings
+    closeSettings: settings.closeSettings,
+    showAiSettingsPanel: settings.showAiSettingsPanel,
+    openAiSettings: settings.openAiSettings,
+    closeAiSettings: settings.closeAiSettings
   }
 }
