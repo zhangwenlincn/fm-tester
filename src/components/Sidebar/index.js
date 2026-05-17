@@ -43,6 +43,7 @@ export function useSidebarSetup(props, emit) {
   const handleCreateWorkspace = () => emit('createWorkspace')
   const handleWorkspaceDeleted = (wsId) => emit('workspaceDeleted', wsId)
   const handleWorkspaceUpdated = (ws) => emit('workspaceUpdated', ws)
+  const handleBranchSwitched = (ws) => emit('branchSwitched', ws)
   
   // 处理已保存响应事件
   const handleSelectSavedResponse = (item) => emit('selectSavedResponse', item)
@@ -150,6 +151,7 @@ export function useSidebarSetup(props, emit) {
     handleCreateWorkspace,
     handleWorkspaceDeleted,
     handleWorkspaceUpdated,
+    handleBranchSwitched,
     handleSelectSavedResponse,
     handleSelectHistory,
     handleSelectChatSession,

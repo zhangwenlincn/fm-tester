@@ -9,6 +9,8 @@ export function useAiSettingsSetup(props, emit) {
   // AI 设置
   const aiApiEndpoint = ref('https://api.openai.com/v1')
   const aiApiKey = ref('')
+  const apiKeyPlaceholder = ref('') // placeholder 文本
+  const hasApiKey = ref(false) // 是否已配置 API Key
   const aiModel = ref('')
   const aiModels = ref([])
   const loadingModels = ref(false)
@@ -24,7 +26,17 @@ export function useAiSettingsSetup(props, emit) {
       // 加载 AI 设置
       if (settings.ai) {
         aiApiEndpoint.value = settings.ai.api_endpoint || 'https://api.openai.com/v1'
-        aiApiKey.value = settings.ai.api_key || ''
+        // encrypted_api_key: "***" 表示已配置，空字符串表示未配置
+        const encryptedKey = settings.ai.encrypted_api_key || ''
+        hasApiKey.value = encryptedKey === '***'
+        if (hasApiKey.value) {
+          // 已配置，显示 placeholder 提示
+          aiApiKey.value = ''
+          apiKeyPlaceholder.value = 'API Key 已加密保存'
+        } else {
+          aiApiKey.value = ''
+          apiKeyPlaceholder.value = '请输入 API Key'
+        }
         aiModel.value = settings.ai.model || ''
         aiTimeout.value = settings.ai.timeout || 600
         // 加载自定义请求头
@@ -46,19 +58,13 @@ export function useAiSettingsSetup(props, emit) {
     }
   }
 
-  // 获取模型列表
+  // 获取模型列表（从后端获取配置，不需要前端传递）
   const fetchModels = async () => {
-    if (!aiApiEndpoint.value || !aiApiKey.value) {
-      return
-    }
-    
     closeModelDropdown()
     
     try {
       loadingModels.value = true
       const models = await invoke('get_ai_models', {
-        apiEndpoint: aiApiEndpoint.value,
-        apiKey: aiApiKey.value,
         customHeaders: getEnabledHeaders()
       })
       aiModels.value = models || []
@@ -125,10 +131,17 @@ export function useAiSettingsSetup(props, emit) {
   const saveSettings = async () => {
     try {
       loading.value = true
+      
+      // API Key 保存逻辑：
+      // - 用户输入了新值 → 传新值让后端加密保存
+      // - 用户没输入且之前已配置 → 不传参数（后端保持原值）
+      // - 用户没输入且之前未配置 → 不传参数
+      const newApiKey = aiApiKey.value.trim()
+      
       await invoke('update_settings', { 
         timeout: 60, // 保持默认值
         aiApiEndpoint: aiApiEndpoint.value,
-        aiApiKey: aiApiKey.value,
+        aiApiKey: newApiKey || null, // 只有输入了才传，否则 null 表示保持原值
         aiModel: aiModel.value,
         aiTimeout: parseInt(aiTimeout.value) || 600,
         aiCustomHeaders: customHeaders.value.filter(h => h.key.trim()).map(h => ({
@@ -166,6 +179,8 @@ export function useAiSettingsSetup(props, emit) {
     t,
     aiApiEndpoint,
     aiApiKey,
+    apiKeyPlaceholder,
+    hasApiKey,
     aiModel,
     aiModels,
     loadingModels,

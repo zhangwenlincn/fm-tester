@@ -27,6 +27,7 @@ const emit = defineEmits([
   'selectHistory',
   'selectWorkspace',
   'workspaceUpdated',
+  'branchSwitched',
   'selectChatSession',
   'newChatSession',
   'sessionCreated'
@@ -53,6 +54,7 @@ const {
   handleCreateWorkspace,
   handleWorkspaceDeleted,
   handleWorkspaceUpdated,
+  handleBranchSwitched,
   handleSelectSavedResponse,
   handleSelectHistory,
   handleSelectChatSession,
@@ -120,6 +122,7 @@ defineExpose({
         @create-workspace="handleCreateWorkspace"
         @workspace-deleted="handleWorkspaceDeleted"
         @workspace-updated="handleWorkspaceUpdated"
+        @branch-switched="handleBranchSwitched"
       />
       
       <!-- 历史面板 -->

@@ -3,9 +3,20 @@ use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter};
 use crate::models::Header;
 use crate::settings::read_settings;
+use crate::git::decrypt_string;
 use std::sync::{Arc, Mutex};
 use std::collections::HashMap;
 use std::time::Instant;
+
+/// 从设置中获取解密后的 API key
+fn get_decrypted_api_key() -> Result<String, String> {
+    let settings = read_settings();
+    if settings.ai.encrypted_api_key.is_empty() {
+        return Err("请先配置 AI API Key".to_string());
+    }
+    decrypt_string(&settings.ai.encrypted_api_key)
+        .map_err(|e| format!("解密 API Key 失败: {}", e))
+}
 
 /// 生成任务状态（用于取消检查）
 #[derive(Debug, Clone)]
@@ -88,17 +99,18 @@ pub struct ModelsResponse {
 /// 获取 AI 模型列表
 #[tauri::command]
 pub async fn get_ai_models(
-    api_endpoint: String,
-    api_key: String,
     custom_headers: Option<Vec<Header>>,
 ) -> Result<Vec<String>, String> {
+    let settings = read_settings();
+    let api_endpoint = settings.ai.api_endpoint;
+    
     if api_endpoint.is_empty() {
-        return Err("API endpoint is empty".to_string());
+        return Err("请先配置 AI API Endpoint".to_string());
     }
-    if api_key.is_empty() {
-        return Err("API key is empty".to_string());
-    }
-
+    
+    // 从设置中解密获取 API key
+    let api_key = get_decrypted_api_key()?;
+    
     let url = format!("{}/models", api_endpoint.trim_end_matches('/'));
     
     let client = reqwest::Client::new();
@@ -107,8 +119,16 @@ pub async fn get_ai_models(
         .header("Authorization", format!("Bearer {}", api_key))
         .timeout(std::time::Duration::from_secs(30));
     
-    // 添加自定义请求头
-    if let Some(headers) = custom_headers {
+    // 添加自定义请求头（使用传入的或设置中的）
+    let headers = custom_headers.or_else(|| {
+        if settings.ai.custom_headers.is_empty() {
+            None
+        } else {
+            Some(settings.ai.custom_headers)
+        }
+    });
+    
+    if let Some(headers) = headers {
         for header in headers {
             if header.enabled {
                 request = request.header(&header.key, &header.value);
@@ -181,15 +201,28 @@ pub struct ChatDelta {
 #[tauri::command]
 pub async fn chat_ai(
     app: AppHandle,
-    api_endpoint: String,
-    api_key: String,
-    model: String,
     messages: Vec<ChatMessage>,
-    custom_headers: Option<Vec<Header>>,
 ) -> Result<String, String> {
-    // 从设置中读取超时配置
+    // 从设置中读取配置
     let settings = read_settings();
+    let api_endpoint = settings.ai.api_endpoint;
+    let model = settings.ai.model;
     let timeout = settings.ai.timeout;
+    let custom_headers = if settings.ai.custom_headers.is_empty() {
+        None
+    } else {
+        Some(settings.ai.custom_headers)
+    };
+    
+    if api_endpoint.is_empty() {
+        return Err("请先配置 AI API Endpoint".to_string());
+    }
+    if model.is_empty() {
+        return Err("请先配置 AI Model".to_string());
+    }
+    
+    // 从设置中解密获取 API key
+    let api_key = get_decrypted_api_key()?;
     
     // 内部调用，无取消检查
     chat_ai_internal(app, api_endpoint, api_key, model, messages, custom_headers, None, timeout).await
@@ -309,22 +342,29 @@ pub async fn chat_ai_internal(
 #[tauri::command]
 pub async fn optimize_script_ai(
     app: AppHandle,
-    api_endpoint: String,
-    api_key: String,
-    model: String,
     script_content: String,
     script_type: String,
-    custom_headers: Option<Vec<Header>>,
 ) -> Result<String, String> {
+    // 从设置中读取配置
+    let settings = read_settings();
+    let api_endpoint = settings.ai.api_endpoint;
+    let model = settings.ai.model;
+    let timeout = settings.ai.timeout;
+    let custom_headers = if settings.ai.custom_headers.is_empty() {
+        None
+    } else {
+        Some(settings.ai.custom_headers)
+    };
+    
     if api_endpoint.is_empty() {
-        return Err("API endpoint is empty".to_string());
-    }
-    if api_key.is_empty() {
-        return Err("API key is empty".to_string());
+        return Err("请先配置 AI API Endpoint".to_string());
     }
     if model.is_empty() {
-        return Err("Model is empty".to_string());
+        return Err("请先配置 AI Model".to_string());
     }
+    
+    // 从设置中解密获取 API key
+    let api_key = get_decrypted_api_key()?;
 
     // 构建系统提示
     let system_prompt = if script_type == "pre" {
@@ -381,10 +421,6 @@ pub async fn optimize_script_ai(
             },
         },
     ];
-
-    // 从设置中读取超时配置
-    let settings = read_settings();
-    let timeout = settings.ai.timeout;
 
     // 调用内部聊天函数
     chat_ai_internal(app, api_endpoint, api_key, model, messages, custom_headers, None, timeout).await

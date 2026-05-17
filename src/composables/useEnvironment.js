@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 
 /**
@@ -14,7 +14,7 @@ export function useEnvironment(currentWorkspace, currentNavKey) {
   const selectedEnvVariables = ref([])
   const activeVariables = ref([])
 
-  const loadEnvironments = async () => {
+const loadEnvironments = async () => {
     if (!currentWorkspace.value?.path) {
       environments.value = []
       activeEnvironmentId.value = null
@@ -40,6 +40,13 @@ export function useEnvironment(currentWorkspace, currentNavKey) {
       console.error('加载环境失败:', e)
     }
   }
+
+  // 监听 currentWorkspace 变化，自动刷新环境
+  watch(currentWorkspace, async (ws) => {
+    if (ws?.path) {
+      await loadEnvironments()
+    }
+  })
 
   const loadActiveVariables = async () => {
     if (!currentWorkspace.value?.path) {

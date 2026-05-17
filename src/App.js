@@ -218,6 +218,15 @@ export function useAppSetup() {
     }
   }
 
+  // 分支切换后刷新环境（仅当前工作区）
+  const handleBranchSwitched = async (ws) => {
+    // 更新当前工作区的分支信息
+    workspace.currentWorkspace.value = ws
+    // 刷新环境变量
+    await environment.loadEnvironments()
+    await sidebarRef.value?.loadEnvironments()
+  }
+
   // 返回所有需要的状态和方法
   return {
     // 工作区
@@ -236,6 +245,7 @@ export function useAppSetup() {
     selectedWorkspace: responseModule.selectedWorkspace,
     onSelectWorkspace: responseModule.onSelectWorkspace,
     onWorkspaceUpdated: handleWorkspaceUpdated,
+    onBranchSwitched: handleBranchSwitched,
 
     // 标签页
     tabs,

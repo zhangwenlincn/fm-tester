@@ -91,6 +91,7 @@ const {
   onWorkspaceCreated,
   onWorkspaceDeleted,
   onWorkspaceUpdated,
+  onBranchSwitched,
   onSwitchWorkspace,
   loadWorkspaces,
   onNavChange,
@@ -169,6 +170,7 @@ const {
         @select-history="onSelectHistory"
         @select-workspace="onSelectWorkspace"
         @workspace-updated="onWorkspaceUpdated"
+        @branch-switched="onBranchSwitched"
         @select-chat-session="onSelectChatSession"
         @new-chat-session="onNewChatSession"
         @session-created="onSessionCreated"

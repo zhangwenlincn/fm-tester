@@ -21,12 +21,6 @@ let completionProvider = null
 
 // AI 优化相关状态
 const aiOptimizing = ref(false)
-const aiConfig = ref({
-  endpoint: '',
-  key: '',
-  model: '',
-  customHeaders: []
-})
 let streamUnlisten = null
 
 // fm API 自动补全定义
@@ -351,32 +345,9 @@ const saveScript = () => {
   emit('save')
 }
 
-// 加载 AI 配置
-const loadAiConfig = async () => {
-  try {
-    const settings = await invoke('get_settings')
-    if (settings.ai) {
-      aiConfig.value = {
-        endpoint: settings.ai.api_endpoint || '',
-        key: settings.ai.api_key || '',
-        model: settings.ai.model || '',
-        customHeaders: settings.ai.custom_headers || []
-      }
-    }
-  } catch (e) {
-    console.error('Failed to load AI config:', e)
-  }
-}
-
 // AI 优化脚本
 const optimizeWithAi = async () => {
   if (!editor) return
-  
-  // 检查 AI 配置
-  if (!aiConfig.value.endpoint || !aiConfig.value.key || !aiConfig.value.model) {
-    showToast(t('script.aiNoConfig'), 'warning')
-    return
-  }
   
   aiOptimizing.value = true
   const currentContent = editor.getValue()
@@ -394,19 +365,10 @@ const optimizeWithAi = async () => {
     // 清空编辑器准备接收新内容
     editor.setValue('')
     
-    // 调用后端 AI 优化
+    // 调用后端 AI 优化（不传 api key，后端自动从 settings 解密）
     const result = await invoke('optimize_script_ai', {
-      apiEndpoint: aiConfig.value.endpoint,
-      apiKey: aiConfig.value.key,
-      model: aiConfig.value.model,
       scriptContent: currentContent,
-      scriptType: scriptType.value,
-      customHeaders: aiConfig.value.customHeaders.filter(h => h.enabled && h.key.trim()).map(h => ({
-        key: h.key,
-        value: h.value,
-        enabled: h.enabled,
-        description: h.description?.trim() || null
-      }))
+      scriptType: scriptType.value
     })
     
     // 设置最终结果（防止流式更新遗漏）
@@ -429,7 +391,6 @@ const optimizeWithAi = async () => {
 }
 
 onMounted(() => {
-  loadAiConfig()
   nextTick(() => {
     setTimeout(() => {
       // 确保容器有尺寸

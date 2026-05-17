@@ -6,9 +6,9 @@ pub struct AiSettings {
     /// API 端点地址（OpenAI 协议）
     #[serde(default = "default_ai_endpoint")]
     pub api_endpoint: String,
-    /// API Key
+    /// 加密后的 API Key（Base64 编码）
     #[serde(default)]
-    pub api_key: String,
+    pub encrypted_api_key: String,
     /// 选中的模型
     #[serde(default)]
     pub model: String,
@@ -32,7 +32,7 @@ impl Default for AiSettings {
     fn default() -> Self {
         Self {
             api_endpoint: "https://api.openai.com/v1".to_string(),
-            api_key: "".to_string(),
+            encrypted_api_key: "".to_string(),
             model: "".to_string(),
             custom_headers: Vec::new(),
             timeout: 600,

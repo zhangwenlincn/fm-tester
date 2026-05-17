@@ -5,6 +5,7 @@ use crate::history::history_config::{list_history_dates, load_history_by_date};
 use crate::saved_response::saved_response_config::{get_api_saved_responses_index, read_saved_response_file};
 use crate::ai::{ChatMessage, chat_ai_internal, init_generation_task, is_generation_running, cancel_generation_task, cleanup_generation_task, get_generation_elapsed_seconds};
 use crate::models::{Collection, Header, HistoryEntry, SavedResponse};
+use crate::git::decrypt_string;
 use tauri::{AppHandle, Emitter, command};
 
 /// 文档生成状态
@@ -113,9 +114,13 @@ async fn do_generate_api_doc_async(
     let settings = read_settings();
     let ai_config = settings.ai;
     
-    if ai_config.api_key.is_empty() || ai_config.api_endpoint.is_empty() {
+    if ai_config.encrypted_api_key.is_empty() || ai_config.api_endpoint.is_empty() {
         return Err("请先配置 AI 设置".to_string());
     }
+    
+    // 解密 API key
+    let decrypted_api_key = decrypt_string(&ai_config.encrypted_api_key)
+        .map_err(|e| format!("解密 API key 失败: {}", e))?;
     
     // 2. 获取接口定义
     let collections_config = read_collections(workspace_path);
@@ -176,7 +181,7 @@ async fn do_generate_api_doc_async(
     let content = chat_ai_internal(
         app.clone(),
         ai_config.api_endpoint.clone(),
-        ai_config.api_key.clone(),
+        decrypted_api_key,
         ai_config.model.clone(),
         messages,
         custom_headers,

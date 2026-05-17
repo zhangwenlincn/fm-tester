@@ -242,17 +242,18 @@ export function useRequest(currentWorkspace, tabs, activeTab, sidebarRef, reques
         })
         
         if (!preScriptResult.success) {
-          // 前置脚本失败，中断请求
-          scriptLogger('error', `前置脚本执行失败，请求中断`, preScriptResult.source)
-          loading.value = false
-          sendingTabId.value = null
-          return
+          // 前置脚本失败，记录错误日志，但不中断请求
+          scriptLogger('error', `前置脚本执行失败: ${preScriptResult.errors?.map(e => e.error).join(', ')}`, '')
+          // 使用原始请求参数继续发送
+          modifiedRequest = request
+          modifiedEnvVars = activeEnvVars || {}
+          modifiedCollVars = collVarsObj
+        } else {
+          // 使用脚本修改后的请求参数
+          modifiedRequest = preScriptResult.data.request
+          modifiedEnvVars = preScriptResult.data.environmentVariables
+          modifiedCollVars = preScriptResult.data.collectionVariables
         }
-        
-        // 使用脚本修改后的请求参数
-        modifiedRequest = preScriptResult.data.request
-        modifiedEnvVars = preScriptResult.data.environmentVariables
-        modifiedCollVars = preScriptResult.data.collectionVariables
       }
 
       // ========== HTTP 请求发送 ==========

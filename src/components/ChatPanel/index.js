@@ -35,37 +35,9 @@ export function useChatSetup(props) {
   // 当前会话ID
   const sessionId = ref(null)
   
-  // AI 配置
-  const aiConfig = ref({
-    endpoint: '',
-    key: '',
-    model: '',
-    customHeaders: []
-  })
-  
   // 检查工作区状态
   const checkWorkspace = () => {
     hasWorkspace.value = props.workspacePath && props.workspacePath.trim() !== ''
-  }
-  
-  // 加载 AI 配置
-  const loadAiConfig = async () => {
-    try {
-      loading.value = true
-      const settings = await invoke('get_settings')
-      if (settings.ai) {
-        aiConfig.value = {
-          endpoint: settings.ai.api_endpoint || '',
-          key: settings.ai.api_key || '',
-          model: settings.ai.model || '',
-          customHeaders: settings.ai.custom_headers || []
-        }
-      }
-    } catch (e) {
-      console.error('Failed to load AI config:', e)
-    } finally {
-      loading.value = false
-    }
   }
   
   // 加载聊天记录
@@ -177,18 +149,9 @@ export function useChatSetup(props) {
         content: m.content
       }))
       
-      // 调用后端
+      // 调用后端（不传递 api key，后端自动从 settings 解密）
       const result = await invoke('chat_ai', {
-        apiEndpoint: aiConfig.value.endpoint,
-        apiKey: aiConfig.value.key,
-        model: aiConfig.value.model,
-        messages: chatMessages,
-        customHeaders: aiConfig.value.customHeaders.filter(h => h.enabled && h.key.trim()).map(h => ({
-          key: h.key,
-          value: h.value,
-          enabled: h.enabled,
-          description: h.description?.trim() || null
-        }))
+        messages: chatMessages
       })
       
       // 如果被中断，不更新内容
@@ -294,7 +257,6 @@ export function useChatSetup(props) {
   onMounted(async () => {
     checkWorkspace()
     sessionId.value = props.sessionId
-    await loadAiConfig()
     
     if (hasWorkspace.value) {
       await loadChatHistory()

@@ -1,4 +1,4 @@
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, watch, onMounted, onUnmounted } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
 import { showToast } from '../../../composables/useToast'
@@ -11,6 +11,11 @@ export function useWorkspacePanelSetup(props, emit) {
   // 工作区列表
   const workspaces = ref([])
   const currentWorkspace = ref(null)
+  
+  // 监听 props.workspace，同步到本地 currentWorkspace
+  watch(() => props.workspace, (ws) => {
+    currentWorkspace.value = ws
+  }, { immediate: true })
   
   // 工作区右键菜单状态
   const wsContextMenu = ref({
@@ -67,6 +72,14 @@ export function useWorkspacePanelSetup(props, emit) {
       showToast(t('toast.branchSwitchSuccess'), 'success')
       closeBranchDialog()
       await loadWorkspaces()
+      
+      // 如果切换的是当前工作区，通知父组件刷新环境
+      if (currentWorkspace.value?.id === branchDialog.value.ws.id) {
+        const updatedWs = workspaces.value.find(w => w.id === branchDialog.value.ws.id)
+        if (updatedWs) {
+          emit('branchSwitched', updatedWs)
+        }
+      }
     } catch (e) {
       console.error('切换分支失败:', e)
       showToast(`${t('toast.branchSwitchFailed')}: ${e}`, 'error')

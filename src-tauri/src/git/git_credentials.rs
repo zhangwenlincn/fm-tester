@@ -14,7 +14,7 @@ use crate::models::GitCredentials;
 use super::git_config::{read_git_credentials_config, write_git_credentials_config};
 
 /// 生成加密密钥（基于机器名+用户名的 hash）
-fn generate_encryption_key() -> Result<[u8; 32], String> {
+pub fn generate_encryption_key() -> Result<[u8; 32], String> {
     let machine_name = hostname::get()
         .map(|h| h.to_string_lossy().to_string())
         .unwrap_or_else(|_| "unknown-machine".to_string());
@@ -35,25 +35,25 @@ fn generate_encryption_key() -> Result<[u8; 32], String> {
     Ok(key)
 }
 
-/// 加密密码
-fn encrypt_password(password: &str) -> Result<String, String> {
+/// 加密字符串（返回 Base64 编码的密文）
+pub fn encrypt_string(plain_text: &str) -> Result<String, String> {
     let key = generate_encryption_key()?;
     let cipher = Aes256Gcm::new_from_slice(&key)
         .map_err(|e| format!("创建加密器失败: {}", e))?;
     
-    // 使用固定的 12 字节 nonce（对于凭据存储场景足够安全）
+    // 使用固定的 12 字节 nonce（对于本地凭据存储场景足够安全）
     let nonce_bytes = b"fm-git-creds"; // 12 bytes
     let nonce = Nonce::from_slice(nonce_bytes);
     
     let ciphertext = cipher
-        .encrypt(nonce, password.as_bytes())
+        .encrypt(nonce, plain_text.as_bytes())
         .map_err(|e| format!("加密失败: {}", e))?;
     
     Ok(BASE64.encode(&ciphertext))
 }
 
-/// 解密密码
-fn decrypt_password(encrypted: &str) -> Result<String, String> {
+/// 解密字符串（输入 Base64 编码的密文）
+pub fn decrypt_string(encrypted: &str) -> Result<String, String> {
     let key = generate_encryption_key()?;
     let cipher = Aes256Gcm::new_from_slice(&key)
         .map_err(|e| format!("创建解密器失败: {}", e))?;
@@ -81,7 +81,7 @@ pub fn save_git_credentials(
 ) -> Result<GitCredentials, String> {
     let mut config = read_git_credentials_config()?;
     
-    let encrypted_password = encrypt_password(&password)?;
+    let encrypted_password = encrypt_string(&password)?;
     let now = Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
     
     let credentials = if let Some(existing_id) = id {
@@ -143,7 +143,7 @@ pub fn get_credential_by_id_internal(id: String) -> Result<GitCredentials, Strin
         .ok_or_else(|| format!("未找到 ID 为 {} 的凭据", id))?;
     
     // 解密密码
-    let decrypted_password = decrypt_password(&credential.encrypted_password)?;
+    let decrypted_password = decrypt_string(&credential.encrypted_password)?;
     
     Ok(GitCredentials {
         id: credential.id,

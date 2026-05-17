@@ -15,6 +15,8 @@ const {
   t, 
   aiApiEndpoint, 
   aiApiKey, 
+  apiKeyPlaceholder,
+  hasApiKey,
   aiModel, 
   aiModels, 
   loadingModels, 
@@ -65,7 +67,7 @@ const {
             class="setting-input full-width"
             v-model="aiApiKey"
             :disabled="loading"
-            placeholder="sk-..."
+            :placeholder="apiKeyPlaceholder"
           />
         </div>
         
@@ -105,7 +107,7 @@ const {
             </div>
             <button 
               class="fetch-models-btn"
-              :disabled="loading || loadingModels || !aiApiEndpoint || !aiApiKey"
+              :disabled="loading || loadingModels || !aiApiEndpoint || (!aiApiKey && !hasApiKey)"
               @click="fetchModels"
             >
               {{ loadingModels ? t('settings.aiFetchingModels') : t('settings.aiFetchModels') }}

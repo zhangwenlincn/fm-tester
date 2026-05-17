@@ -9,7 +9,7 @@ const props = defineProps({
   workspace: Object  // 当前选中的工作区，用于显示选中状态
 })
 
-const emit = defineEmits(['selectWorkspace', 'createWorkspace', 'workspaceDeleted', 'workspaceUpdated'])
+const emit = defineEmits(['selectWorkspace', 'createWorkspace', 'workspaceDeleted', 'workspaceUpdated', 'branchSwitched'])
 
 // 使用 composable
 const {
