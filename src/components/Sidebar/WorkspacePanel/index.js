@@ -12,13 +12,66 @@ export function useWorkspacePanelSetup(props, emit) {
   const workspaces = ref([])
   const currentWorkspace = ref(null)
   
-  // 工作区右键菜单
+  // 工作区右键菜单状态
   const wsContextMenu = ref({
     visible: false,
     x: 0,
     y: 0,
     ws: null
   })
+  
+  // 分支选择弹窗状态
+  const branchDialog = ref({
+    visible: false,
+    branches: [],
+    currentBranch: '',
+    selectedBranch: '',
+    ws: null
+  })
+  
+  // 打开分支选择弹窗
+  const openBranchDialog = async (ws) => {
+    try {
+      const branches = await invoke('get_git_branches', { workspaceId: ws.id })
+      const currentBranch = await invoke('get_current_branch', { workspaceId: ws.id })
+      branchDialog.value = {
+        visible: true,
+        branches: branches || [],
+        currentBranch: currentBranch || '',
+        selectedBranch: currentBranch || '',
+        ws: ws
+      }
+    } catch (e) {
+      console.error('获取分支列表失败:', e)
+      showToast(`${t('toast.branchListFailed')}: ${e}`, 'error')
+    }
+  }
+  
+  // 关闭分支弹窗
+  const closeBranchDialog = () => {
+    branchDialog.value.visible = false
+  }
+  
+  // 确认切换分支
+  const confirmSwitchBranch = async () => {
+    if (!branchDialog.value.ws || !branchDialog.value.selectedBranch) return
+    if (branchDialog.value.selectedBranch === branchDialog.value.currentBranch) {
+      closeBranchDialog()
+      return
+    }
+    try {
+      await invoke('switch_git_branch', {
+        workspaceId: branchDialog.value.ws.id,
+        branch: branchDialog.value.selectedBranch
+      })
+      showToast(t('toast.branchSwitchSuccess'), 'success')
+      closeBranchDialog()
+      await loadWorkspaces()
+    } catch (e) {
+      console.error('切换分支失败:', e)
+      showToast(`${t('toast.branchSwitchFailed')}: ${e}`, 'error')
+    }
+  }
   
   // 拖拽排序状态
   const dragState = ref({
@@ -129,6 +182,12 @@ export function useWorkspacePanelSetup(props, emit) {
     } else if (action === 'sync-ws') {
       if (ws && ws.workspace_type === 'git') {
         await syncWorkspace(ws)
+      }
+    } else if (action === 'switch-branch') {
+      if (ws && ws.workspace_type === 'git') {
+        closeWsContextMenu()
+        await openBranchDialog(ws)
+        return
       }
     }
     
@@ -262,12 +321,16 @@ export function useWorkspacePanelSetup(props, emit) {
     workspaces,
     currentWorkspace,
     wsContextMenu,
+    branchDialog,
     dragState,
     loadWorkspaces,
     selectWorkspace,
     createWorkspace,
     deleteWorkspace,
     syncWorkspace,
+    openBranchDialog,
+    confirmSwitchBranch,
+    closeBranchDialog,
     openWsContextMenu,
     closeWsContextMenu,
     handleWsContextAction,

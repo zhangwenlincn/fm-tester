@@ -954,3 +954,199 @@ pub async fn sync_git_workspace_full(
     
     Ok(())
 }
+
+/// 检查 Git 工作区是否有远程更新
+#[tauri::command]
+pub async fn check_git_updates(workspace_id: String) -> Result<bool, String> {
+    let config = read_config();
+    let workspace = config
+        .workspaces
+        .iter()
+        .find(|w| w.id == workspace_id)
+        .cloned()
+        .ok_or_else(|| "工作区不存在".to_string())?;
+    
+    if workspace.workspace_type != "git" {
+        return Ok(false);
+    }
+    
+    let workspace_path = workspace.path.clone();
+    
+    // 检查是否是 git 仓库
+    if !is_git_repo(&workspace_path) {
+        return Ok(false);
+    }
+    
+    // 获取凭据
+    let (username, password) = if let Some(cred_id) = &workspace.git_credentials_id {
+        let cred = get_credential_by_id_internal(cred_id.clone())?;
+        (Some(cred.username), Some(cred.encrypted_password))
+    } else {
+        (None, None)
+    };
+    
+    // 设置远程 URL（如果有凭据）
+    if let (Some(user), Some(pass)) = (username, password) {
+        let remote_url_result = run_git_command(vec!["remote", "get-url", "origin"], Some(&workspace_path));
+        if let Ok(current_url) = remote_url_result {
+            let encoded_user = user.replace('@', "%40").replace(':', "%3A");
+            let encoded_pass = pass.replace('@', "%40").replace(':', "%3A");
+            
+            let clean_url = if current_url.starts_with("https://") {
+                let after = &current_url[8..];
+                if let Some(at_pos) = after.find('@') { after[at_pos + 1..].to_string() } else { after.to_string() }
+            } else if current_url.starts_with("http://") {
+                let after = &current_url[7..];
+                if let Some(at_pos) = after.find('@') { after[at_pos + 1..].to_string() } else { after.to_string() }
+            } else { current_url.clone() };
+            
+            let auth_url = if current_url.starts_with("https://") {
+                format!("https://{}:{}@{}", encoded_user, encoded_pass, clean_url)
+            } else if current_url.starts_with("http://") {
+                format!("http://{}:{}@{}", encoded_user, encoded_pass, clean_url)
+            } else { clean_url };
+            
+            let _ = run_git_command(vec!["remote", "set-url", "origin", &auth_url], Some(&workspace_path));
+        }
+    }
+    
+    // Git fetch（只获取信息，不合并）
+    let fetch_result = run_git_command(vec!["fetch", "origin"], Some(&workspace_path));
+    if let Err(e) = fetch_result {
+        return Err(format!("获取远程信息失败: {}", e));
+    }
+    
+    // 检查本地和远程的差异
+    // git rev-parse HEAD 获取本地 HEAD
+    let local_head = run_git_command(vec!["rev-parse", "HEAD"], Some(&workspace_path)).unwrap_or_default();
+    
+    // git rev-parse @{u} 获取远程跟踪分支
+    let remote_head = run_git_command(vec!["rev-parse", "@{u}"], Some(&workspace_path)).unwrap_or_default();
+    
+    // 比较是否有差异
+    Ok(local_head != remote_head && !remote_head.is_empty())
+}
+
+/// 获取 Git 工作区的所有分支列表
+#[tauri::command]
+pub async fn get_git_branches(workspace_id: String) -> Result<Vec<String>, String> {
+    let config = read_config();
+    let workspace = config
+        .workspaces
+        .iter()
+        .find(|w| w.id == workspace_id)
+        .cloned()
+        .ok_or_else(|| "工作区不存在".to_string())?;
+    
+    if workspace.workspace_type != "git" {
+        return Err("此工作区不是 Git 类型".to_string());
+    }
+    
+    let workspace_path = workspace.path.clone();
+    
+    if !is_git_repo(&workspace_path) {
+        return Err("工作区路径不是 Git 仓库".to_string());
+    }
+    
+    // 获取所有分支（只获取本地分支，避免重复）
+    let branch_output = run_git_command(vec!["branch"], Some(&workspace_path))
+        .map_err(|e| format!("获取分支列表失败: {}", e))?;
+    
+    // 解析分支列表
+    let branches: Vec<String> = branch_output
+        .lines()
+        .filter_map(|line| {
+            let trimmed = line.trim();
+            // 去掉当前分支的 * 标记
+            if trimmed.starts_with('*') {
+                Some(trimmed[1..].trim().to_string())
+            } else if !trimmed.is_empty() && !trimmed.contains("HEAD ->") {
+                Some(trimmed.to_string())
+            } else {
+                None
+            }
+        })
+        .filter(|b| !b.is_empty())
+        .collect();
+    
+    Ok(branches)
+}
+
+/// 获取当前分支
+#[tauri::command]
+pub async fn get_current_branch(workspace_id: String) -> Result<String, String> {
+    let config = read_config();
+    let workspace = config
+        .workspaces
+        .iter()
+        .find(|w| w.id == workspace_id)
+        .cloned()
+        .ok_or_else(|| "工作区不存在".to_string())?;
+    
+    if workspace.workspace_type != "git" {
+        return Err("此工作区不是 Git 类型".to_string());
+    }
+    
+    let workspace_path = workspace.path.clone();
+    
+    if !is_git_repo(&workspace_path) {
+        return Err("工作区路径不是 Git 仓库".to_string());
+    }
+    
+    run_git_command(vec!["branch", "--show-current"], Some(&workspace_path))
+}
+
+/// 切换 Git 工作区的分支
+#[tauri::command]
+pub async fn switch_git_branch(workspace_id: String, branch: String) -> Result<(), String> {
+    let config = read_config();
+    let workspace = config
+        .workspaces
+        .iter()
+        .find(|w| w.id == workspace_id)
+        .cloned()
+        .ok_or_else(|| "工作区不存在".to_string())?;
+    
+    if workspace.workspace_type != "git" {
+        return Err("此工作区不是 Git 类型".to_string());
+    }
+    
+    let workspace_path = workspace.path.clone();
+    
+    if !is_git_repo(&workspace_path) {
+        return Err("工作区路径不是 Git 仓库".to_string());
+    }
+    
+    // 先检查是否有本地未提交的更改
+    let status = run_git_command(vec!["status", "--porcelain"], Some(&workspace_path))
+        .unwrap_or_default();
+    
+    if !status.is_empty() {
+        return Err("有未提交的更改，请先同步后再切换分支".to_string());
+    }
+    
+    // 切换分支
+    let switch_result = run_git_command(vec!["checkout", &branch], Some(&workspace_path));
+    if let Err(_e) = switch_result {
+        // 如果本地没有这个分支，尝试从远程创建
+        let track_result = run_git_command(
+            vec!["checkout", "-b", &branch, "--track", &format!("origin/{}", branch)],
+            Some(&workspace_path)
+        );
+        if let Err(e2) = track_result {
+            return Err(format!("切换分支失败: {}", e2));
+        }
+    }
+    
+    // 更新工作区配置中的分支信息
+    let mut config = read_config();
+    for w in &mut config.workspaces {
+        if w.id == workspace_id {
+            w.git_branch = Some(branch.clone());
+            break;
+        }
+    }
+    write_config(&config)?;
+    
+    Ok(())
+}

@@ -163,7 +163,10 @@
     "selectFileFailed": "选择文件失败",
     "syncing": "正在同步接口...",
     "syncSuccess": "同步成功",
-    "syncFailed": "同步失败"
+    "syncFailed": "同步失败",
+    "branchListFailed": "获取分支列表失败",
+    "branchSwitchSuccess": "切换分支成功",
+    "branchSwitchFailed": "切换分支失败"
   },
   "response": {
     "status": "状态",
@@ -239,7 +242,8 @@
     "deleteWorkspace": "删除工作区",
     "deleteEnvironment": "删除环境",
     "deleteCollection": "删除集合",
-    "syncWorkspace": "同步接口"
+    "syncWorkspace": "同步接口",
+    "switchBranch": "切换分支"
   },
   "workspaceType": {
     "local": "本地工作区",
@@ -249,7 +253,8 @@
     "url": "Git 地址",
     "branch": "分支",
     "username": "用户名",
-    "password": "密码"
+    "password": "密码",
+    "current": "当前"
   },
   "gitTimes": {
     "sync": "同步",

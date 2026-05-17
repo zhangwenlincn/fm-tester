@@ -42,6 +42,11 @@
   color: #595959;
 }
 
+.update-indicator {
+  margin-left: 4px;
+  color: #1890ff;
+}
+
 .scripts-panel {
   flex: 1;
   overflow: hidden;

@@ -16,6 +16,7 @@ const {
   workspaces,
   currentWorkspace,
   wsContextMenu,
+  branchDialog,
   dragState,
   loadWorkspaces,
   selectWorkspace,
@@ -23,6 +24,9 @@ const {
   openWsContextMenu,
   closeWsContextMenu,
   handleWsContextAction,
+  openBranchDialog,
+  confirmSwitchBranch,
+  closeBranchDialog,
   onMouseDown
 } = useWorkspacePanelSetup(props, emit)
 
@@ -64,7 +68,7 @@ defineExpose({
             <Icon :name="ws.workspace_type === 'git' ? 'git' : 'folder'" />
           </span>
           <span class="env-name">{{ ws.name }}</span>
-          <span v-if="ws.workspace_type === 'git'" class="ws-type-badge">Git</span>
+          <span v-if="ws.workspace_type === 'git' && ws.git_branch" class="ws-type-badge">{{ ws.git_branch }}</span>
         </div>
       </div>
       
@@ -85,12 +89,35 @@ defineExpose({
           <span class="menu-icon"><Icon name="sync" :size="14" /></span>
           {{ t('contextMenu.syncWorkspace') }}
         </div>
+        <div class="menu-item" @click="handleWsContextAction('switch-branch')">
+          <span class="menu-icon"><Icon name="git" :size="14" /></span>
+          {{ t('contextMenu.switchBranch') }}
+        </div>
         <div class="menu-divider"></div>
       </template>
       <!-- 删除工作区（所有类型都有） -->
       <div class="menu-item delete" @click="handleWsContextAction('delete-ws')">
         <span class="menu-icon">🗑</span>
         {{ t('contextMenu.deleteWorkspace') }}
+      </div>
+    </div>
+    
+    <!-- 分支切换弹窗 -->
+    <div v-if="branchDialog.visible" class="branch-dialog-overlay" @click.self="closeBranchDialog">
+      <div class="branch-dialog">
+        <div class="dialog-title">{{ t('contextMenu.switchBranch') }}</div>
+        <div class="dialog-body">
+          <label>{{ t('gitConfig.branch') }}</label>
+          <select v-model="branchDialog.selectedBranch" class="branch-select">
+            <option v-for="branch in branchDialog.branches" :key="branch" :value="branch">
+              {{ branch }}
+            </option>
+          </select>
+        </div>
+        <div class="dialog-footer">
+          <button class="btn-cancel" @click="closeBranchDialog">{{ t('common.cancel') }}</button>
+          <button class="btn-confirm" @click="confirmSwitchBranch">{{ t('common.confirm') }}</button>
+        </div>
       </div>
     </div>
   </div>

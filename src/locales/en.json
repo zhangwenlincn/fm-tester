@@ -163,7 +163,10 @@
     "selectFileFailed": "Select file failed",
     "syncing": "Syncing API...",
     "syncSuccess": "Sync success",
-    "syncFailed": "Sync failed"
+    "syncFailed": "Sync failed",
+    "branchListFailed": "Failed to get branch list",
+    "branchSwitchSuccess": "Branch switched",
+    "branchSwitchFailed": "Failed to switch branch"
   },
   "response": {
     "status": "Status",
@@ -239,7 +242,8 @@
     "deleteWorkspace": "Delete Workspace",
     "deleteEnvironment": "Delete Environment",
     "deleteCollection": "Delete Collection",
-    "syncWorkspace": "Sync API"
+    "syncWorkspace": "Sync API",
+    "switchBranch": "Switch Branch"
   },
   "workspaceType": {
     "local": "Local Workspace",
@@ -249,7 +253,8 @@
     "url": "Git URL",
     "branch": "Branch",
     "username": "Username",
-    "password": "Password"
+    "password": "Password",
+    "current": "Current"
   },
   "gitTimes": {
     "sync": "Sync",

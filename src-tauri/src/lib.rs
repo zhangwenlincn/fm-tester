@@ -102,7 +102,11 @@ pub fn run() {
             // Git Sync
             sync_git_workspace,
             update_git_workspace,
-            sync_git_workspace_full
+            sync_git_workspace_full,
+            check_git_updates,
+            get_git_branches,
+            get_current_branch,
+            switch_git_branch
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

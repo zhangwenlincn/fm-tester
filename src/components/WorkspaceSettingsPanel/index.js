@@ -1,4 +1,4 @@
-import { ref, reactive, watch, computed } from 'vue'
+import { ref, reactive, watch, computed, onMounted } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { showToast } from '../../composables/useToast.js'
 
@@ -11,14 +11,37 @@ export function useWorkspaceSettingsSetup(props, emit) {
     postScript: ''
   })
   
+  // 是否需要更新
+  const needUpdate = ref(false)
+  
   // 工作区信息（包含 Git 相关信息）
   const workspaceInfo = computed(() => {
     const ws = props.workspace
     return {
       isGit: ws?.workspace_type === 'git',
-      lastSyncAt: ws?.last_sync_at || null
+      lastSyncAt: ws?.last_sync_at || null,
+      needUpdate: needUpdate.value
     }
   })
+  
+  // 检查是否需要更新
+  const checkNeedUpdate = async () => {
+    if (!props.workspace?.id || props.workspace.workspace_type !== 'git') {
+      needUpdate.value = false
+      return
+    }
+    try {
+      needUpdate.value = await invoke('check_git_updates', { workspaceId: props.workspace.id })
+    } catch (e) {
+      console.error('检查更新失败:', e)
+      needUpdate.value = false
+    }
+  }
+  
+  // 监听 workspace 变化时检查更新
+  watch(() => props.workspace, () => {
+    checkNeedUpdate()
+  }, { immediate: true })
   
   // 初始化数据
   const initSettings = async () => {
