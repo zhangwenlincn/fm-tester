@@ -27,19 +27,18 @@ const emit = defineEmits(['switchWorkspace', 'switchEnvironment', 'openSettings'
 
 // 菜单配置 - 使用 computed 以响应语言变化
 const menus = computed(() => [
-  { name: t('menu.file') },
   { name: t('menu.language'), items: supportedLocales.map(l => l.name) },
   { name: t('menu.theme') },
   { name: t('menu.settings'), items: [t('menu.preferences'), t('menu.aiSettings')] },
-  { name: t('menu.plugin') },
   { name: t('menu.help'), items: [t('menu.scriptApiRef')] },
-  { name: t('menu.about') }
+  { name: t('menu.about'), items: [t('menu.license')] }
 ])
 
 const activeMenu = ref(null)
 const showWorkspaceDropdown = ref(false)
 const showEnvironmentDropdown = ref(false)
 const showScriptHelp = ref(false)
+const showLicensePanel = ref(false)
 const workspaceWrapperRef = ref(null)
 const environmentWrapperRef = ref(null)
 
@@ -114,11 +113,21 @@ const handleMenuItemClick = (menuName, item) => {
   if (menuName === t('menu.help') && item === t('menu.scriptApiRef')) {
     showScriptHelp.value = true
   }
+  
+  // 关于菜单 - 开源协议
+  if (menuName === t('menu.about') && item === t('menu.license')) {
+    showLicensePanel.value = true
+  }
 }
 
 // 关闭脚本帮助面板
 const closeScriptHelp = () => {
   showScriptHelp.value = false
+}
+
+// 关闭开源协议面板
+const closeLicense = () => {
+  showLicensePanel.value = false
 }
 
 // 点击外部关闭下拉菜单
@@ -277,6 +286,17 @@ onUnmounted(() => {
           <h3>{{ t('script.apiRef.executionOrder') }}</h3>
           <p class="section-desc">{{ t('script.apiRef.executionOrderDesc') }}</p>
         </div>
+      </div>
+    </div>
+    
+    <!-- 开源协议面板 -->
+    <div v-if="showLicensePanel" class="license-panel">
+      <div class="license-header">
+        <span class="license-title">{{ t('license.mitTitle') }}</span>
+        <button class="close-btn" @click="closeLicense">×</button>
+      </div>
+      <div class="license-content">
+        <pre>{{ t('license.mitContent') }}</pre>
       </div>
     </div>
   </div>
