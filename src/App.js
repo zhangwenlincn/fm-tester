@@ -5,6 +5,7 @@ import { useTabs } from './composables/useTabs.js'
 import { useRequest } from './composables/useRequest.js'
 import { useResponse } from './composables/useResponse.js'
 import { useSettings } from './composables/useSettings.js'
+import { useGitUpdateChecker } from './composables/useGitUpdateChecker.js'
 
 // 导出 composable 函数
 export function useAppSetup() {
@@ -88,6 +89,9 @@ export function useAppSetup() {
 
   // 环境管理模块
   const environment = useEnvironment(workspace.currentWorkspace, currentNavKey)
+
+  // Git 更新检查模块
+  const gitUpdateChecker = useGitUpdateChecker(workspace.currentWorkspace)
 
   // 设置 activeTab watcher
   requestModule.setupActiveTabWatcher()

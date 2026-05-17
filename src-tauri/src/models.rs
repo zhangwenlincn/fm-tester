@@ -9,6 +9,9 @@ pub struct AppSettings {
     /// 语言设置（zh-CN 或 en）
     #[serde(default = "default_language")]
     pub language: String,
+    /// Git 工作区更新检查间隔（秒），0 表示禁用
+    #[serde(default = "default_git_update_interval")]
+    pub git_update_check_interval: u64,
 }
 
 fn default_timeout() -> u64 {
@@ -19,11 +22,16 @@ fn default_language() -> String {
     "zh-CN".to_string()
 }
 
+fn default_git_update_interval() -> u64 {
+    300 // 默认 300 秒（5 分钟）
+}
+
 impl Default for AppSettings {
     fn default() -> Self {
         Self {
             request_timeout: 60,
             language: "zh-CN".to_string(),
+            git_update_check_interval: 300,
         }
     }
 }

@@ -11,7 +11,7 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'saved'])
 
-const { t, timeout, selectedLanguage, supportedLocales, loading, saved, saveSettings, close } = useSettingsSetup(props, emit)
+const { t, timeout, gitUpdateInterval, loading, saved, saveSettings, close } = useSettingsSetup(props, emit)
 </script>
 
 <template>
@@ -22,22 +22,6 @@ const { t, timeout, selectedLanguage, supportedLocales, loading, saved, saveSett
     </div>
     
     <div class="settings-content">
-      <!-- 语言设置 -->
-      <div class="settings-section">
-        <div class="section-title">{{ t('settings.language') }}</div>
-        <div class="setting-item">
-          <select 
-            class="setting-select"
-            v-model="selectedLanguage"
-            :disabled="loading"
-          >
-            <option v-for="lang in supportedLocales" :key="lang.code" :value="lang.code">
-              {{ lang.name }}
-            </option>
-          </select>
-        </div>
-      </div>
-      
       <!-- 请求设置 -->
       <div class="settings-section">
         <div class="section-title">{{ t('panels.requestSettings') }}</div>
@@ -59,6 +43,30 @@ const { t, timeout, selectedLanguage, supportedLocales, loading, saved, saveSett
         
         <div class="setting-description">
           {{ t('settings.timeoutDesc') }}
+        </div>
+      </div>
+      
+      <!-- Git 设置 -->
+      <div class="settings-section">
+        <div class="section-title">{{ t('settings.gitSection') }}</div>
+        
+        <div class="setting-item">
+          <span class="setting-label">{{ t('settings.gitUpdateInterval') }}</span>
+          <div class="setting-input-wrapper">
+            <input 
+              type="number" 
+              class="setting-input"
+              v-model.number="gitUpdateInterval"
+              min="0"
+              max="3600"
+              :disabled="loading"
+            />
+            <span class="unit-label">{{ t('settings.gitUpdateIntervalUnit') }}</span>
+          </div>
+        </div>
+        
+        <div class="setting-description">
+          {{ t('settings.gitUpdateIntervalDesc') }}
         </div>
       </div>
     </div>

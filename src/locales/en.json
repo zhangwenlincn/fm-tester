@@ -166,7 +166,8 @@
     "syncFailed": "Sync failed",
     "branchListFailed": "Failed to get branch list",
     "branchSwitchSuccess": "Branch switched",
-    "branchSwitchFailed": "Failed to switch branch"
+    "branchSwitchFailed": "Failed to switch branch",
+    "gitUpdateDetected": "Remote repository has updates, please sync workspace"
   },
   "response": {
     "status": "Status",
@@ -179,7 +180,11 @@
     "timeout": "Request Timeout",
     "timeoutUnit": "seconds",
     "timeoutDesc": "Set the maximum wait time for HTTP requests. Requests will be cancelled if timeout. Default is 60 seconds.",
-    "language": "Language"
+    "language": "Language",
+    "gitSection": "Git Settings",
+    "gitUpdateInterval": "Update Check Interval",
+    "gitUpdateIntervalUnit": "seconds",
+    "gitUpdateIntervalDesc": "Set the frequency to check for Git workspace remote updates. Set to 0 to disable auto check. Default is 300 seconds (5 minutes)."
   },
   "workspace": {
     "selector": "Workspace:",

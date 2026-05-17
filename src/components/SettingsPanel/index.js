@@ -1,11 +1,11 @@
 import { ref, onMounted } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
-import { useI18nSetup } from '../../composables/useI18n'
+import { useI18n } from 'vue-i18n'
 
 export function useSettingsSetup(props, emit) {
-  const { t, locale, supportedLocales, switchLanguage } = useI18nSetup()
+  const { t } = useI18n()
   const timeout = ref(60)
-  const selectedLanguage = ref('zh-CN')
+  const gitUpdateInterval = ref(300)
   const loading = ref(false)
   const saved = ref(false)
 
@@ -15,7 +15,7 @@ export function useSettingsSetup(props, emit) {
       loading.value = true
       const settings = await invoke('get_settings')
       timeout.value = settings.request_timeout
-      selectedLanguage.value = settings.language || 'zh-CN'
+      gitUpdateInterval.value = settings.git_update_check_interval || 300
     } catch (e) {
       console.error('Failed to load settings:', e)
     } finally {
@@ -29,12 +29,10 @@ export function useSettingsSetup(props, emit) {
       loading.value = true
       const settings = await invoke('update_settings', { 
         timeout: timeout.value,
-        language: selectedLanguage.value 
+        gitUpdateCheckInterval: gitUpdateInterval.value
       })
       timeout.value = settings.request_timeout
-      
-      // 切换语言
-      switchLanguage(selectedLanguage.value)
+      gitUpdateInterval.value = settings.git_update_check_interval
       
       saved.value = true
       emit('saved')
@@ -62,8 +60,7 @@ export function useSettingsSetup(props, emit) {
   return {
     t,
     timeout,
-    selectedLanguage,
-    supportedLocales,
+    gitUpdateInterval,
     loading,
     saved,
     saveSettings,

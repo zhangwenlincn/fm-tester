@@ -166,7 +166,8 @@
     "syncFailed": "同步失败",
     "branchListFailed": "获取分支列表失败",
     "branchSwitchSuccess": "切换分支成功",
-    "branchSwitchFailed": "切换分支失败"
+    "branchSwitchFailed": "切换分支失败",
+    "gitUpdateDetected": "检测到远程仓库有更新，请同步工作区"
   },
   "response": {
     "status": "状态",
@@ -179,7 +180,11 @@
     "timeout": "请求超时时间",
     "timeoutUnit": "秒",
     "timeoutDesc": "设置 HTTP 请求的最大等待时间，超过该时间请求将自动取消。默认值为 60 秒。",
-    "language": "语言"
+    "language": "语言",
+    "gitSection": "Git 设置",
+    "gitUpdateInterval": "更新检查间隔",
+    "gitUpdateIntervalUnit": "秒",
+    "gitUpdateIntervalDesc": "设置 Git 工作区远程更新的检查频率。设置为 0 可禁用自动检查。默认值为 300 秒（5 分钟）。"
   },
   "workspace": {
     "selector": "工作区:",

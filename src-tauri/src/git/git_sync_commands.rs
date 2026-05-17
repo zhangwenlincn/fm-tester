@@ -955,76 +955,79 @@ pub async fn sync_git_workspace_full(
     Ok(())
 }
 
-/// 检查 Git 工作区是否有远程更新
+/// 检查 Git 工作区是否有远程更新（非阻塞）
 #[tauri::command]
 pub async fn check_git_updates(workspace_id: String) -> Result<bool, String> {
-    let config = read_config();
-    let workspace = config
-        .workspaces
-        .iter()
-        .find(|w| w.id == workspace_id)
-        .cloned()
-        .ok_or_else(|| "工作区不存在".to_string())?;
-    
-    if workspace.workspace_type != "git" {
-        return Ok(false);
-    }
-    
-    let workspace_path = workspace.path.clone();
-    
-    // 检查是否是 git 仓库
-    if !is_git_repo(&workspace_path) {
-        return Ok(false);
-    }
-    
-    // 获取凭据
-    let (username, password) = if let Some(cred_id) = &workspace.git_credentials_id {
-        let cred = get_credential_by_id_internal(cred_id.clone())?;
-        (Some(cred.username), Some(cred.encrypted_password))
-    } else {
-        (None, None)
-    };
-    
-    // 设置远程 URL（如果有凭据）
-    if let (Some(user), Some(pass)) = (username, password) {
-        let remote_url_result = run_git_command(vec!["remote", "get-url", "origin"], Some(&workspace_path));
-        if let Ok(current_url) = remote_url_result {
-            let encoded_user = user.replace('@', "%40").replace(':', "%3A");
-            let encoded_pass = pass.replace('@', "%40").replace(':', "%3A");
-            
-            let clean_url = if current_url.starts_with("https://") {
-                let after = &current_url[8..];
-                if let Some(at_pos) = after.find('@') { after[at_pos + 1..].to_string() } else { after.to_string() }
-            } else if current_url.starts_with("http://") {
-                let after = &current_url[7..];
-                if let Some(at_pos) = after.find('@') { after[at_pos + 1..].to_string() } else { after.to_string() }
-            } else { current_url.clone() };
-            
-            let auth_url = if current_url.starts_with("https://") {
-                format!("https://{}:{}@{}", encoded_user, encoded_pass, clean_url)
-            } else if current_url.starts_with("http://") {
-                format!("http://{}:{}@{}", encoded_user, encoded_pass, clean_url)
-            } else { clean_url };
-            
-            let _ = run_git_command(vec!["remote", "set-url", "origin", &auth_url], Some(&workspace_path));
+    // 在 spawn_blocking 中执行同步 git 操作
+    let result = tokio::task::spawn_blocking(move || {
+        let config = read_config();
+        let workspace = config
+            .workspaces
+            .iter()
+            .find(|w| w.id == workspace_id)
+            .cloned()
+            .ok_or_else(|| "工作区不存在".to_string())?;
+        
+        if workspace.workspace_type != "git" {
+            return Ok(false);
         }
-    }
+        
+        let workspace_path = workspace.path.clone();
+        
+        // 检查是否是 git 仓库
+        if !is_git_repo(&workspace_path) {
+            return Ok(false);
+        }
+        
+        // 获取凭据
+        let (username, password) = if let Some(cred_id) = &workspace.git_credentials_id {
+            let cred = get_credential_by_id_internal(cred_id.clone())?;
+            (Some(cred.username), Some(cred.encrypted_password))
+        } else {
+            (None, None)
+        };
+        
+        // 设置远程 URL（如果有凭据）
+        if let (Some(user), Some(pass)) = (username, password) {
+            let remote_url_result = run_git_command(vec!["remote", "get-url", "origin"], Some(&workspace_path));
+            if let Ok(current_url) = remote_url_result {
+                let encoded_user = user.replace('@', "%40").replace(':', "%3A");
+                let encoded_pass = pass.replace('@', "%40").replace(':', "%3A");
+                
+                let clean_url = if current_url.starts_with("https://") {
+                    let after = &current_url[8..];
+                    if let Some(at_pos) = after.find('@') { after[at_pos + 1..].to_string() } else { after.to_string() }
+                } else if current_url.starts_with("http://") {
+                    let after = &current_url[7..];
+                    if let Some(at_pos) = after.find('@') { after[at_pos + 1..].to_string() } else { after.to_string() }
+                } else { current_url.clone() };
+                
+                let auth_url = if current_url.starts_with("https://") {
+                    format!("https://{}:{}@{}", encoded_user, encoded_pass, clean_url)
+                } else if current_url.starts_with("http://") {
+                    format!("http://{}:{}@{}", encoded_user, encoded_pass, clean_url)
+                } else { clean_url };
+                
+                let _ = run_git_command(vec!["remote", "set-url", "origin", &auth_url], Some(&workspace_path));
+            }
+        }
+        
+        // Git fetch（只获取信息，不合并）
+        let fetch_result = run_git_command(vec!["fetch", "origin"], Some(&workspace_path));
+        if let Err(e) = fetch_result {
+            return Err(format!("获取远程信息失败: {}", e));
+        }
+        
+        // 检查本地和远程的差异
+        let local_head = run_git_command(vec!["rev-parse", "HEAD"], Some(&workspace_path)).unwrap_or_default();
+        let remote_head = run_git_command(vec!["rev-parse", "@{u}"], Some(&workspace_path)).unwrap_or_default();
+        
+        // 比较是否有差异
+        Ok(local_head != remote_head && !remote_head.is_empty())
+    }).await;
     
-    // Git fetch（只获取信息，不合并）
-    let fetch_result = run_git_command(vec!["fetch", "origin"], Some(&workspace_path));
-    if let Err(e) = fetch_result {
-        return Err(format!("获取远程信息失败: {}", e));
-    }
-    
-    // 检查本地和远程的差异
-    // git rev-parse HEAD 获取本地 HEAD
-    let local_head = run_git_command(vec!["rev-parse", "HEAD"], Some(&workspace_path)).unwrap_or_default();
-    
-    // git rev-parse @{u} 获取远程跟踪分支
-    let remote_head = run_git_command(vec!["rev-parse", "@{u}"], Some(&workspace_path)).unwrap_or_default();
-    
-    // 比较是否有差异
-    Ok(local_head != remote_head && !remote_head.is_empty())
+    // 处理 spawn_blocking 的结果
+    result.map_err(|e| format!("任务执行失败: {}", e))?
 }
 
 /// 获取 Git 工作区的所有分支列表
