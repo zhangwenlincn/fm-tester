@@ -192,8 +192,8 @@ const {
           />
         </div>
         
-        <!-- 响应区 - 脚本tab时不显示 -->
-        <div class="response-area" v-if="currentRequestTab !== 'scripts'">
+        <!-- 响应区 - 脚本/文档tab时不显示 -->
+        <div class="response-area" v-if="currentRequestTab !== 'scripts' && currentRequestTab !== 'docs'">
           <ResponsePanel 
             :response="response"
             :loading="loading"

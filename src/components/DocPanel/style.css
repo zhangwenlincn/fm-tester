@@ -1,0 +1,207 @@
+.doc-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #fff;
+}
+
+.doc-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 8px 16px;
+  border-bottom: 1px solid #e8e8e8;
+  background: #fafafa;
+}
+
+.toggle-btn {
+  padding: 6px 12px;
+  font-size: 13px;
+  color: #1890ff;
+  background: #e6f7ff;
+  border: 1px solid #91d5ff;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.toggle-btn:hover {
+  background: #bae7ff;
+}
+
+.save-btn {
+  padding: 6px 12px;
+  font-size: 13px;
+  color: #262626;
+  background: #fff;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.save-btn:hover {
+  border-color: #1890ff;
+  color: #1890ff;
+}
+
+/* 文档展示模式 */
+.doc-view-container {
+  flex: 1;
+  overflow: auto;
+  padding: 16px;
+}
+
+.doc-content {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #262626;
+}
+
+.doc-content h1 {
+  font-size: 24px;
+  font-weight: 600;
+  margin: 16px 0 8px 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.doc-content h2 {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 14px 0 6px 0;
+}
+
+.doc-content h3 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 12px 0 4px 0;
+}
+
+.doc-content h4 {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 10px 0 4px 0;
+}
+
+.doc-content p {
+  margin: 8px 0;
+}
+
+.doc-content ul, .doc-content ol {
+  margin: 8px 0;
+  padding-left: 24px;
+}
+
+.doc-content li {
+  margin: 4px 0;
+}
+
+.doc-content code {
+  background: #f5f5f5;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 13px;
+  color: #d73a49;
+}
+
+.doc-content pre {
+  background: #f6f8fa;
+  padding: 12px;
+  border-radius: 4px;
+  overflow-x: auto;
+  margin: 12px 0;
+  border: 1px solid #e1e4e8;
+}
+
+.doc-content pre code {
+  background: transparent;
+  padding: 0;
+  color: #24292e;
+}
+
+.doc-content blockquote {
+  margin: 12px 0;
+  padding: 8px 16px;
+  border-left: 4px solid #1890ff;
+  background: #f0f5ff;
+  color: #595959;
+}
+
+.doc-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+}
+
+.doc-content th, .doc-content td {
+  padding: 8px 12px;
+  border: 1px solid #e8e8e8;
+}
+
+.doc-content th {
+  background: #fafafa;
+  font-weight: 600;
+}
+
+.doc-content a {
+  color: #1890ff;
+  text-decoration: none;
+}
+
+.doc-content a:hover {
+  text-decoration: underline;
+}
+
+.doc-content img {
+  max-width: 100%;
+  margin: 12px 0;
+}
+
+.doc-content hr {
+  border: none;
+  border-top: 1px solid #e8e8e8;
+  margin: 16px 0;
+}
+
+/* 空状态 */
+.doc-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #8c8c8c;
+}
+
+.doc-empty .empty-icon {
+  margin-bottom: 16px;
+}
+
+.doc-empty p {
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+.doc-empty .edit-btn {
+  padding: 8px 24px;
+  font-size: 13px;
+  color: #1890ff;
+  background: #e6f7ff;
+  border: 1px solid #91d5ff;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.doc-empty .edit-btn:hover {
+  background: #bae7ff;
+}
+
+/* 编辑模式 */
+.doc-editor-container {
+  flex: 1;
+  overflow: hidden;
+  border: 1px solid #e8e8e8;
+  border-radius: 4px;
+  margin: 8px 16px;
+}

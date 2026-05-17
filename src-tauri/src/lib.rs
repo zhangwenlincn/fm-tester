@@ -6,6 +6,7 @@ mod environment;
 mod git;
 mod history;
 mod http;
+mod md;
 mod memory;
 mod models;
 mod saved_response;
@@ -21,6 +22,7 @@ pub use environment::*;
 pub use git::*;
 pub use history::*;
 pub use http::*;
+pub use md::*;
 pub use memory::*;
 pub use models::*;
 pub use saved_response::*;
@@ -102,12 +104,15 @@ pub fn run() {
             get_chat_sessions,
             delete_chat_session,
             rename_chat_session,
-// Script
+            // Script
             save_script,
             get_script,
             delete_script,
             delete_target_scripts,
             get_all_scripts,
+            // API Doc
+            get_api_doc,
+            save_api_doc,
             // Git Credentials
             save_git_credentials,
             get_git_credentials,

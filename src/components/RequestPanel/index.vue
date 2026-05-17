@@ -4,6 +4,7 @@ import { useRequestPanelSetup } from './index.js'
 import Icon from '../Icon/index.vue'
 import VariableHighlight from '../VariableHighlight/index.vue'
 import ScriptPanel from '../ScriptPanel/index.vue'
+import DocPanel from '../DocPanel/index.vue'
 
 const { t } = useI18n()
 
@@ -332,7 +333,7 @@ const {
         </div>
       </div>
       
-      <!-- 脚本 -->
+<!-- 脚本 -->
       <div v-if="activeTab === 'scripts'" class="scripts-panel">
 <ScriptPanel 
             :request="localRequest"
@@ -341,8 +342,16 @@ const {
           />
       </div>
       
+      <!-- 文档 -->
+      <div v-show="activeTab === 'docs'" class="docs-panel">
+        <DocPanel
+          :workspacePath="workspacePath"
+          :apiId="apiId"
+        />
+      </div>
+      
       <!-- 其他标签页（占位符） -->
-      <div v-show="activeTab !== 'params' && activeTab !== 'headers' && activeTab !== 'body' && activeTab !== 'scripts'" class="placeholder-panel">
+      <div v-show="activeTab !== 'params' && activeTab !== 'headers' && activeTab !== 'body' && activeTab !== 'scripts' && activeTab !== 'docs'" class="placeholder-panel">
         <div class="placeholder-content">
           <span class="placeholder-icon">📝</span>
           <p>{{ tabs.find(tab => tab.key === activeTab)?.name }}</p>

@@ -434,7 +434,11 @@ export function useRequest(currentWorkspace, tabs, activeTab, sidebarRef, reques
     }
   }
 
-  const onRenameApi = async (apiId, newName) => {
+  const onRenameApi = async (data) => {
+    // data 可能是对象 { id, name } 或者两个参数 (apiId, newName)
+    const apiId = typeof data === 'object' ? data.id : data
+    const newName = typeof data === 'object' ? data.name : arguments[1]
+    
     if (!currentWorkspace.value?.path) return
 
     try {

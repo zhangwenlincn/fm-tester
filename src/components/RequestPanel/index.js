@@ -116,7 +116,7 @@ export function useRequestPanelSetup(props, emit) {
     emit('updateTab', newVal)
   })
 
-  const localRequest = ref({
+const localRequest = ref({
     method: 'GET',
     url: '',
     params: [],

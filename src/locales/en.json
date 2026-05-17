@@ -107,7 +107,8 @@
     "noRequestHeaders": "No request headers",
     "noRequestBody": "No request body",
     "noResponseHeaders": "No response headers",
-    "selectEnvironment": "Please select an environment on left first"
+    "selectEnvironment": "Please select an environment on left first",
+    "noDoc": "No documentation, click Edit to add"
   },
   "placeholder": {
     "url": "Enter request URL",

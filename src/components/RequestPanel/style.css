@@ -707,3 +707,12 @@
   right: 0;
   bottom: 0;
 }
+
+/* 文档面板容器 */
+.docs-panel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}

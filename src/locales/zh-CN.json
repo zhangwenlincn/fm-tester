@@ -107,7 +107,8 @@
     "noRequestHeaders": "无请求头",
     "noRequestBody": "无请求体",
     "noResponseHeaders": "无响应头",
-    "selectEnvironment": "请先在左侧选择一个环境"
+    "selectEnvironment": "请先在左侧选择一个环境",
+    "noDoc": "暂无文档内容，点击编辑添加"
   },
   "placeholder": {
     "url": "输入请求 URL",
