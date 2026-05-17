@@ -14,11 +14,17 @@
 - **响应查看**：实时显示响应状态码、响应头、响应体（JSON/XML/HTML 格式化显示）
 - **请求历史**：按日期存储请求记录，方便对比和回顾
 
-### 📁 集合管理
+### 📁 工作区管理
+- **多工作区**：支持创建多个独立工作区，隔离不同项目的数据
+- **快速切换**：快速在不同工作区之间切换
+- **工作区设置**：每个工作区独立的集合、环境变量、脚本等配置
+
+### 📂 集合管理
 - **层级结构**：支持多层集合嵌套（最多 3 层），方便组织接口
 - **拖拽排序**：支持同级拖拽排序和跨层级移动
 - **集合变量**：集合级别的变量继承，支持 `{{variableName}}` 引用
 - **公共请求头**：集合级别的公共请求头，自动应用到所有接口
+- **集合设置**：为集合配置前置/后置脚本、变量、公共请求头
 
 ### 🔧 环境管理
 - **多环境支持**：支持多环境配置（开发、测试、生产等）
@@ -40,13 +46,14 @@
 ### ⚡ 脚本引擎
 - **前置脚本**：请求发送前执行，可修改请求参数
 - **后置脚本**：响应返回后执行，可处理响应数据
+- **控制台日志**：脚本执行日志实时显示，方便调试
 - **fm API**：
   - `fm.environment.get/set` - 环境变量操作
   - `fm.collection.get/set` - 集合变量操作
   - `fm.request.*` - 请求参数修改（URL、Headers、Body）
   - `fm.response.*` - 响应数据访问
   - `fm.log/assert/sleep` - 工具方法
-- **执行顺序**：继承链执行（工作区 → 集合 → 接口）
+- **执行顺序**：继承链执行（工作区 → 父集合 → 子集合 → 接口 → 请求），后置脚本反向执行
 
 ### 🍪 Cookie 管理
 - **自动管理**：自动保存响应中的 Cookie
@@ -137,27 +144,50 @@ cargo tauri build
 fm-tester/
 ├── src/                          # Vue 前端代码
 │   ├── components/               # Vue 组件
+│   │   ├── AISettingsPanel/     # AI 设置面板
 │   │   ├── ChatPanel/           # AI 聊天面板
+│   │   ├── CollectionSettingsPanel/  # 集合设置面板
+│   │   ├── ConsolePanel/        # 控制台面板（脚本日志）
+│   │   ├── CookiePanel/         # Cookie 管理面板
+│   │   ├── DocPanel/            # 文档面板
+│   │   ├── EnvironmentPanel/    # 环境变量面板
+│   │   ├── HistoryDetailPanel/  # 历史详情面板
+│   │   ├── Icon/                # 图标组件
+│   │   ├── MenuBar/             # 菜单栏
 │   │   ├── RequestPanel/        # 请求配置面板
 │   │   ├── ResponsePanel/       # 响应查看面板
-│   │   ├── SettingsPanel/       # 全局设置面板
+│   │   ├── SavedResponseDetail/ # 保存的响应详情
+│   │   ├── SaveResponseDialog/  # 保存响应对话框
 │   │   ├── ScriptPanel/         # 脚本编辑面板
-│   │   └── Sidebar/             # 侧边栏组件
+│   │   ├── SettingsPanel/       # 全局设置面板
+│   │   ├── Sidebar/             # 侧边栏（集合列表）
+│   │   ├── StatusBar/           # 状态栏
+│   │   ├── TabsBar/             # 标签页栏
+│   │   ├── Toast/               # Toast 提示组件
+│   │   ├── VariableHighlight/    # 变量高亮组件
+│   │   ├── WorkspaceDialog/      # 工作区对话框
+│   │   └── WorkspaceSettingsPanel/  # 工作区设置面板
 │   ├── composables/             # Vue Composition API hooks
 │   ├── i18n/                    # 国际化配置
 │   ├── locales/                 # 语言包
 │   └── utils/                   # 工具函数
 ├── src-tauri/                    # Rust 后端代码
 │   ├── src/
-│   │   ├── ai/                  # AI API 调用
-│   │   ├── chat/                # AI 聊天管理
-│   │   ├── collection/          # 集合管理
-│   │   ├── environment/         # 环境变量管理
-│   │   ├── git/                 # Git 同步管理
-│   │   ├── http/                # HTTP 请求处理
-│   │   ├── script/              # 脚本引擎
-│   │   ├── settings/            # 全局设置
-│   │   └── workspace/           # 工作空间管理
+│   │   ├── ai/                  # AI API 调用（获取模型列表）
+│   │   ├── chat/                # AI 聊天（对话历史管理）
+│   │   ├── collection/          # 集合/接口 CRUD
+│   │   ├── cookie/              # Cookie 管理
+│   │   ├── environment/         # 环境变量 CRUD + 变量替换
+│   │   ├── git/                 # Git 同步、凭据加密、分支管理
+│   │   ├── history/             # 请求历史记录（按日期分目录）
+│   │   ├── http/                # HTTP 请求发送（自动记录历史）
+│   │   ├── md/                  # Markdown 渲染
+│   │   ├── memory/              # 记忆配置（集合展开状态等）
+│   │   ├── models.rs            # 数据结构定义
+│   │   ├── saved_response/      # 保存的响应快照
+│   │   ├── script/              # 前置/后置脚本管理
+│   │   ├── settings/            # 全局设置（超时、语言、AI配置）
+│   │   └── workspace/           # 工作区 CRUD
 │   └── Cargo.toml               # Rust 依赖配置
 ├── .github/workflows/            # GitHub Actions CI/CD
 └── package.json                  # Node.js 项目配置

@@ -40,6 +40,7 @@ src-tauri/src/
 ├── git/            # Git 同步、凭据加密、分支管理
 ├── history/        # 请求历史记录（按日期分目录存储）
 ├── http/           # send_http_request（自动记录历史、处理 Cookie）
+├── md/             # API 文档管理（生成/保存文档、AI 辅助生成）
 ├── memory/         # 记忆配置（集合展开状态等）
 ├── saved_response/ # 保存的响应快照
 ├── script/         # 前置/后置脚本管理
@@ -80,8 +81,9 @@ src-tauri/src/
 | history | `get_history_dates`, `get_history_by_date`, `get_history_entry`, `delete_history_entry`, `clear_history_by_date`, `clear_all_history` | 请求历史记录 |
 | settings | `get_settings`, `update_settings` | 全局设置（超时、语言、Git检查间隔、AI配置） |
 | script | `save_script`, `get_script`, `delete_script`, `delete_target_scripts`, `get_all_scripts` | 前置/后置脚本管理 |
-| ai | `get_ai_models` | 获取 AI 模型列表（OpenAI 协议） |
-| chat | `chat_ai`, `save_chat_history`, `get_chat_history`, `clear_chat_history`, `get_chat_sessions`, `delete_chat_session` | AI 聊天 |
+| ai | `get_ai_models`, `optimize_script_ai` | 获取 AI 模型列表、AI 优化脚本（OpenAI 协议） |
+| chat | `chat_ai`, `save_chat_history`, `get_chat_history`, `clear_chat_history`, `get_chat_sessions`, `delete_chat_session`, `rename_chat_session` | AI 聊天 |
+| md | `get_api_doc`, `save_api_doc`, `generate_api_doc_with_ai`, `get_doc_generation_status`, `cancel_doc_generation`, `get_api_doc_metadata` | API 文档管理 |
 | git | `save_git_credentials`, `get_git_credentials`, `get_git_credential_by_id`, `delete_git_credentials`, `sync_git_workspace`, `update_git_workspace`, `sync_git_workspace_full`, `check_git_updates`, `get_git_branches`, `get_current_branch`, `switch_git_branch` | Git 同步、凭据、分支管理 |
 
 ## 添加新 Tauri Command
@@ -158,7 +160,8 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 
 ## Vite 配置注意
 
-Monaco Editor 必须排除优化依赖，否则会出错：
+- 开发服务器固定端口 `1420`（strictPort 模式，冲突时会报错）
+- Monaco Editor 必须排除优化依赖，否则会出错：
 ```js
 // vite.config.js
 optimizeDeps: { exclude: ['monaco-editor'] }
