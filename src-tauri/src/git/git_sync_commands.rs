@@ -7,6 +7,12 @@ use tauri::{AppHandle, Emitter};
 use crate::workspace::{read_config, write_config};
 use crate::git::get_credential_by_id_internal;
 
+#[cfg(windows)]
+use std::os::windows::process::CommandExt;
+
+#[cfg(windows)]
+const CREATE_NO_WINDOW: u32 = 0x08000000;
+
 /// Git 同步日志结构
 #[derive(Clone, Serialize)]
 struct GitSyncLog {
@@ -44,6 +50,10 @@ fn run_git_command(args: Vec<&str>, working_dir: Option<&str>) -> Result<String,
     if let Some(dir) = working_dir {
         cmd.current_dir(dir);
     }
+
+    // 在 Windows 上隐藏控制台窗口
+    #[cfg(windows)]
+    cmd.creation_flags(CREATE_NO_WINDOW);
 
     let output = cmd.output().map_err(|e| {
         if e.kind() == std::io::ErrorKind::NotFound {

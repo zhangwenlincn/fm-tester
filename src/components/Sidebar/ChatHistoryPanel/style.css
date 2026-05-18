@@ -79,12 +79,6 @@
 .session-date {
   font-size: 12px;
   color: #8c8c8c;
-  margin-bottom: 2px;
-}
-
-.session-count {
-  font-size: 12px;
-  color: #bfbfbf;
 }
 
 .empty-sessions {

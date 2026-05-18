@@ -66,7 +66,6 @@ const {
           <template v-else>
             <div class="session-title">{{ session.title || t('chat.sessionTitle', { date: session.created_at }) }}</div>
             <div class="session-date">{{ session.created_at }}</div>
-            <div class="session-count">{{ t('chat.messageCount', { count: session.messages.length }) }}</div>
           </template>
         </div>
       </div>
