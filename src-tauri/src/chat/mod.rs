@@ -1,3 +1,4 @@
+mod chat_config;
 mod chat_commands;
 
 pub use chat_commands::{
