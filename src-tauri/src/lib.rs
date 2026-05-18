@@ -3,6 +3,7 @@ mod chat;
 mod collection;
 mod cookie;
 mod environment;
+mod file_dialog;
 mod git;
 mod history;
 mod http;
@@ -19,6 +20,7 @@ pub use chat::*;
 pub use collection::*;
 pub use cookie::*;
 pub use environment::*;
+pub use file_dialog::*;
 pub use git::*;
 pub use history::*;
 pub use http::*;
@@ -130,7 +132,9 @@ pub fn run() {
             check_git_updates,
             get_git_branches,
             get_current_branch,
-            switch_git_branch
+            switch_git_branch,
+            // File Dialog
+            safe_pick_directory
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

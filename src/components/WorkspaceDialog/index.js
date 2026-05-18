@@ -1,6 +1,5 @@
 import { ref, watch } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
-import { open } from '@tauri-apps/plugin-dialog'
 import { showToast } from '../../composables/useToast'
 
 // 导出 composable 函数
@@ -32,19 +31,16 @@ export function useWorkspaceDialogSetup(props, emit) {
     }
   }
 
-  // 选择路径
+  // 选择路径（使用安全的 safe_pick_directory 命令）
   const selectPath = async () => {
     try {
-      const selected = await open({
-        directory: true,
-        multiple: false,
-        title: '选择工作区路径'
-      })
+      const selected = await invoke('safe_pick_directory')
       if (selected) {
         path.value = selected
       }
     } catch (e) {
       console.error('选择路径失败:', e)
+      showToast(`选择路径失败: ${e}`, 'error')
     }
   }
 
