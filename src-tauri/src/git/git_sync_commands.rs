@@ -341,17 +341,6 @@ fn get_current_branch_name(repo: &Repository) -> String {
 }
 
 /// 获取 remote URL
-fn get_remote_url(repo: &Repository, remote_name: &str) -> Result<String, String> {
-    let remote = repo.find_remote(remote_name)
-        .map_err(|e| format!("查找 remote 失败: {}", e))?;
-    
-    let url = remote.url()
-        .ok_or_else(|| "Remote 没有 URL".to_string())?;
-    
-    Ok(url.to_string())
-}
-
-/// 清理 URL 中的认证信息
 fn clean_auth_from_url(url: &str) -> String {
     if url.starts_with("https://") {
         let after = &url[8..];
@@ -385,10 +374,12 @@ fn build_auth_url(url: &str, username: &str, password: &str) -> String {
     let encoded_user = url_encode(username);
     let encoded_pass = url_encode(password);
     
-    if url.starts_with("https://") {
-        format!("https://{}:{}@{}", encoded_user, encoded_pass, clean_auth_from_url(&clean_url))
-    } else if url.starts_with("http://") {
-        format!("http://{}:{}@{}", encoded_user, encoded_pass, clean_auth_from_url(&clean_url))
+    if clean_url.starts_with("https://") {
+        let after = &clean_url[8..];
+        format!("https://{}:{}@{}", encoded_user, encoded_pass, after)
+    } else if clean_url.starts_with("http://") {
+        let after = &clean_url[7..];
+        format!("http://{}:{}@{}", encoded_user, encoded_pass, after)
     } else {
         clean_url
     }
@@ -632,9 +623,8 @@ pub async fn sync_git_workspace(
 
     // 设置 remote URL（如果有凭据）
     if let (Some(user), Some(pass)) = (&username, &password) {
-        let current_url = get_remote_url(&repo, "origin").ok();
-        if let Some(url) = current_url {
-            let auth_url = build_auth_url(&url, user, pass);
+        if let Some(url) = &workspace.git_url {
+            let auth_url = build_auth_url(url, user, pass);
             set_remote_url(&repo, "origin", &auth_url)?;
         }
     }
@@ -783,9 +773,8 @@ pub async fn update_git_workspace(
             },
         );
 
-        let current_url = get_remote_url(&repo, "origin").ok();
-        if let Some(url) = current_url {
-            let auth_url = build_auth_url(&url, user, pass);
+        if let Some(url) = &workspace.git_url {
+            let auth_url = build_auth_url(url, user, pass);
             set_remote_url(&repo, "origin", &auth_url)?;
         }
     }
@@ -936,9 +925,8 @@ pub async fn sync_git_workspace_full(
         
         // 设置 remote URL
         if let (Some(user), Some(pass)) = (&username, &password) {
-            let current_url = get_remote_url(&repo, "origin").ok();
-            if let Some(url) = current_url {
-                let auth_url = build_auth_url(&url, user, pass);
+            if let Some(url) = &workspace.git_url {
+                let auth_url = build_auth_url(url, user, pass);
                 set_remote_url(&repo, "origin", &auth_url)?;
             }
         }
@@ -1087,9 +1075,8 @@ pub async fn sync_git_workspace_full(
     
     // 设置 remote URL 并 push
     if let (Some(user), Some(pass)) = (&username, &password) {
-        let current_url = get_remote_url(&repo, "origin").ok();
-        if let Some(url) = current_url {
-            let auth_url = build_auth_url(&url, user, pass);
+        if let Some(url) = &workspace.git_url {
+            let auth_url = build_auth_url(url, user, pass);
             set_remote_url(&repo, "origin", &auth_url)?;
         }
     }
@@ -1187,9 +1174,8 @@ pub async fn check_git_updates(workspace_id: String) -> Result<bool, String> {
         
         // 设置 remote URL
         if let (Some(user), Some(pass)) = (&username, &password) {
-            let current_url = get_remote_url(&repo, "origin").ok();
-            if let Some(url) = current_url {
-                let auth_url = build_auth_url(&url, user, pass);
+            if let Some(url) = &workspace.git_url {
+                let auth_url = build_auth_url(url, user, pass);
                 set_remote_url(&repo, "origin", &auth_url)?;
             }
         }
