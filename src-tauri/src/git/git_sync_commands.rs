@@ -206,7 +206,13 @@ pub async fn sync_git_workspace(
                     },
         );
 
-        let clone_result = run_git_command(vec!["clone", &auth_url, &workspace_path], None);
+        // 构建 clone 命令，如果有分支则指定分支
+        let clone_args = if let Some(branch) = &workspace.git_branch {
+            vec!["clone", "--branch", branch, &auth_url, &workspace_path]
+        } else {
+            vec!["clone", &auth_url, &workspace_path]
+        };
+        let clone_result = run_git_command(clone_args, None);
         if let Err(e) = clone_result {
             let err_msg = format!("克隆仓库失败: {}", e);
             emit_log(
@@ -992,8 +998,14 @@ pub async fn sync_git_workspace_full(
                 else if repo_url.starts_with("http://") { format!("http://{}:{}@{}", url_encode(&user), url_encode(&pass), clean_url) }
                 else { format!("https://{}", clean_url) }
             } else { format!("https://{}", clean_url) };
-            
-            let _ = run_git_command(vec!["clone", &auth_url, &workspace_path], None);
+
+            // 构建 clone 命令，如果有分支则指定分支
+            let clone_args = if let Some(branch) = &workspace.git_branch {
+                vec!["clone", "--branch", branch, &auth_url, &workspace_path]
+            } else {
+                vec!["clone", &auth_url, &workspace_path]
+            };
+            let _ = run_git_command(clone_args, None);
         }
         
         // 配置 Git 用户
@@ -1196,7 +1208,7 @@ pub async fn check_git_updates(workspace_id: String) -> Result<bool, String> {
     result.map_err(|e| format!("任务执行失败: {}", e))?
 }
 
-/// 获取 Git 工作区的所有分支列表
+/// 获取 Git 工作区的所有分支列表（远程分支）
 #[tauri::command]
 pub async fn get_git_branches(workspace_id: String) -> Result<Vec<String>, String> {
     let config = read_config();
@@ -1217,20 +1229,28 @@ pub async fn get_git_branches(workspace_id: String) -> Result<Vec<String>, Strin
         return Err("工作区路径不是 Git 仓库".to_string());
     }
     
-    // 获取所有分支（只获取本地分支，避免重复）
-    let branch_output = run_git_command(vec!["branch"], Some(&workspace_path))
+    // 先 fetch 获取最新的远程分支信息
+    let _ = run_git_command(vec!["fetch", "origin"], Some(&workspace_path));
+    
+    // 获取远程分支列表
+    let branch_output = run_git_command(vec!["branch", "-r"], Some(&workspace_path))
         .map_err(|e| format!("获取分支列表失败: {}", e))?;
     
-    // 解析分支列表
+    // 解析分支列表，去掉 origin/ 前缀
     let branches: Vec<String> = branch_output
         .lines()
         .filter_map(|line| {
             let trimmed = line.trim();
-            // 去掉当前分支的 * 标记
-            if trimmed.starts_with('*') {
-                Some(trimmed[1..].trim().to_string())
-            } else if !trimmed.is_empty() && !trimmed.contains("HEAD ->") {
-                Some(trimmed.to_string())
+            // 远程分支格式: origin/branch-name
+            if trimmed.starts_with("origin/") {
+                // 去掉 origin/ 前缀
+                let branch_name = trimmed[7..].to_string();
+                // 过滤 HEAD 分支
+                if !branch_name.starts_with("HEAD") && !branch_name.is_empty() {
+                    Some(branch_name)
+                } else {
+                    None
+                }
             } else {
                 None
             }
