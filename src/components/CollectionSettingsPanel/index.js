@@ -1,7 +1,8 @@
-import { ref, reactive, watch, onUnmounted } from 'vue'
+import { ref, reactive, watch, onUnmounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { invoke } from '@tauri-apps/api/core'
 import { showToast } from '../../composables/useToast.js'
+import { COMMON_HEADERS } from '../HeaderAutocomplete/index.js'
 
 // 导出 composable 函数
 export function useCollectionSettingsSetup(props, emit) {
@@ -172,6 +173,137 @@ export function useCollectionSettingsSetup(props, emit) {
     localSettings.collectionVariables.splice(index, 1)
   }
   
+  // Header 自动补全相关
+  const showHeaderKeyAutocomplete = ref(false)
+  const showHeaderValueAutocomplete = ref(false)
+  const headerAutocompletePosition = ref({ top: 0, left: 0 })
+  const headerAutocompleteWidth = ref('280px')
+  const headerSelectedIndex = ref(0)
+  const headerKeyInput = ref('')
+  const headerValueInput = ref('')
+  const activeHeaderIndex = ref(-1)
+
+  const filteredHeaderKeys = computed(() => {
+    const input = headerKeyInput.value.toLowerCase()
+    if (!input) {
+      return COMMON_HEADERS.slice(0, 10)
+    }
+    return COMMON_HEADERS.filter(h => 
+      h.key.toLowerCase().includes(input)
+    ).slice(0, 10)
+  })
+
+  const filteredHeaderValues = computed(() => {
+    const header = COMMON_HEADERS.find(h => 
+      h.key.toLowerCase() === headerKeyInput.value.toLowerCase()
+    )
+    if (!header || !header.values.length) return []
+    
+    const input = headerValueInput.value.toLowerCase()
+    if (!input) return header.values
+    
+    return header.values.filter(v => 
+      v.toLowerCase().includes(input)
+    )
+  })
+
+  const handleHeaderKeyInput = (value, index, event) => {
+    headerKeyInput.value = value
+    activeHeaderIndex.value = index
+    headerSelectedIndex.value = 0
+    
+    if (value.length > 0) {
+      const rect = event.target.getBoundingClientRect()
+      headerAutocompletePosition.value = {
+        top: rect.bottom + window.scrollY,
+        left: rect.left + window.scrollX
+      }
+      headerAutocompleteWidth.value = `${rect.width}px`
+      showHeaderKeyAutocomplete.value = true
+      showHeaderValueAutocomplete.value = false
+    } else {
+      showHeaderKeyAutocomplete.value = false
+    }
+  }
+
+  const handleHeaderValueInput = (key, value, index, event) => {
+    headerKeyInput.value = key
+    headerValueInput.value = value
+    activeHeaderIndex.value = index
+    headerSelectedIndex.value = 0
+    
+    const header = COMMON_HEADERS.find(h => 
+      h.key.toLowerCase() === key.toLowerCase()
+    )
+    
+    if (header && header.values.length > 0) {
+      const rect = event.target.getBoundingClientRect()
+      headerAutocompletePosition.value = {
+        top: rect.bottom + window.scrollY,
+        left: rect.left + window.scrollX
+      }
+      headerAutocompleteWidth.value = `${rect.width}px`
+      showHeaderValueAutocomplete.value = true
+      showHeaderKeyAutocomplete.value = false
+    } else {
+      showHeaderValueAutocomplete.value = false
+    }
+  }
+
+  const selectHeaderKey = (item) => {
+    if (activeHeaderIndex.value >= 0 && localSettings.commonHeaders[activeHeaderIndex.value]) {
+      localSettings.commonHeaders[activeHeaderIndex.value].key = item.key
+    }
+    hideHeaderAutocomplete()
+  }
+
+  const selectHeaderValue = (value) => {
+    if (activeHeaderIndex.value >= 0 && localSettings.commonHeaders[activeHeaderIndex.value]) {
+      localSettings.commonHeaders[activeHeaderIndex.value].value = value
+    }
+    hideHeaderAutocomplete()
+  }
+
+  const hideHeaderAutocomplete = () => {
+    showHeaderKeyAutocomplete.value = false
+    showHeaderValueAutocomplete.value = false
+    headerSelectedIndex.value = 0
+  }
+
+  const handleHeaderKeyNavigation = (e) => {
+    if (!showHeaderKeyAutocomplete.value && !showHeaderValueAutocomplete.value) return false
+    
+    const list = showHeaderKeyAutocomplete.value ? filteredHeaderKeys.value : 
+                 showHeaderValueAutocomplete.value ? filteredHeaderValues.value : []
+    
+    if (!list.length) return false
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      headerSelectedIndex.value = Math.min(headerSelectedIndex.value + 1, list.length - 1)
+      return true
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      headerSelectedIndex.value = Math.max(headerSelectedIndex.value - 1, 0)
+      return true
+    } else if (e.key === 'Enter') {
+      e.preventDefault()
+      if (showHeaderKeyAutocomplete.value && filteredHeaderKeys.value[headerSelectedIndex.value]) {
+        selectHeaderKey(filteredHeaderKeys.value[headerSelectedIndex.value])
+      } else if (showHeaderValueAutocomplete.value && filteredHeaderValues.value[headerSelectedIndex.value]) {
+        selectHeaderValue(filteredHeaderValues.value[headerSelectedIndex.value])
+      }
+      return true
+    } else if (e.key === 'Escape') {
+      hideHeaderAutocomplete()
+      return true
+    } else if (e.key === 'Tab') {
+      hideHeaderAutocomplete()
+      return false
+    }
+    return false
+  }
+  
   // 处理脚本更新
   const handleScriptUpdate = (updated) => {
     localSettings.preScript = updated.preScript || ''
@@ -266,6 +398,20 @@ export function useCollectionSettingsSetup(props, emit) {
     removeVariable,
     handleScriptUpdate,
     saveScripts,
-    saveSettings
+    saveSettings,
+    // Header 自动补全
+    showHeaderKeyAutocomplete,
+    showHeaderValueAutocomplete,
+    headerAutocompletePosition,
+    headerAutocompleteWidth,
+    headerSelectedIndex,
+    filteredHeaderKeys,
+    filteredHeaderValues,
+    handleHeaderKeyInput,
+    handleHeaderValueInput,
+    selectHeaderKey,
+    selectHeaderValue,
+    hideHeaderAutocomplete,
+    handleHeaderKeyNavigation
   }
 }

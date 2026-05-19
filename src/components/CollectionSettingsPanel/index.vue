@@ -2,6 +2,7 @@
 import { useCollectionSettingsSetup } from './index.js'
 import Icon from '../Icon/index.vue'
 import ScriptPanel from '../ScriptPanel/index.vue'
+import HeaderAutocomplete from '../HeaderAutocomplete/index.vue'
 
 const props = defineProps({
   collection: {
@@ -28,7 +29,20 @@ const {
   removeVariable,
   handleScriptUpdate,
   saveScripts,
-  saveSettings
+  saveSettings,
+  showHeaderKeyAutocomplete,
+  showHeaderValueAutocomplete,
+  headerAutocompletePosition,
+  headerAutocompleteWidth,
+  headerSelectedIndex,
+  filteredHeaderKeys,
+  filteredHeaderValues,
+  handleHeaderKeyInput,
+  handleHeaderValueInput,
+  selectHeaderKey,
+  selectHeaderValue,
+  hideHeaderAutocomplete,
+  handleHeaderKeyNavigation
 } = useCollectionSettingsSetup(props, emit)
 </script>
 
@@ -82,20 +96,58 @@ const {
             <span class="col-check">
               <input type="checkbox" v-model="header.enabled" />
             </span>
-            <span class="col-key">
-              <input type="text" v-model="header.key" placeholder="Header 名" />
+            <span class="col-key header-key-cell">
+              <input 
+                type="text" 
+                v-model="header.key" 
+                :placeholder="t('placeholder.headerName')"
+                @input="handleHeaderKeyInput(header.key, index, $event)"
+                @keydown="handleHeaderKeyNavigation($event)"
+                @blur="hideHeaderAutocomplete"
+                @focus="handleHeaderKeyInput(header.key, index, $event)"
+              />
             </span>
-            <span class="col-value">
-              <input type="text" v-model="header.value" placeholder="Header 值" />
+            <span class="col-value header-value-cell">
+              <input 
+                type="text" 
+                v-model="header.value" 
+                :placeholder="t('placeholder.headerValue')"
+                @input="handleHeaderValueInput(header.key, header.value, index, $event)"
+                @keydown="handleHeaderKeyNavigation($event)"
+                @blur="hideHeaderAutocomplete"
+                @focus="handleHeaderValueInput(header.key, header.value, index, $event)"
+              />
             </span>
             <span class="col-desc">
-              <input type="text" v-model="header.description" placeholder="描述" />
+              <input type="text" v-model="header.description" :placeholder="t('placeholder.description')" />
             </span>
             <span class="col-action">
               <button class="remove-btn" @click="removeHeader(index)">×</button>
             </span>
           </div>
         </div>
+        <!-- Header Key 自动补全 -->
+        <HeaderAutocomplete
+          :visible="showHeaderKeyAutocomplete"
+          type="key"
+          :position="headerAutocompletePosition"
+          :width="headerAutocompleteWidth"
+          :items="filteredHeaderKeys"
+          :selectedIndex="headerSelectedIndex"
+          @select="selectHeaderKey"
+          @close="hideHeaderAutocomplete"
+        />
+        <!-- Header Value 自动补全 -->
+        <HeaderAutocomplete
+          :visible="showHeaderValueAutocomplete"
+          type="value"
+          :position="headerAutocompletePosition"
+          :width="headerAutocompleteWidth"
+          :items="filteredHeaderValues"
+          :selectedIndex="headerSelectedIndex"
+          @select="selectHeaderValue"
+          @close="hideHeaderAutocomplete"
+        />
       </div>
       
       <!-- 变量 -->

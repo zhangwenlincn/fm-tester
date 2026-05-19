@@ -5,6 +5,7 @@ import Icon from '../Icon/index.vue'
 import VariableHighlight from '../VariableHighlight/index.vue'
 import ScriptPanel from '../ScriptPanel/index.vue'
 import DocPanel from '../DocPanel/index.vue'
+import HeaderAutocomplete from '../HeaderAutocomplete/index.vue'
 
 const { t } = useI18n()
 
@@ -65,7 +66,20 @@ const {
   removeFormFieldFile,
   updateTimeout,
   handleScriptUpdate,
-  saveScripts
+  saveScripts,
+  showHeaderKeyAutocomplete,
+  showHeaderValueAutocomplete,
+  headerAutocompletePosition,
+  headerAutocompleteWidth,
+  headerSelectedIndex,
+  filteredHeaderKeys,
+  filteredHeaderValues,
+  handleHeaderKeyInput,
+  handleHeaderValueInput,
+  selectHeaderKey,
+  selectHeaderValue,
+  hideHeaderAutocomplete,
+  handleHeaderKeyNavigation
 } = useRequestPanelSetup(props, emit)
 </script>
 
@@ -178,11 +192,27 @@ const {
             <span class="col-check">
               <input type="checkbox" v-model="header.enabled" />
             </span>
-            <span class="col-key">
-              <input type="text" v-model="header.key" :placeholder="t('placeholder.headerName')" />
+            <span class="col-key header-key-cell">
+              <input 
+                type="text" 
+                v-model="header.key" 
+                :placeholder="t('placeholder.headerName')"
+                @input="handleHeaderKeyInput(header.key, index, $event)"
+                @keydown="handleHeaderKeyNavigation($event, index)"
+                @blur="hideHeaderAutocomplete"
+                @focus="handleHeaderKeyInput(header.key, index, $event)"
+              />
             </span>
-            <span class="col-value">
-              <input type="text" v-model="header.value" :placeholder="t('placeholder.headerValue')" />
+            <span class="col-value header-value-cell">
+              <input 
+                type="text" 
+                v-model="header.value" 
+                :placeholder="t('placeholder.headerValue')"
+                @input="handleHeaderValueInput(header.key, header.value, index, $event)"
+                @keydown="handleHeaderKeyNavigation($event, index)"
+                @blur="hideHeaderAutocomplete"
+                @focus="handleHeaderValueInput(header.key, header.value, index, $event)"
+              />
             </span>
             <span class="col-desc">
               <input type="text" v-model="header.description" :placeholder="t('placeholder.description')" />
@@ -192,6 +222,28 @@ const {
             </span>
           </div>
         </div>
+        <!-- Header Key 自动补全 -->
+        <HeaderAutocomplete
+          :visible="showHeaderKeyAutocomplete"
+          type="key"
+          :position="headerAutocompletePosition"
+          :width="headerAutocompleteWidth"
+          :items="filteredHeaderKeys"
+          :selectedIndex="headerSelectedIndex"
+          @select="selectHeaderKey"
+          @close="hideHeaderAutocomplete"
+        />
+        <!-- Header Value 自动补全 -->
+        <HeaderAutocomplete
+          :visible="showHeaderValueAutocomplete"
+          type="value"
+          :position="headerAutocompletePosition"
+          :width="headerAutocompleteWidth"
+          :items="filteredHeaderValues"
+          :selectedIndex="headerSelectedIndex"
+          @select="selectHeaderValue"
+          @close="hideHeaderAutocomplete"
+        />
       </div>
       
       <!-- 请求体 -->
