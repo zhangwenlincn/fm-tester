@@ -76,10 +76,13 @@ const {
   filteredHeaderValues,
   handleHeaderKeyInput,
   handleHeaderValueInput,
+  handleHeaderValueChange,
   selectHeaderKey,
   selectHeaderValue,
   hideHeaderAutocomplete,
-  handleHeaderKeyNavigation
+  handleHeaderKeyNavigation,
+  headerValueRefs,
+  variables
 } = useRequestPanelSetup(props, emit)
 </script>
 
@@ -106,7 +109,7 @@ const {
           :text="localRequest.url"
           :variables="variables"
           @input="updateUrl"
-          class="url-input-wrapper"
+          class="url-mode"
           :placeholder="t('placeholder.url')"
         />
         <button class="send-btn" @click="sendRequest">{{ t('buttons.send') }}</button>
@@ -204,14 +207,16 @@ const {
               />
             </span>
             <span class="col-value header-value-cell">
-              <input 
-                type="text" 
-                v-model="header.value" 
+              <VariableHighlight
+                :ref="el => { if (el) headerValueRefs[index] = el }"
+                mode="input"
+                :modelValue="header.value"
+                :variables="variables"
                 :placeholder="t('placeholder.headerValue')"
-                @input="handleHeaderValueInput(header.key, header.value, index, $event)"
+                @input="(val) => { header.value = val; handleHeaderValueChange(header.key, val, index) }"
+                @focus="handleHeaderValueInput(header.key, header.value, index, $event)"
                 @keydown="handleHeaderKeyNavigation($event, index)"
                 @blur="hideHeaderAutocomplete"
-                @focus="handleHeaderValueInput(header.key, header.value, index, $event)"
               />
             </span>
             <span class="col-desc">

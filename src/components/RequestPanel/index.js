@@ -588,23 +588,81 @@ const localRequest = ref({
     activeHeaderIndex.value = index
     headerSelectedIndex.value = 0
     
+    // 如果包含 {{，不显示 header 值补全（让变量补全生效）
+    if (value.includes('{{')) {
+      showHeaderValueAutocomplete.value = false
+      return
+    }
+    
     const header = COMMON_HEADERS.find(h => 
       h.key.toLowerCase() === key.toLowerCase()
     )
     
     if (header && header.values.length > 0) {
-      const rect = event.target.getBoundingClientRect()
-      headerAutocompletePosition.value = {
-        top: rect.bottom + window.scrollY,
-        left: rect.left + window.scrollX
+      // 获取位置：优先使用 event.target，否则尝试从 headerValueRefs 获取
+      let rect = null
+      if (event && event.target) {
+        rect = event.target.getBoundingClientRect()
+      } else if (headerValueRefs[index]) {
+        const inputEl = headerValueRefs[index]?.getInputRef?.()
+        if (inputEl) {
+          rect = inputEl.getBoundingClientRect()
+        }
       }
-      headerAutocompleteWidth.value = `${rect.width}px`
-      showHeaderValueAutocomplete.value = true
-      showHeaderKeyAutocomplete.value = false
+      
+      if (rect) {
+        headerAutocompletePosition.value = {
+          top: rect.bottom + window.scrollY,
+          left: rect.left + window.scrollX
+        }
+        headerAutocompleteWidth.value = `${rect.width}px`
+        showHeaderValueAutocomplete.value = true
+        showHeaderKeyAutocomplete.value = false
+      }
     } else {
       showHeaderValueAutocomplete.value = false
     }
   }
+  
+  // 处理 VariableHighlight 的 input 事件（值变化）
+  const handleHeaderValueChange = (key, value, index) => {
+    headerKeyInput.value = key
+    headerValueInput.value = value
+    activeHeaderIndex.value = index
+    
+    // 如果包含 {{，不显示 header 值补全
+    if (value.includes('{{')) {
+      showHeaderValueAutocomplete.value = false
+      return
+    }
+    
+    // 检查是否有预设值
+    const header = COMMON_HEADERS.find(h => 
+      h.key.toLowerCase() === key.toLowerCase()
+    )
+    
+    if (header && header.values.length > 0 && headerValueRefs[index]) {
+      // 延迟获取位置，确保 DOM 已更新
+      setTimeout(() => {
+        const inputEl = headerValueRefs[index]?.getInputRef?.()
+        if (inputEl) {
+          const rect = inputEl.getBoundingClientRect()
+          headerAutocompletePosition.value = {
+            top: rect.bottom + window.scrollY,
+            left: rect.left + window.scrollX
+          }
+          headerAutocompleteWidth.value = `${rect.width}px`
+          showHeaderValueAutocomplete.value = true
+          showHeaderKeyAutocomplete.value = false
+        }
+      }, 50)
+    } else {
+      showHeaderValueAutocomplete.value = false
+    }
+  }
+
+  // Header value 输入框 refs（用于获取位置）
+  const headerValueRefs = {}
 
   const selectHeaderKey = (item) => {
     if (activeHeaderIndex.value >= 0 && localRequest.value.headers[activeHeaderIndex.value]) {
@@ -873,9 +931,13 @@ const localRequest = ref({
     filteredHeaderValues,
     handleHeaderKeyInput,
     handleHeaderValueInput,
+    handleHeaderValueChange,
     selectHeaderKey,
     selectHeaderValue,
     hideHeaderAutocomplete,
-    handleHeaderKeyNavigation
+    handleHeaderKeyNavigation,
+    headerValueRefs,
+    // 变量列表
+    variables: computed(() => props.variables)
   }
 }

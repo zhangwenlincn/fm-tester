@@ -31,7 +31,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['update:modelValue', 'input', 'scroll'])
+const emit = defineEmits(['update:modelValue', 'input', 'scroll', 'focus', 'blur'])
 
 const { splitByVariables, highlightVariables } = useVariableHighlight()
 const { syncScroll } = useUrlOverlay()
@@ -143,6 +143,8 @@ defineExpose({
       @input="handleInput"
       @scroll="handleScroll"
       @keydown="onKeyDown"
+      @focus="emit('focus', $event)"
+      @blur="emit('blur', $event)"
     />
     
     <!-- 变量自动补全下拉菜单 -->

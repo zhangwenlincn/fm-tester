@@ -3,6 +3,7 @@ import { useCollectionSettingsSetup } from './index.js'
 import Icon from '../Icon/index.vue'
 import ScriptPanel from '../ScriptPanel/index.vue'
 import HeaderAutocomplete from '../HeaderAutocomplete/index.vue'
+import VariableHighlight from '../VariableHighlight/index.vue'
 
 const props = defineProps({
   collection: {
@@ -12,6 +13,10 @@ const props = defineProps({
   workspacePath: {
     type: String,
     required: true
+  },
+  variables: {
+    type: Array,
+    default: () => []
   }
 })
 
@@ -39,10 +44,13 @@ const {
   filteredHeaderValues,
   handleHeaderKeyInput,
   handleHeaderValueInput,
+  handleHeaderValueChange,
   selectHeaderKey,
   selectHeaderValue,
   hideHeaderAutocomplete,
-  handleHeaderKeyNavigation
+  handleHeaderKeyNavigation,
+  headerValueRefs,
+  variables
 } = useCollectionSettingsSetup(props, emit)
 </script>
 
@@ -108,14 +116,16 @@ const {
               />
             </span>
             <span class="col-value header-value-cell">
-              <input 
-                type="text" 
-                v-model="header.value" 
+              <VariableHighlight
+                :ref="el => { if (el) headerValueRefs[index] = el }"
+                mode="input"
+                :modelValue="header.value"
+                :variables="variables"
                 :placeholder="t('placeholder.headerValue')"
-                @input="handleHeaderValueInput(header.key, header.value, index, $event)"
+                @input="(val) => { header.value = val; handleHeaderValueChange(header.key, val, index) }"
+                @focus="handleHeaderValueInput(header.key, header.value, index, $event)"
                 @keydown="handleHeaderKeyNavigation($event)"
                 @blur="hideHeaderAutocomplete"
-                @focus="handleHeaderValueInput(header.key, header.value, index, $event)"
               />
             </span>
             <span class="col-desc">

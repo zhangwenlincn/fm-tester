@@ -42,7 +42,8 @@
 }
 
 .method-select {
-  padding: 8px 12px;
+  height: 32px;
+  padding: 0 12px;
   font-size: 13px;
   font-weight: 600;
   border: 1px solid #d9d9d9;
@@ -50,6 +51,7 @@
   cursor: pointer;
   outline: none;
   min-width: 90px;
+  box-sizing: border-box;
 }
 
 .method-select.get {
@@ -76,27 +78,15 @@
   border-color: #ffa39e;
 }
 
-.url-input {
+/* URL 输入框容器 */
+.url-mode {
   flex: 1;
-  padding: 8px 12px;
-  font-size: 13px;
-  border: 1px solid #d9d9d9;
-  border-radius: 4px;
-  outline: none;
-}
-
-.url-input:focus {
-  border-color: #1890ff;
-}
-
-/* URL 输入框高亮 wrapper */
-.url-input-wrapper {
-  flex: 1;
-  min-height: 34px;
+  min-width: 0;
 }
 
 .send-btn {
-  padding: 8px 24px;
+  height: 32px;
+  padding: 0 24px;
   font-size: 13px;
   font-weight: 500;
   color: #ffffff;
@@ -104,6 +94,7 @@
   border: none;
   border-radius: 4px;
   cursor: pointer;
+  box-sizing: border-box;
 }
 
 .send-btn:hover {
@@ -111,13 +102,15 @@
 }
 
 .save-btn {
-  padding: 8px 16px;
+  height: 32px;
+  padding: 0 16px;
   font-size: 13px;
   color: #262626;
   background: #ffffff;
   border: 1px solid #d9d9d9;
   border-radius: 4px;
   cursor: pointer;
+  box-sizing: border-box;
 }
 
 .save-btn:hover {
@@ -220,6 +213,11 @@
 .col-value {
   flex: 1;
   min-width: 0;
+  position: relative;
+}
+
+.header-value-cell {
+  position: relative;
 }
 
 .col-desc {
@@ -241,6 +239,8 @@
   border: 1px solid #d9d9d9;
   border-radius: 4px;
   outline: none;
+  height: 28px;
+  box-sizing: border-box;
 }
 
 .col-key input:focus,

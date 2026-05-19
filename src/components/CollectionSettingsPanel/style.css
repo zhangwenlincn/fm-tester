@@ -130,15 +130,24 @@
 }
 
 .col-key {
-  width: 150px;
+  flex: 1;
+  min-width: 0;
+  position: relative;
 }
 
 .col-value {
-  width: 200px;
+  flex: 1;
+  min-width: 0;
+  position: relative;
+}
+
+.header-value-cell {
+  position: relative;
 }
 
 .col-desc {
   flex: 1;
+  min-width: 0;
 }
 
 .col-action {
@@ -175,6 +184,8 @@
   border-radius: 2px;
   font-size: 13px;
   outline: none;
+  height: 28px;
+  box-sizing: border-box;
 }
 
 .param-row input[type="text"]:focus {

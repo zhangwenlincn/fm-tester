@@ -209,6 +209,7 @@ const {
         <CollectionSettingsPanel 
           :collection="selectedCollection"
           :workspace-path="currentWorkspace?.path || ''"
+          :variables="activeVariables"
           @save="onCollectionSettingsSaved"
         />
       </div>

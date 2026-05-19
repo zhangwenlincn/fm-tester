@@ -10,14 +10,10 @@
   border-radius: 3px;
 }
 
-/* 未定义变量错误样式 - 红色波浪线 */
+/* 未定义变量样式 */
 .var-undefined {
   color: #ff4d4f;
   background: rgba(255, 77, 79, 0.1);
-  text-decoration: underline;
-  text-decoration-style: wavy;
-  text-decoration-color: #ff4d4f;
-  cursor: help;
 }
 
 /* 占位符样式 */
@@ -29,7 +25,6 @@
 .var-highlight-input-wrapper {
   position: relative;
   width: 100%;
-  height: 100%;
 }
 
 /* 高亮覆盖层 */
@@ -42,48 +37,89 @@
   pointer-events: none;
   white-space: nowrap;
   overflow: hidden;
-  
-  /* 与输入框相同的样式 */
-  padding: 8px 12px;
-  font-size: 13px;
-  font-family: inherit;
-  line-height: normal;
-  border: 1px solid transparent;
-  border-radius: 4px;
+  z-index: 1;
   
   /* 文本颜色（非变量部分） */
   color: #262626;
-  
-  /* 确保覆盖层在输入框下方 */
-  z-index: 1;
+  font-size: 13px;
+  font-family: inherit;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  box-sizing: border-box;
+  background: #fff;
 }
 
-/* 透明输入框 */
+/* CollectionSettingsPanel 使用更小的 border-radius */
+.param-row .var-highlight-overlay {
+  border-radius: 2px;
+}
+
+/* 覆盖层内文本 span - 与输入框 padding 同步 */
+.var-highlight-overlay > span {
+  display: block;
+  padding: 4px 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 占位符在覆盖层内的样式 */
+.var-highlight-overlay .var-placeholder {
+  display: block;
+  padding: 4px 8px;
+  color: #bfbfbf;
+}
+
+/* 透明输入框 - 决定容器高度 */
 .var-highlight-input {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  position: relative;
   width: 100%;
-  height: 100%;
+  z-index: 2;
   
   /* 透明文本，只显示光标 */
   color: transparent;
   caret-color: #262626;
   
   /* 输入框样式 */
-  padding: 8px 12px;
+  padding: 4px 8px;
   font-size: 13px;
   font-family: inherit;
-  line-height: normal;
   border: 1px solid #d9d9d9;
   border-radius: 4px;
   outline: none;
   background: transparent;
-  
-  /* 确保输入框在覆盖层上方 */
-  z-index: 2;
+  box-sizing: border-box;
+}
+
+/* 表格中的输入框固定高度 */
+.params-list .var-highlight-input,
+.form-list .var-highlight-input {
+  height: 28px;
+}
+
+/* URL 输入框模式 - 固定 32px 高度，与按钮对齐 */
+.url-mode.var-highlight-input-wrapper {
+  height: 32px;
+}
+
+.url-mode .var-highlight-input {
+  height: 32px;
+  padding: 0 12px;
+  font-size: 13px;
+}
+
+.url-mode .var-highlight-overlay {
+  height: 32px;
+}
+
+.url-mode .var-highlight-overlay > span {
+  height: 32px;
+  padding: 0 12px;
+  line-height: 30px;
+}
+
+/* CollectionSettingsPanel 使用更小的 border-radius */
+.param-row .var-highlight-input {
+  border-radius: 2px;
 }
 
 .var-highlight-input:focus {
