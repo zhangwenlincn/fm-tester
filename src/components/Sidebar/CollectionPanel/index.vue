@@ -274,9 +274,11 @@ defineExpose({
         </div>
         <div class="menu-divider"></div>
         <div class="menu-item" @click="handleContextAction('rename')">
+          <span class="menu-icon"><Icon name="edit" :size="14" /></span>
           <span>{{ t('common.rename') }}</span>
         </div>
         <div class="menu-item delete" @click="handleContextAction('delete')">
+          <span class="menu-icon"><Icon name="delete" :size="14" /></span>
           <span>{{ t('common.delete') }}</span>
         </div>
       </template>
@@ -284,10 +286,12 @@ defineExpose({
       <!-- API 菜单 -->
       <template v-if="contextMenu.type === 'api'">
         <div class="menu-item" @click="handleContextAction('rename')">
+          <span class="menu-icon"><Icon name="edit" :size="14" /></span>
           <span>{{ t('common.rename') }}</span>
         </div>
         <div class="menu-divider"></div>
         <div class="menu-item delete" @click="handleContextAction('delete')">
+          <span class="menu-icon"><Icon name="delete" :size="14" /></span>
           <span>{{ t('common.delete') }}</span>
         </div>
       </template>
@@ -295,6 +299,7 @@ defineExpose({
       <!-- 保存响应菜单 -->
       <template v-if="contextMenu.type === 'saved-response'">
         <div class="menu-item delete" @click="handleContextAction('delete-saved-response')">
+          <span class="menu-icon"><Icon name="delete" :size="14" /></span>
           <span>{{ t('common.delete') }}</span>
         </div>
       </template>

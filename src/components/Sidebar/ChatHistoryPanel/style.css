@@ -138,11 +138,14 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   z-index: 9999;
   min-width: 120px;
+  padding: 4px 0;
 }
 
 .chat-context-menu .context-menu-item {
-  padding: 8px 16px;
-  font-size: 14px;
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  font-size: 13px;
   color: #262626;
   cursor: pointer;
   transition: background 0.2s;
@@ -158,4 +161,8 @@
 
 .chat-context-menu .context-menu-item.danger:hover {
   background: #fff1f0;
+}
+
+.chat-context-menu .menu-icon {
+  margin-right: 8px;
 }

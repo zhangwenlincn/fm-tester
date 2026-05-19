@@ -1,5 +1,6 @@
 <script setup>
 import { useChatHistorySetup } from './index.js'
+import Icon from '../../Icon/index.vue'
 import './style.css'
 
 const props = defineProps({
@@ -90,10 +91,12 @@ const {
       @click.stop
     >
       <div class="context-menu-item" @click.stop="handleRenameFromMenu">
-        {{ t('common.rename') }}
+        <span class="menu-icon"><Icon name="edit" :size="14" /></span>
+        <span>{{ t('common.rename') }}</span>
       </div>
       <div class="context-menu-item danger" @click.stop="handleDeleteFromMenu">
-        {{ t('common.delete') }}
+        <span class="menu-icon"><Icon name="delete" :size="14" /></span>
+        <span>{{ t('common.delete') }}</span>
       </div>
     </div>
   </Teleport>

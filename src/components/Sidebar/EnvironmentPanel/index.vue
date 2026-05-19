@@ -85,10 +85,12 @@
       <!-- 环境菜单 -->
       <template v-if="envContextMenu.type === 'env'">
         <div class="menu-item" @click="handleEnvContextAction('edit-env')">
+          <span class="menu-icon"><Icon name="edit" :size="14" /></span>
           <span>{{ t('common.rename') }}</span>
         </div>
         <div class="menu-divider"></div>
         <div class="menu-item delete" @click="handleEnvContextAction('delete-env')">
+          <span class="menu-icon"><Icon name="delete" :size="14" /></span>
           <span>{{ t('contextMenu.deleteEnvironment') }}</span>
         </div>
       </template>
