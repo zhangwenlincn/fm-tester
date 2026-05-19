@@ -28,6 +28,7 @@ const emit = defineEmits(['switchWorkspace', 'switchEnvironment', 'openSettings'
 // 菜单配置 - 使用 computed 以响应语言变化
 const menus = computed(() => [
   { name: t('menu.language'), items: supportedLocales.map(l => l.name) },
+  { name: t('menu.workspace'), items: props.workspaces.map(w => w.name), isWorkspace: true },
   { name: t('menu.theme') },
   { name: t('menu.settings'), items: [t('menu.preferences'), t('menu.aiSettings')] },
   { name: t('menu.help'), items: [t('menu.scriptApiRef')] },
@@ -35,11 +36,9 @@ const menus = computed(() => [
 ])
 
 const activeMenu = ref(null)
-const showWorkspaceDropdown = ref(false)
 const showEnvironmentDropdown = ref(false)
 const showScriptHelp = ref(false)
 const showLicensePanel = ref(false)
-const workspaceWrapperRef = ref(null)
 const environmentWrapperRef = ref(null)
 
 // 获取当前工作区显示名称
@@ -49,7 +48,6 @@ const currentWorkspaceName = () => {
 
 const toggleMenu = (index) => {
   activeMenu.value = activeMenu.value === index ? null : index
-  showWorkspaceDropdown.value = false
   showEnvironmentDropdown.value = false
 }
 
@@ -57,28 +55,14 @@ const closeMenu = () => {
   activeMenu.value = null
 }
 
-const toggleWorkspaceDropdown = (event) => {
-  event.stopPropagation()
-  showWorkspaceDropdown.value = !showWorkspaceDropdown.value
-  showEnvironmentDropdown.value = false
-  activeMenu.value = null
-}
-
 const toggleEnvironmentDropdown = (event) => {
   event.stopPropagation()
   showEnvironmentDropdown.value = !showEnvironmentDropdown.value
-  showWorkspaceDropdown.value = false
   activeMenu.value = null
 }
 
 const closeDropdowns = () => {
-  showWorkspaceDropdown.value = false
   showEnvironmentDropdown.value = false
-}
-
-const handleSwitchWorkspace = async (workspace) => {
-  emit('switchWorkspace', workspace)
-  showWorkspaceDropdown.value = false
 }
 
 const handleSwitchEnvironment = (env) => {
@@ -87,7 +71,7 @@ const handleSwitchEnvironment = (env) => {
 }
 
 // 处理菜单项点击
-const handleMenuItemClick = (menuName, item) => {
+const handleMenuItemClick = (menuName, item, menu) => {
   closeMenu()
   
   // 语言切换
@@ -95,6 +79,15 @@ const handleMenuItemClick = (menuName, item) => {
     const localeCode = supportedLocales.find(l => l.name === item)?.code
     if (localeCode) {
       switchLanguage(localeCode)
+    }
+    return
+  }
+  
+  // 工作区切换
+  if (menu?.isWorkspace) {
+    const workspace = props.workspaces.find(w => w.name === item)
+    if (workspace) {
+      emit('switchWorkspace', workspace)
     }
     return
   }
@@ -132,9 +125,6 @@ const closeLicense = () => {
 
 // 点击外部关闭下拉菜单
 const handleClickOutside = (event) => {
-  if (workspaceWrapperRef.value && !workspaceWrapperRef.value.contains(event.target)) {
-    showWorkspaceDropdown.value = false
-  }
   if (environmentWrapperRef.value && !environmentWrapperRef.value.contains(event.target)) {
     showEnvironmentDropdown.value = false
   }
@@ -166,7 +156,8 @@ onUnmounted(() => {
             v-for="item in menu.items" 
             :key="item" 
             class="dropdown-item"
-            @click.stop="handleMenuItemClick(menu.name, item)"
+            :class="{ active: menu.isWorkspace && workspaces.find(w => w.name === item)?.id === currentWorkspace?.id }"
+            @click.stop="handleMenuItemClick(menu.name, item, menu)"
           >
             {{ item }}
           </div>
@@ -176,33 +167,6 @@ onUnmounted(() => {
     
     <!-- 右侧选择器 -->
     <div class="menu-right">
-      <!-- 工作区选择器 -->
-      <div ref="workspaceWrapperRef" class="selector-wrapper">
-        <div
-          class="selector"
-          :class="{ active: showWorkspaceDropdown }"
-          @click="toggleWorkspaceDropdown"
-        >
-          <span class="selector-label">{{ t('workspace.selector') }}</span>
-          <span class="selector-value">{{ currentWorkspaceName() }}</span>
-          <span class="selector-arrow">▼</span>
-        </div>
-        <div v-show="showWorkspaceDropdown" class="selector-dropdown">
-          <div
-            v-for="ws in workspaces"
-            :key="ws.id"
-            class="dropdown-item"
-            :class="{ active: props.currentWorkspace?.id === ws.id }"
-            @click.stop="handleSwitchWorkspace(ws)"
-          >
-            {{ ws.name }}
-          </div>
-          <div v-if="workspaces.length === 0" class="dropdown-item empty">
-            {{ t('workspace.noWorkspace') }}
-          </div>
-        </div>
-      </div>
-
       <!-- 环境选择器 -->
       <div ref="environmentWrapperRef" class="selector-wrapper">
         <div

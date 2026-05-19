@@ -263,6 +263,7 @@ const {
     
     <!-- 底部状态栏 -->
     <StatusBar 
+      :workspace-name="currentWorkspace?.name"
       @open-cookie-panel="openCookiePanel"
       @open-console-panel="openConsolePanel"
     />

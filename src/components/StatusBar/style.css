@@ -14,12 +14,22 @@
   display: flex;
   align-items: center;
   gap: 16px;
+  flex: 1;
+}
+
+.status-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 2;
 }
 
 .status-right {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex: 1;
+  justify-content: flex-end;
 }
 
 .status-icon {
@@ -38,4 +48,10 @@
 
 .version {
   color: #8c8c8c;
+}
+
+.workspace-name {
+  color: #262626;
+  font-weight: 600;
+  font-size: 13px;
 }

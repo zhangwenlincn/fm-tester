@@ -12,6 +12,7 @@
 .menu-left {
   display: flex;
   align-items: center;
+  gap: 8px;
 }
 
 .menu-right {

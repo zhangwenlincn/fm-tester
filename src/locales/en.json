@@ -21,6 +21,7 @@
   "menu": {
     "file": "File",
     "language": "Language",
+    "workspace": "Workspace",
     "theme": "Theme",
     "settings": "Settings",
     "plugin": "Plugin",

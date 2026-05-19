@@ -21,6 +21,7 @@
   "menu": {
     "file": "文件",
     "language": "语言",
+    "workspace": "工作区",
     "theme": "主题",
     "settings": "设置",
     "plugin": "插件",
