@@ -394,7 +394,7 @@ export async function executePreScripts(options) {
 /**
  * 执行后置脚本链（反向顺序）
  * @param {Object} options - 执行选项
- * @returns {Promise<{success: boolean, errors?: Array}>}
+ * @returns {Promise<{success: boolean, errors?: Array, data?: Object}>}
  */
 export async function executePostScripts(options) {
   const {
@@ -417,7 +417,13 @@ export async function executePostScripts(options) {
   })
 
   if (scripts.length === 0) {
-    return { success: true }
+    return { 
+      success: true,
+      data: {
+        environmentVariables,
+        collectionVariables
+      }
+    }
   }
 
   // 后置脚本反向执行：接口 → 子集合 → 父集合 → 工作区
@@ -447,6 +453,11 @@ export async function executePostScripts(options) {
     try {
       const fm = createPostResponseFm(context)
       await executeInSandbox(script.content, fm)
+      
+      // 获取修改后的数据，传递给下一个脚本
+      const modifiedData = fm._getData()
+      context.environmentVariables = modifiedData.environmentVariables
+      context.collectionVariables = modifiedData.collectionVariables
     } catch (error) {
       logger('error', `[${script.source}] 执行失败: ${error.message}`, script.source)
       errors.push({ source: script.source, error: error.message })
@@ -456,7 +467,11 @@ export async function executePostScripts(options) {
 
   return {
     success: errors.length === 0,
-    errors
+    errors,
+    data: {
+      environmentVariables: context.environmentVariables,
+      collectionVariables: context.collectionVariables
+    }
   }
 }
 

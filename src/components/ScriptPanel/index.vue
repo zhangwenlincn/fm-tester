@@ -351,19 +351,16 @@ const optimizeWithAi = async () => {
   
   aiOptimizing.value = true
   const currentContent = editor.getValue()
+  let streamedContent = ''
   
   try {
     // 监听流式响应
     streamUnlisten = await listen('ai-chat-stream', (event) => {
       if (editor) {
-        // 实时更新编辑器内容
-        const currentValue = editor.getValue()
-        editor.setValue(currentValue + event.payload)
+        streamedContent += event.payload
+        editor.setValue(streamedContent)
       }
     })
-    
-    // 清空编辑器准备接收新内容
-    editor.setValue('')
     
     // 调用后端 AI 优化（不传 api key，后端自动从 settings 解密）
     const result = await invoke('optimize_script_ai', {
@@ -371,7 +368,7 @@ const optimizeWithAi = async () => {
       scriptType: scriptType.value
     })
     
-    // 设置最终结果（防止流式更新遗漏）
+    // 设置最终结果
     editor.setValue(result)
     
     // 提示成功

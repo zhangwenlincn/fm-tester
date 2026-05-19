@@ -196,6 +196,7 @@ export function useRequest(currentWorkspace, tabs, activeTab, sidebarRef, reques
       let modifiedCollVars = {}
       let ancestorCollections = []
       let collectionsData = []
+      let envConfig = null
 
       if (apiId && workspacePath) {
         // 获取集合数据
@@ -221,7 +222,8 @@ export function useRequest(currentWorkspace, tabs, activeTab, sidebarRef, reques
         
         ancestorCollections = findAncestorCollectionsForApi(collectionsData, apiId)
         
-        // 获取当前环境变量
+        // 获取当前环境变量和环境配置
+        envConfig = await invoke('get_environments', { workspacePath })
         const activeEnvVars = await invoke('get_active_variables', { workspacePath })
         const collVarsObj = mergeCollectionVariablesToObject(ancestorCollections)
         
@@ -253,6 +255,27 @@ export function useRequest(currentWorkspace, tabs, activeTab, sidebarRef, reques
           modifiedRequest = preScriptResult.data.request
           modifiedEnvVars = preScriptResult.data.environmentVariables
           modifiedCollVars = preScriptResult.data.collectionVariables
+          
+          // 保存脚本修改的环境变量
+          if (envConfig.active_environment_id && Object.keys(modifiedEnvVars).length > 0) {
+            const activeEnv = envConfig.environments.find(e => e.id === envConfig.active_environment_id)
+            if (activeEnv) {
+              // 更新环境变量：已存在的更新值，不存在的添加新变量
+              const updatedVariables = [...(activeEnv.variables || [])]
+              for (const [key, value] of Object.entries(modifiedEnvVars)) {
+                const existingVar = updatedVariables.find(v => v.key === key)
+                if (existingVar) {
+                  existingVar.value = value
+                } else {
+                  updatedVariables.push({ key, value, enabled: true })
+                }
+              }
+              await invoke('save_environment', {
+                workspacePath,
+                environment: { ...activeEnv, variables: updatedVariables }
+              })
+            }
+          }
         }
       }
 
@@ -354,6 +377,29 @@ export function useRequest(currentWorkspace, tabs, activeTab, sidebarRef, reques
         
         if (!postScriptResult.success) {
           scriptLogger('error', `后置脚本执行有错误: ${postScriptResult.errors?.map(e => e.error).join(', ')}`, '')
+        }
+        
+        // 保存后置脚本修改的环境变量
+        if (postScriptResult.data && envConfig.active_environment_id) {
+          const postEnvVars = postScriptResult.data.environmentVariables
+          if (Object.keys(postEnvVars).length > 0) {
+            const activeEnv = envConfig.environments.find(e => e.id === envConfig.active_environment_id)
+            if (activeEnv) {
+              const updatedVariables = [...(activeEnv.variables || [])]
+              for (const [key, value] of Object.entries(postEnvVars)) {
+                const existingVar = updatedVariables.find(v => v.key === key)
+                if (existingVar) {
+                  existingVar.value = value
+                } else {
+                  updatedVariables.push({ key, value, enabled: true })
+                }
+              }
+              await invoke('save_environment', {
+                workspacePath,
+                environment: { ...activeEnv, variables: updatedVariables }
+              })
+            }
+          }
         }
       }
 
