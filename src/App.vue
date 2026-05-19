@@ -42,6 +42,7 @@ const {
   selectedEnvironment,
   
   activeVariables,
+  availableVariables,
   loadEnvironments,
   loadActiveVariables,
   switchEnvironment,
@@ -183,7 +184,7 @@ const {
 <RequestPanel 
             :request="currentRequest"
             :has-active-tab="tabs.length > 0"
-            :variables="activeVariables"
+            :variables="availableVariables"
             :request-tab="currentRequestTab"
             :workspace-path="currentWorkspace?.path || ''"
             :api-id="displayTabs[activeTab]?.id || ''"
@@ -206,12 +207,12 @@ const {
       
       <!-- 集合设置面板 -->
       <div class="content-area" v-else-if="showCollectionSettings">
-        <CollectionSettingsPanel 
-          :collection="selectedCollection"
-          :workspace-path="currentWorkspace?.path || ''"
-          :variables="activeVariables"
-          @save="onCollectionSettingsSaved"
-        />
+<CollectionSettingsPanel 
+           :collection="selectedCollection"
+           :workspace-path="currentWorkspace?.path || ''"
+           :variables="availableVariables"
+           @save="onCollectionSettingsSaved"
+         />
       </div>
       
       <!-- 历史详情面板 -->

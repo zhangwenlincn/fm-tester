@@ -13,6 +13,7 @@ export function useEnvironment(currentWorkspace, currentNavKey) {
   const selectedEnvironment = ref(null)
   const selectedEnvVariables = ref([])
   const activeVariables = ref([])
+  const availableVariables = ref([])
 
 const loadEnvironments = async () => {
     if (!currentWorkspace.value?.path) {
@@ -58,6 +59,30 @@ const loadEnvironments = async () => {
       activeVariables.value = Object.entries(variablesMap).map(([key, value]) => ({ key, value }))
     } catch (e) {
       console.error('加载激活变量失败:', e)
+    }
+  }
+
+  const loadAvailableVariables = async (itemId, itemType) => {
+    if (!currentWorkspace.value?.path || !itemId) {
+      availableVariables.value = []
+      return
+    }
+    try {
+      const variables = await invoke('get_available_variables', {
+        workspacePath: currentWorkspace.value.path,
+        environmentId: activeEnvironmentId.value || null,
+        itemId,
+        itemType
+      })
+      availableVariables.value = variables.map(v => ({
+        key: v.key,
+        value: v.value,
+        source: v.source,
+        description: v.description
+      }))
+    } catch (e) {
+      console.error('加载可用变量失败:', e)
+      availableVariables.value = []
     }
   }
 
@@ -164,8 +189,10 @@ const loadEnvironments = async () => {
     selectedEnvironment,
     selectedEnvVariables,
     activeVariables,
+    availableVariables,
     loadEnvironments,
     loadActiveVariables,
+    loadAvailableVariables,
     switchEnvironment,
     selectEnvironment,
     saveEnvironment,

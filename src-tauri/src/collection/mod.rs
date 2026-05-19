@@ -8,6 +8,7 @@ pub use collection_commands::{
 };
 pub use collection_config::{get_collections_path, read_collections, write_collections};
 pub use collection_utils::{
-    find_api_in_collections, find_collection_item, find_parent_children, get_all_descendant_ids,
-    get_collection_depth, get_collection_max_child_depth, remove_collection_item,
+    find_ancestor_chain, find_api_in_collections, find_collection_item, find_parent_children,
+    get_all_descendant_ids, get_collection_depth, get_collection_max_child_depth,
+    remove_collection_item,
 };

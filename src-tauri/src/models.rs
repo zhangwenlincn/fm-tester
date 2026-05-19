@@ -208,6 +208,16 @@ pub struct Variable {
     pub description: Option<String>,
 }
 
+/// 变量信息（用于前端提示）
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct VariableInfo {
+    pub key: String,
+    pub value: String,
+    pub source: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+}
+
 /// 环境配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Environment {

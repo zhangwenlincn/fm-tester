@@ -97,6 +97,24 @@ export function useAppSetup() {
   // 设置 activeTab watcher
   requestModule.setupActiveTabWatcher()
 
+  // 监听当前标签页变化，加载可用变量
+  watch([tabs, activeTab], () => {
+    const currentTab = tabs.value[activeTab.value]
+    if (currentTab && currentNavKey.value === 'collection' && workspace.currentWorkspace.value?.path) {
+      environment.loadAvailableVariables(currentTab.id, currentTab.tabType)
+    } else {
+      environment.availableVariables.value = []
+    }
+  }, { immediate: true })
+
+  // 监听环境变化，重新加载可用变量
+  watch(() => environment.activeEnvironmentId.value, () => {
+    const currentTab = tabs.value[activeTab.value]
+    if (currentTab && currentNavKey.value === 'collection' && workspace.currentWorkspace.value?.path) {
+      environment.loadAvailableVariables(currentTab.id, currentTab.tabType)
+    }
+  })
+
   // 监听导航变化，更新 Chat 面板状态
   watch(currentNavKey, () => {
     showChatPanel.value = currentNavKey.value === 'chat'
@@ -281,6 +299,7 @@ export function useAppSetup() {
     activeEnvironment: environment.activeEnvironment,
     selectedEnvironment: environment.selectedEnvironment,
     activeVariables: environment.activeVariables,
+    availableVariables: environment.availableVariables,
     loadEnvironments: environment.loadEnvironments,
     loadActiveVariables: environment.loadActiveVariables,
     switchEnvironment: environment.switchEnvironment,

@@ -68,6 +68,7 @@ pub fn run() {
             switch_environment,
             get_active_variables,
             reorder_environments,
+            get_available_variables,
             // 记忆
             get_expanded_collections,
             save_expanded_collections,

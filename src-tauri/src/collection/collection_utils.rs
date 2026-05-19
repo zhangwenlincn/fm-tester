@@ -1,5 +1,25 @@
 use crate::models::Collection;
 
+/// 查找集合或接口的父链（从根到该节点的路径）
+/// 返回所有父集合（包括自身，如果是集合）
+pub fn find_ancestor_chain(
+    items: &[Collection],
+    target_id: &str,
+    path: &mut Vec<Collection>,
+) -> bool {
+    for item in items {
+        if item.id == target_id {
+            path.push(item.clone());
+            return true;
+        }
+        if find_ancestor_chain(&item.children, target_id, path) {
+            path.insert(0, item.clone());
+            return true;
+        }
+    }
+    false
+}
+
 /// 递归查找集合项
 pub fn find_collection_item<'a>(
     items: &'a mut Vec<Collection>,

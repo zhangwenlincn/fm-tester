@@ -175,10 +175,16 @@ export function useVariableAutocomplete(props, emit) {
   const autocompletePosition = ref({ top: 0, left: 0 })
   const selectedIndex = ref(0)
   const triggerPosition = ref(0) // {{ 的位置
+  const filterKeyword = ref('') // 过滤关键字
   
   // 过滤后的变量列表
   const filteredVariables = computed(() => {
-    return props.variables || []
+    const vars = props.variables || []
+    if (!filterKeyword.value) {
+      return vars
+    }
+    const keyword = filterKeyword.value.toLowerCase()
+    return vars.filter(v => v.key?.toLowerCase().includes(keyword))
   })
   
   /**
@@ -208,6 +214,10 @@ export function useVariableAutocomplete(props, emit) {
         return
       }
       
+      // 提取 {{ 后面已输入的内容作为过滤关键字
+      const keywordStart = lastBraceIndex + 2
+      filterKeyword.value = beforeCursor.slice(keywordStart).trim()
+      
       // 触发自动补全
       triggerPosition.value = lastBraceIndex
       showAutocomplete.value = true
@@ -220,6 +230,7 @@ export function useVariableAutocomplete(props, emit) {
       }
     } else {
       showAutocomplete.value = false
+      filterKeyword.value = ''
     }
   }
   
