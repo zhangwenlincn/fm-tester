@@ -71,6 +71,10 @@
   background: transparent;
 }
 
+.date-header:hover .clear-btn {
+  color: #8c8c8c;
+}
+
 .expand-icon {
   width: 16px;
   height: 16px;
@@ -100,10 +104,27 @@
   justify-content: center;
   color: #8c8c8c;
   cursor: pointer;
+  border: none;
+  outline: none;
+  background: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.clear-btn:hover {
-  color: #ff4d4f;
+.clear-btn:hover,
+.date-header:hover .clear-btn:hover {
+  color: #ff4d4f !important;
+}
+
+.clear-btn:focus,
+.clear-btn:active {
+  color: #ff4d4f !important;
+  outline: none !important;
+}
+
+.clear-btn svg {
+  pointer-events: none;
 }
 
 .history-list {
