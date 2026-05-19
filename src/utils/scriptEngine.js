@@ -24,7 +24,11 @@ export function extractBaseUrl(url) {
     const urlObj = new URL(url)
     return urlObj.origin
   } catch {
-    // URL 不完整，尝试手动解析
+    // URL 不完整（纯路径如 /api/users），没有 baseUrl
+    if (url.startsWith('/')) {
+      return ''
+    }
+    // 尝试手动解析
     const idx = url.indexOf('/')
     if (idx > 0 && url[idx + 1] !== '/') {
       // 找到第一个单斜杠（路径开始）
