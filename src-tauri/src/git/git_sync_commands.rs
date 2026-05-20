@@ -927,7 +927,6 @@ pub async fn sync_git_workspace_full(
     workspace_id: String,
     commit_message: Option<String>,
 ) -> Result<(), String> {
-    let mut pulled = false;
     let mut pushed = false;
     
     emit_log(
@@ -1107,10 +1106,8 @@ pub async fn sync_git_workspace_full(
         },
     );
     
-    let pull_result = git_pull(&repo, &branch, username.as_deref(), password.as_deref());
-    match pull_result {
+    let pulled = match git_pull(&repo, &branch, username.as_deref(), password.as_deref()) {
         Ok(has_update) => {
-            pulled = has_update;
             if has_update {
                 emit_log(
                     &app,
@@ -1138,6 +1135,7 @@ pub async fn sync_git_workspace_full(
                     },
                 );
             }
+            has_update
         }
         Err(e) => {
             emit_log(
@@ -1159,7 +1157,7 @@ pub async fn sync_git_workspace_full(
             }
             return Err(e);
         }
-    }
+    };
     
     // 步骤 3: 恢复暂存的修改
     if stashed {
