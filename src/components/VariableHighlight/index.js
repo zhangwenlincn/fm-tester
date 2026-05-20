@@ -166,6 +166,24 @@ export function useUrlOverlay() {
 }
 
 /**
+ * 计算文本在输入框中的宽度
+ * @param {string} text - 要测量的文本
+ * @param {HTMLInputElement} inputEl - 输入框元素
+ * @returns {number} 文本宽度（像素）
+ */
+const measureTextWidth = (text, inputEl) => {
+  if (!inputEl) return 0
+  
+  const canvas = document.createElement('canvas')
+  const ctx = canvas.getContext('2d')
+  
+  const computedStyle = window.getComputedStyle(inputEl)
+  ctx.font = `${computedStyle.fontSize} ${computedStyle.fontFamily}`
+  
+  return ctx.measureText(text).width
+}
+
+/**
  * 变量自动补全 composable
  * 用于检测 {{ 输入并显示变量选择下拉菜单
  */
@@ -176,6 +194,7 @@ export function useVariableAutocomplete(props, emit) {
   const selectedIndex = ref(0)
   const triggerPosition = ref(0) // {{ 的位置
   const filterKeyword = ref('') // 过滤关键字
+  const inputElement = ref(null) // 保存输入框引用
   
   // 过滤后的变量列表
   const filteredVariables = computed(() => {
@@ -191,8 +210,14 @@ export function useVariableAutocomplete(props, emit) {
    * 检测输入是否包含 {{ 并触发自动补全
    * @param {string} value - 输入值
    * @param {number} cursorPos - 光标位置
+   * @param {HTMLInputElement} inputEl - 输入框元素
    */
-  const handleInputAutocomplete = (value, cursorPos) => {
+  const handleInputAutocomplete = (value, cursorPos, inputEl) => {
+    // 更新输入框引用
+    if (inputEl) {
+      inputElement.value = inputEl
+    }
+    
     // 查找光标前最近的 {{ 
     const beforeCursor = value.slice(0, cursorPos)
     const lastBraceIndex = beforeCursor.lastIndexOf('{{')
@@ -223,10 +248,21 @@ export function useVariableAutocomplete(props, emit) {
       showAutocomplete.value = true
       selectedIndex.value = 0
       
-      // 计算下拉菜单位置（简化：固定在输入框下方）
+      // 计算 {{ 前面文本的宽度，确定下拉菜单水平位置
+      const textBeforeBrace = value.slice(0, lastBraceIndex)
+      const textWidth = measureTextWidth(textBeforeBrace, inputElement.value)
+      
+      // 获取输入框的 padding 和 border
+      const computedStyle = inputElement.value ? window.getComputedStyle(inputElement.value) : null
+      const paddingLeft = computedStyle ? parseFloat(computedStyle.paddingLeft) || 0 : 0
+      const borderLeft = computedStyle ? parseFloat(computedStyle.borderLeftWidth) || 0 : 0
+      
+      // 考虑滚动偏移
+      const scrollLeft = inputElement.value ? inputElement.value.scrollLeft : 0
+      
       autocompletePosition.value = {
-        top: 32, // 输入框高度
-        left: 0
+        top: 32,
+        left: Math.max(0, paddingLeft + borderLeft + textWidth - scrollLeft)
       }
     } else {
       showAutocomplete.value = false

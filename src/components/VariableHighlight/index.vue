@@ -73,7 +73,7 @@ const highlightedHtml = computed(() => {
 const handleInput = (e) => {
   inputValue.value = e.target.value
   // 检测 {{ 触发自动补全
-  handleInputAutocomplete(e.target.value, e.target.selectionStart)
+  handleInputAutocomplete(e.target.value, e.target.selectionStart, e.target)
 }
 
 // 处理滚动事件
