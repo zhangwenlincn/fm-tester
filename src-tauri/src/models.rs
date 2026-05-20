@@ -174,6 +174,8 @@ pub struct Collection {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub url: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub params: Option<Vec<Param>>, // Query 参数
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub headers: Option<Vec<Header>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub body: Option<String>,
@@ -190,6 +192,16 @@ pub struct Collection {
     pub common_headers: Option<Vec<Header>>, // 集合通用请求头
     #[serde(skip_serializing_if = "Option::is_none")]
     pub collection_variables: Option<Vec<Variable>>, // 集合变量
+}
+
+/// Query 参数
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Param {
+    pub key: String,
+    pub value: String,
+    pub enabled: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
 }
 
 /// 集合配置文件结构

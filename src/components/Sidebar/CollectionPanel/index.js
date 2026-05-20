@@ -301,25 +301,20 @@ export function useCollectionPanelSetup(props, emit) {
 
     if (action === 'new-collection') {
       if (type === 'root') {
-        // 根级别新建集合
         startInlineEdit(null, 'collection', 0)
       } else if (canCreateSubCollection(depth)) {
-        // 在集合下新建子集合
         startInlineEdit(item.id, 'collection', depth + 1)
       }
     } else if (action === 'new-api') {
-      // 新建接口：使用 inline 编辑
       if (type === 'root') {
         startInlineEdit(null, 'api', 0)
       } else {
         startInlineEdit(item.id, 'api', depth + 1)
       }
-} else if (action === 'rename') {
-      // 集合和 API 重命名都使用 inline 编辑
+    } else if (action === 'rename') {
       if (type === 'collection') {
         startInlineEdit(item.id, 'collection', depth, false)
       } else {
-        // API 重命名
         startInlineEdit(item.id, 'api', depth, false)
       }
     } else if (action === 'delete') {

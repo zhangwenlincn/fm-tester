@@ -7,6 +7,7 @@ mod file_dialog;
 mod git;
 mod history;
 mod http;
+mod import;
 mod md;
 mod memory;
 mod models;
@@ -24,6 +25,7 @@ pub use file_dialog::*;
 pub use git::*;
 pub use history::*;
 pub use http::*;
+pub use import::*;
 pub use md::*;
 pub use memory::*;
 pub use models::*;
@@ -135,7 +137,10 @@ pub fn run() {
             get_current_branch,
             switch_git_branch,
             // File Dialog
-            safe_pick_directory
+            safe_pick_directory,
+            // Import
+            preview_openapi,
+            import_openapi
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

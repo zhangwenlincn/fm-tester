@@ -3,6 +3,7 @@ import { useI18n } from 'vue-i18n'
 import { nextTick, ref, watch } from 'vue'
 import { useCollectionPanelSetup } from './index.js'
 import Icon from '../../Icon/index.vue'
+import ImportDialog from '../../ImportDialog/index.vue'
 
 const { t } = useI18n()
 
@@ -14,6 +15,10 @@ const emit = defineEmits(['selectApi', 'deleteApis', 'deleteCollection', 'rename
 
 // inline 编辑输入框 ref
 const inlineEditInput = ref(null)
+
+// 导入对话框状态
+const showImportDialog = ref(false)
+const importTargetCollectionId = ref(null)
 
 // 使用 composable
 const {
@@ -67,15 +72,36 @@ watch(editingItem, (val) => {
 
 // 点击编辑输入框外部时保存编辑
 const handleEditBlur = () => {
-  // 立即执行保存（mousedown 会先触发 finishInlineEdit）
   finishInlineEdit()
+}
+
+// 打开导入对话框
+const openImportDialogLocal = (targetId = null) => {
+  importTargetCollectionId.value = targetId
+  showImportDialog.value = true
+}
+
+// 右键菜单操作包装
+const handleMenuAction = (action) => {
+  if (action === 'import-openapi') {
+    closeContextMenu()
+    openImportDialogLocal(contextMenu.value.item?.id || null)
+  } else {
+    handleContextAction(action)
+  }
+}
+
+// 导入成功后刷新
+const onImported = async () => {
+  await loadCollections()
 }
 
 // 暴露方法给父组件
 defineExpose({
   loadCollections,
   setSelectedApiId,
-  setSelectedCollectionId
+  setSelectedCollectionId,
+  openImportDialog: openImportDialogLocal
 })
 </script>
 
@@ -248,13 +274,18 @@ defineExpose({
     >
       <!-- 根级别菜单 -->
       <template v-if="contextMenu.type === 'root'">
-        <div class="menu-item" @click="handleContextAction('new-collection')">
+        <div class="menu-item" @click="handleMenuAction('new-collection')">
           <span class="menu-icon"><Icon name="folder" :size="14" /></span>
           <span>{{ t('buttons.newCollection') }}</span>
         </div>
-        <div class="menu-item" @click="handleContextAction('new-api')">
+        <div class="menu-item" @click="handleMenuAction('new-api')">
           <span class="menu-icon"><Icon name="api" :size="14" /></span>
           <span>{{ t('buttons.newApi') }}</span>
+        </div>
+        <div class="menu-divider"></div>
+        <div class="menu-item" @click="handleMenuAction('import-openapi')">
+          <span class="menu-icon"><Icon name="import" :size="14" /></span>
+          <span>{{ t('contextMenu.importOpenapi') }}</span>
         </div>
       </template>
 
@@ -263,21 +294,21 @@ defineExpose({
         <div
           v-if="canCreateSubCollection(contextMenu.depth)"
           class="menu-item"
-          @click="handleContextAction('new-collection')"
+          @click="handleMenuAction('new-collection')"
         >
           <span class="menu-icon"><Icon name="folder" :size="14" /></span>
           <span>{{ t('buttons.newSubCollection') }}</span>
         </div>
-        <div class="menu-item" @click="handleContextAction('new-api')">
+        <div class="menu-item" @click="handleMenuAction('new-api')">
           <span class="menu-icon"><Icon name="api" :size="14" /></span>
           <span>{{ t('buttons.newApi') }}</span>
         </div>
         <div class="menu-divider"></div>
-        <div class="menu-item" @click="handleContextAction('rename')">
+        <div class="menu-item" @click="handleMenuAction('rename')">
           <span class="menu-icon"><Icon name="edit" :size="14" /></span>
           <span>{{ t('common.rename') }}</span>
         </div>
-        <div class="menu-item delete" @click="handleContextAction('delete')">
+        <div class="menu-item delete" @click="handleMenuAction('delete')">
           <span class="menu-icon"><Icon name="delete" :size="14" /></span>
           <span>{{ t('common.delete') }}</span>
         </div>
@@ -285,12 +316,12 @@ defineExpose({
 
       <!-- API 菜单 -->
       <template v-if="contextMenu.type === 'api'">
-        <div class="menu-item" @click="handleContextAction('rename')">
+        <div class="menu-item" @click="handleMenuAction('rename')">
           <span class="menu-icon"><Icon name="edit" :size="14" /></span>
           <span>{{ t('common.rename') }}</span>
         </div>
         <div class="menu-divider"></div>
-        <div class="menu-item delete" @click="handleContextAction('delete')">
+        <div class="menu-item delete" @click="handleMenuAction('delete')">
           <span class="menu-icon"><Icon name="delete" :size="14" /></span>
           <span>{{ t('common.delete') }}</span>
         </div>
@@ -298,12 +329,22 @@ defineExpose({
 
       <!-- 保存响应菜单 -->
       <template v-if="contextMenu.type === 'saved-response'">
-        <div class="menu-item delete" @click="handleContextAction('delete-saved-response')">
+        <div class="menu-item delete" @click="handleMenuAction('delete-saved-response')">
           <span class="menu-icon"><Icon name="delete" :size="14" /></span>
           <span>{{ t('common.delete') }}</span>
         </div>
       </template>
     </div>
+
+    <!-- 导入对话框 -->
+    <ImportDialog
+      :visible="showImportDialog"
+      :workspace-path="props.workspace?.path || ''"
+      :target-collection-id="importTargetCollectionId"
+      :collections="collections"
+      @close="showImportDialog = false"
+      @imported="onImported"
+    />
   </div>
 </template>
 

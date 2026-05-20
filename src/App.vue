@@ -19,6 +19,7 @@ import SettingsPanel from './components/SettingsPanel/index.vue'
 import AISettingsPanel from './components/AISettingsPanel/index.vue'
 import ChatPanel from './components/ChatPanel/index.vue'
 import Toast from './components/Toast/index.vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 
 // 使用 composable
 const { t } = useI18n()
@@ -120,6 +121,49 @@ const {
   openAiSettings,
   closeAiSettings
 } = useAppSetup()
+
+// 侧边栏宽度拖拽
+const sidebarWidth = ref(240)
+const isDragging = ref(false)
+const dragStartX = ref(0)
+const dragStartWidth = ref(0)
+
+const startDrag = (e) => {
+  isDragging.value = true
+  dragStartX.value = e.clientX
+  dragStartWidth.value = sidebarWidth.value
+  document.body.style.cursor = 'col-resize'
+  document.body.style.userSelect = 'none'
+}
+
+const handleDrag = (e) => {
+  if (!isDragging.value) return
+  const diff = e.clientX - dragStartX.value
+  const newWidth = Math.max(160, Math.min(480, dragStartWidth.value + diff))
+  sidebarWidth.value = newWidth
+}
+
+const endDrag = () => {
+  if (!isDragging.value) return
+  isDragging.value = false
+  document.body.style.cursor = ''
+  document.body.style.userSelect = ''
+  localStorage.setItem('sidebarWidth', sidebarWidth.value)
+}
+
+onMounted(() => {
+  const savedWidth = localStorage.getItem('sidebarWidth')
+  if (savedWidth) {
+    sidebarWidth.value = parseInt(savedWidth, 10)
+  }
+  document.addEventListener('mousemove', handleDrag)
+  document.addEventListener('mouseup', endDrag)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('mousemove', handleDrag)
+  document.removeEventListener('mouseup', endDrag)
+})
 </script>
 
 <template>
@@ -156,6 +200,7 @@ const {
       <Sidebar 
         ref="sidebarRef"
         :workspace="currentWorkspace"
+        :style="{ width: sidebarWidth + 'px' }"
         @select-api="selectApi"
         @select-collection="selectCollection"
         @delete-collection="onDeleteCollection"
@@ -176,6 +221,13 @@ const {
         @new-chat-session="onNewChatSession"
         @session-created="onSessionCreated"
       />
+      
+      <!-- 可拖拽分隔线 -->
+      <div 
+        class="sidebar-resizer"
+        :class="{ dragging: isDragging }"
+        @mousedown="startDrag"
+      ></div>
       
       <!-- 中间内容区 -->
       <div class="content-area" v-if="showRequestResponse">

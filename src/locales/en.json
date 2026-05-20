@@ -70,7 +70,9 @@
     "newApi": "New API",
     "newSubCollection": "New Sub-collection",
     "newEnvironment": "New Environment",
-    "newWorkspace": "New Workspace"
+    "newWorkspace": "New Workspace",
+    "import": "Import",
+    "preview": "Preview"
   },
   "table": {
     "paramName": "Param Name",
@@ -160,7 +162,8 @@
     "rename": "Rename",
     "workspacePath": "Path",
     "responseName": "Response Name",
-    "parent": "Parent"
+    "parent": "Parent",
+    "importOpenapi": "Import OpenAPI"
   },
   "toast": {
     "scriptSaved": "Script saved",
@@ -312,7 +315,8 @@
     "deleteEnvironment": "Delete Environment",
     "deleteCollection": "Delete Collection",
     "syncWorkspace": "Sync API",
-    "switchBranch": "Switch Branch"
+    "switchBranch": "Switch Branch",
+    "importOpenapi": "Import OpenAPI"
   },
   "workspaceType": {
     "local": "Local Workspace",
@@ -365,5 +369,20 @@
     "minutesAgo": "{n} minutes ago",
     "hoursAgo": "{n} hours ago",
     "daysAgo": "{n} days ago"
+  },
+  "import": {
+    "pasteContent": "Paste Content",
+    "selectFile": "Select File",
+    "pasteJsonPlaceholder": "Paste OpenAPI JSON or YAML content...",
+    "format": "Format",
+    "rootName": "Root Collection Name",
+    "rootNamePlaceholder": "Leave empty to use OpenAPI info.title",
+    "targetCollection": "Import Location",
+    "rootLevel": "Root Level",
+    "collections": "collections",
+    "apis": "APIs",
+    "importSuccess": "Import successful",
+    "importFailed": "Import failed",
+    "parseError": "Parse failed"
   }
 }

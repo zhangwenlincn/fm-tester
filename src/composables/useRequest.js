@@ -108,6 +108,7 @@ export function useRequest(currentWorkspace, tabs, activeTab, sidebarRef, reques
     const existingIndex = tabs.value.findIndex(t => t.id === apiId && t.tabType === 'api')
 
     if (existingIndex >= 0) {
+      tabs.value[existingIndex].params = api.params || []
       tabs.value[existingIndex].commonHeaders = api.commonHeaders || []
       tabs.value[existingIndex].collectionVariables = api.collectionVariables || []
       tabs.value[existingIndex].timeout = api.timeout
@@ -118,6 +119,7 @@ export function useRequest(currentWorkspace, tabs, activeTab, sidebarRef, reques
         name: api.name,
         method: api.method || 'GET',
         url: api.url || '',
+        params: api.params || [],
         headers: api.headers || [],
         body: api.body || '',
         bodyType: api.body_type || 'raw',

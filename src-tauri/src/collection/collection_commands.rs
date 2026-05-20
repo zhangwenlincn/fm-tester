@@ -49,6 +49,7 @@ pub fn create_collection(
         children: Vec::new(),
         method: None,
         url: None,
+        params: None,
         headers: None,
         body: None,
         body_type: None,
@@ -100,6 +101,7 @@ pub fn create_api(
         children: Vec::new(),
         method: Some(method),
         url: Some(url),
+        params: None,
         headers: Some(vec![Header {
             key: "Content-Type".to_string(),
             value: "application/json".to_string(),

@@ -70,7 +70,9 @@
     "newApi": "新建接口",
     "newSubCollection": "新建子集合",
     "newEnvironment": "新建环境",
-    "newWorkspace": "新建工作区"
+    "newWorkspace": "新建工作区",
+    "import": "导入",
+    "preview": "预览"
   },
   "table": {
     "paramName": "参数名",
@@ -160,7 +162,8 @@
     "rename": "重命名",
     "workspacePath": "路径",
     "responseName": "响应名称",
-    "parent": "父级"
+    "parent": "父级",
+    "importOpenapi": "导入 OpenAPI"
   },
   "toast": {
     "scriptSaved": "脚本保存成功",
@@ -312,7 +315,8 @@
     "deleteEnvironment": "删除环境",
     "deleteCollection": "删除集合",
     "syncWorkspace": "同步接口",
-    "switchBranch": "切换分支"
+    "switchBranch": "切换分支",
+    "importOpenapi": "导入 OpenAPI"
   },
   "workspaceType": {
     "local": "本地工作区",
@@ -365,5 +369,20 @@
     "minutesAgo": "{n}分钟前",
     "hoursAgo": "{n}小时前",
     "daysAgo": "{n}天前"
+  },
+  "import": {
+    "pasteContent": "粘贴内容",
+    "selectFile": "选择文件",
+    "pasteJsonPlaceholder": "粘贴 OpenAPI JSON 或 YAML 内容...",
+    "format": "格式",
+    "rootName": "根集合名称",
+    "rootNamePlaceholder": "留空则使用 OpenAPI info.title",
+    "targetCollection": "导入位置",
+    "rootLevel": "根级别",
+    "collections": "集合",
+    "apis": "接口",
+    "importSuccess": "导入成功",
+    "importFailed": "导入失败",
+    "parseError": "解析失败"
   }
 }

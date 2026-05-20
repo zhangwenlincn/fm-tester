@@ -17,6 +17,22 @@
   overflow: hidden;
 }
 
+.sidebar-resizer {
+  width: 4px;
+  background: #e8e8e8;
+  cursor: col-resize;
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+
+.sidebar-resizer:hover {
+  background: #1890ff;
+}
+
+.sidebar-resizer.dragging {
+  background: #1890ff;
+}
+
 .content-area {
   display: flex;
   flex-direction: column;

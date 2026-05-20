@@ -1,9 +1,9 @@
 /* Sidebar 容器样式 */
 .sidebar {
   display: flex;
-  width: 240px;
   background: #ffffff;
-  border-right: 1px solid #e8e8e8;
+  border-right: none;
+  overflow: hidden;
 }
 
 /* 面板容器 */

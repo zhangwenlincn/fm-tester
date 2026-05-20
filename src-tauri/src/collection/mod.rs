@@ -1,6 +1,6 @@
-mod collection_commands;
-mod collection_config;
-mod collection_utils;
+pub mod collection_commands;
+pub mod collection_config;
+pub mod collection_utils;
 
 pub use collection_commands::{
     create_api, create_collection, delete_collection_item, get_collections, move_api, move_collection,
