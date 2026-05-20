@@ -181,13 +181,6 @@ export function useEnvPanelSetup(props, emit) {
   const saveSettings = async () => {
     if (saving.value) return
     
-    const hasEmptyVariables = localSettings.variables.some(v => !v.key.trim())
-    const hasEmptyHeaders = localSettings.commonHeaders.some(h => !h.key.trim())
-    
-    if (hasEmptyVariables || hasEmptyHeaders) {
-      return
-    }
-    
     saving.value = true
     try {
       const validVariables = localSettings.variables
@@ -212,7 +205,7 @@ export function useEnvPanelSetup(props, emit) {
         id: props.activeEnvironment.id,
         name: props.activeEnvironment.name,
         variables: validVariables,
-        commonHeaders: validHeaders.length > 0 ? validHeaders : null
+        common_headers: validHeaders.length > 0 ? validHeaders : null
       }
       
       await invoke('save_environment', {
@@ -220,7 +213,7 @@ export function useEnvPanelSetup(props, emit) {
         environment
       })
       
-      emit('saveVariables', validVariables)
+      emit('saveVariables', { variables: validVariables, common_headers: validHeaders.length > 0 ? validHeaders : null })
     } catch (e) {
       console.error('保存环境设置失败:', e)
     } finally {

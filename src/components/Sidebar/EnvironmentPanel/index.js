@@ -91,17 +91,20 @@ export function useEnvironmentPanelSetup(props, emit) {
     if (!props.workspace?.path) return
     if (!editingEnvName.value.trim()) return
     
-    // 编辑时保留原有变量，新建时变量为空
+    // 编辑时保留原有变量和 headers，新建时为空
     let variables = []
+    let common_headers = null
     if (editingEnv.value) {
       variables = editingEnv.value.variables || []
+      common_headers = editingEnv.value.common_headers || null
     }
     
     const envId = editingEnv.value?.id || `env_${Date.now()}`
     const environment = {
       id: envId,
       name: editingEnvName.value.trim(),
-      variables
+      variables,
+      common_headers
     }
     
     try {
