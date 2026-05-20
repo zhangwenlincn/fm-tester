@@ -224,6 +224,14 @@ fn extract_request_body(
     for (content_type, media_type) in &request_body.content {
         match content_type.as_str() {
             "application/json" => {
+                let schema = media_type.schema.as_ref();
+                if let Some(s) = schema {
+                    let resolved = resolve_schema_ref(s, schemas_ctx);
+                    if has_binary_field(&resolved, schemas_ctx) {
+                        let form_fields = extract_form_fields(media_type, schemas_ctx);
+                        return (None, Some("form-data".to_string()), form_fields, Some("multipart/form-data".to_string()));
+                    }
+                }
                 let body = extract_json_example(media_type, schemas_ctx);
                 return (body, Some("raw".to_string()), None, Some(content_type.clone()));
             }
@@ -245,6 +253,16 @@ fn extract_request_body(
     }
     
     (None, None, None, None)
+}
+
+fn has_binary_field(schema: &Schema, schemas_ctx: &HashMap<String, Schema>) -> bool {
+    for prop_schema in &schema.properties {
+        let resolved = resolve_schema_ref(prop_schema.1, schemas_ctx);
+        if resolved.format.as_ref().map(|f| f == "binary" || f == "byte").unwrap_or(false) {
+            return true;
+        }
+    }
+    false
 }
 
 fn extract_json_example(
@@ -348,7 +366,16 @@ fn extract_form_fields(
     let mut fields = Vec::new();
     for (name, prop_schema) in &resolved_schema.properties {
         let resolved_prop = resolve_schema_ref(prop_schema, schemas_ctx);
-        let value = if let Some(ref example) = resolved_prop.example {
+        
+        let is_file = resolved_prop.format.as_ref()
+            .map(|f| f == "binary" || f == "byte")
+            .unwrap_or(false);
+        
+        let field_type = if is_file { "file" } else { "text" };
+        
+        let value = if is_file {
+            String::new()
+        } else if let Some(ref example) = resolved_prop.example {
             example.as_str().unwrap_or("").to_string()
         } else {
             generate_example_from_schema(&resolved_prop, schemas_ctx)
@@ -358,7 +385,7 @@ fn extract_form_fields(
         fields.push(FormField {
             key: name.clone(),
             value,
-            field_type: "text".to_string(),
+            field_type: field_type.to_string(),
             enabled: true,
             files: None,
         });
