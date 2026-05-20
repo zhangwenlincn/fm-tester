@@ -172,11 +172,11 @@ defineExpose({
           </template>
           <!-- 正常显示 -->
           <template v-else>
-            <span class="folder-icon" @click.stop="selectCollectionItem(row.item)">
+            <span class="folder-icon">
               <Icon :name="row.expanded ? 'folder-open' : 'folder'" :size="14" />
             </span>
-            <span class="folder-name" @click.stop="selectCollectionItem(row.item)">{{ row.item.name }}</span>
-            <span class="expand-arrow" :class="{ expanded: row.expanded }" @click.stop="toggleExpand(row.item.id)">
+            <span class="folder-name"><span class="folder-name-text" @mousedown.stop @click.stop="selectCollectionItem(row.item)">{{ row.item.name }}</span></span>
+            <span class="expand-arrow" :class="{ expanded: row.expanded }">
               <Icon name="arrow-right" :size="12" />
             </span>
           </template>

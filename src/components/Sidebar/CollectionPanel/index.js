@@ -659,6 +659,8 @@ export function useCollectionPanelSetup(props, emit) {
   }
 
   const onMouseUp = async (e) => {
+    const wasDragging = isDragging
+
     if (isDragging && dragState.value.dragOverId) {
       const { dragPosition, draggingId, dragOverId } = dragState.value
 
@@ -679,6 +681,12 @@ export function useCollectionPanelSetup(props, emit) {
         }
       }
     }
+
+    // 如果没有拖拽，则是点击 - 集合项切换展开/收起
+    if (!wasDragging && dragStartRow?.isCollection && !dragStartRow.isEditing) {
+      await toggleExpand(dragStartRow.item.id)
+    }
+
     cleanupDrag()
   }
 

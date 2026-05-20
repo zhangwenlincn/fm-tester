@@ -139,11 +139,14 @@
   font-size: 13px;
   color: #262626;
   flex: 1;
-  cursor: pointer;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   min-width: 0;
+}
+
+.folder-name-text {
+  cursor: pointer;
 }
 
 .item-actions {
