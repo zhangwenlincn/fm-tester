@@ -119,6 +119,52 @@ fn has_changes(repo: &Repository) -> Result<bool, String> {
     Ok(false)
 }
 
+/// 暂存本地修改（git stash）
+fn git_stash_save(repo: &mut Repository) -> Result<bool, String> {
+    let sig = get_signature(repo)?;
+    
+    let _stash_id = repo.stash_save(
+        &sig,
+        "FM Tester auto stash",
+        None
+    ).map_err(|e| format!("Stash 保存失败: {}", e))?;
+    
+    Ok(true)
+}
+
+/// 恢复暂存的修改（git stash pop）
+/// 返回 (是否有冲突, 是否有内容恢复)
+fn git_stash_pop(repo: &mut Repository) -> Result<(bool, bool), String> {
+    let mut has_stash = false;
+    let mut stash_index: Option<usize> = None;
+    
+    repo.stash_foreach(|index, _stash_id, _msg| {
+        has_stash = true;
+        stash_index = Some(index);
+        false
+    }).map_err(|e| format!("获取 stash 列表失败: {}", e))?;
+    
+    if !has_stash {
+        return Ok((false, false));
+    }
+    
+    let index = stash_index.unwrap();
+    
+    let result = repo.stash_pop(index, None);
+    
+    match result {
+        Ok(_) => Ok((false, true)),
+        Err(e) => {
+            let err_str = e.to_string().to_lowercase();
+            if err_str.contains("conflict") || err_str.contains("冲突") {
+                Ok((true, true))
+            } else {
+                Err(format!("Stash pop 失败: {}", e))
+            }
+        }
+    }
+}
+
 /// 创建 commit
 fn git_commit(repo: &Repository, message: &str) -> Result<git2::Oid, String> {
     let sig = get_signature(repo)?;
@@ -874,7 +920,7 @@ pub async fn update_git_workspace(
     Ok(())
 }
 
-/// 同步 Git 工作区（先拉取再推送）
+/// 同步 Git 工作区（先暂存本地修改，再拉取，最后推送）
 #[tauri::command]
 pub async fn sync_git_workspace_full(
     app: AppHandle,
@@ -889,7 +935,7 @@ pub async fn sync_git_workspace_full(
         GitSyncLog {
             log_type: "info".to_string(),
             timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
-            message: "开始同步：先拉取远程更改".to_string(),
+            message: "开始同步工作区".to_string(),
             data: None,
             error: None,
             pulled: None,
@@ -919,103 +965,24 @@ pub async fn sync_git_workspace_full(
         (None, None)
     };
     
-    // 如果是 git 仓库，先 pull
-    if is_git_repo(&workspace_path) {
-        let repo = open_repo(&workspace_path)?;
-        
-        // 设置 remote URL
-        if let (Some(user), Some(pass)) = (&username, &password) {
-            if let Some(url) = &workspace.git_url {
-                let auth_url = build_auth_url(url, user, pass);
-                set_remote_url(&repo, "origin", &auth_url)?;
-            }
-        }
-        
-        let branch = get_current_branch_name(&repo);
+    // 获取仓库（可能需要 clone）
+    let mut repo = if is_git_repo(&workspace_path) {
+        open_repo(&workspace_path)?
+    } else {
+        let repo_url = workspace.git_url.clone().unwrap_or_default();
         
         emit_log(
             &app,
             GitSyncLog {
                 log_type: "info".to_string(),
                 timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
-                message: "拉取远程更改".to_string(),
+                message: format!("克隆仓库: {}", repo_url),
                 data: None,
                 error: None,
                 pulled: None,
                 pushed: None,
             },
         );
-        
-        let pull_result = git_pull(&repo, &branch, username.as_deref(), password.as_deref());
-        match pull_result {
-            Ok(has_update) => {
-                pulled = has_update;
-                if has_update {
-                    emit_log(
-                        &app,
-                        GitSyncLog {
-                            log_type: "info".to_string(),
-                            timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
-                            message: "拉取远程更改成功".to_string(),
-                            data: None,
-                            error: None,
-                            pulled: Some(true),
-                            pushed: None,
-                        },
-                    );
-                } else {
-                    emit_log(
-                        &app,
-                        GitSyncLog {
-                            log_type: "info".to_string(),
-                            timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
-                            message: "远程无新更改".to_string(),
-                            data: None,
-                            error: None,
-                            pulled: Some(false),
-                            pushed: None,
-                        },
-                    );
-                }
-            }
-            Err(e) => {
-                emit_log(
-                    &app,
-                    GitSyncLog {
-                        log_type: "error".to_string(),
-                        timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
-                        message: e.clone(),
-                        data: None,
-                        error: Some(e.clone()),
-                        pulled: None,
-                        pushed: None,
-                    },
-                );
-                return Err(e);
-            }
-        }
-    }
-    
-    // 推送本地更改
-    emit_log(
-        &app,
-        GitSyncLog {
-            log_type: "info".to_string(),
-            timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
-            message: "推送本地更改".to_string(),
-            data: None,
-            error: None,
-            pulled: None,
-            pushed: None,
-        },
-    );
-    
-    // 获取仓库（可能刚 clone）
-    let repo = if is_git_repo(&workspace_path) {
-        open_repo(&workspace_path)?
-    } else {
-        // 需要先 clone
-        let repo_url = workspace.git_url.clone().unwrap_or_default();
         
         let parent_dir = Path::new(&workspace_path).parent();
         if let Some(parent) = parent_dir {
@@ -1036,6 +1003,242 @@ pub async fn sync_git_workspace_full(
     
     // 配置 Git 用户
     configure_git_user(&repo)?;
+    
+    // 设置 remote URL
+    if let (Some(user), Some(pass)) = (&username, &password) {
+        if let Some(url) = &workspace.git_url {
+            let auth_url = build_auth_url(url, user, pass);
+            set_remote_url(&repo, "origin", &auth_url)?;
+        }
+    }
+    
+    let branch = get_current_branch_name(&repo);
+    
+    // 步骤 1: 检查并暂存本地修改
+    let has_local_changes = has_changes(&repo)?;
+    let mut stashed = false;
+    
+    if has_local_changes {
+        emit_log(
+            &app,
+            GitSyncLog {
+                log_type: "info".to_string(),
+                timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+                message: "暂存本地修改".to_string(),
+                data: None,
+                error: None,
+                pulled: None,
+                pushed: None,
+            },
+        );
+        
+        match git_stash_save(&mut repo) {
+            Ok(true) => {
+                stashed = true;
+                emit_log(
+                    &app,
+                    GitSyncLog {
+                        log_type: "info".to_string(),
+                        timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+                        message: "本地修改已暂存".to_string(),
+                        data: None,
+                        error: None,
+                        pulled: None,
+                        pushed: None,
+                    },
+                );
+            }
+            Ok(false) => {
+                emit_log(
+                    &app,
+                    GitSyncLog {
+                        log_type: "info".to_string(),
+                        timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+                        message: "无需暂存（没有可暂存的内容）".to_string(),
+                        data: None,
+                        error: None,
+                        pulled: None,
+                        pushed: None,
+                    },
+                );
+            }
+            Err(e) => {
+                emit_log(
+                    &app,
+                    GitSyncLog {
+                        log_type: "error".to_string(),
+                        timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+                        message: format!("暂存失败: {}", e),
+                        data: None,
+                        error: Some(e.clone()),
+                        pulled: None,
+                        pushed: None,
+                    },
+                );
+                return Err(e);
+            }
+        }
+    } else {
+        emit_log(
+            &app,
+            GitSyncLog {
+                log_type: "info".to_string(),
+                timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+                message: "本地无修改，跳过暂存".to_string(),
+                data: None,
+                error: None,
+                pulled: None,
+                pushed: None,
+            },
+        );
+    }
+    
+    // 步骤 2: 拉取远程更改
+    emit_log(
+        &app,
+        GitSyncLog {
+            log_type: "info".to_string(),
+            timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+            message: "拉取远程更改".to_string(),
+            data: None,
+            error: None,
+            pulled: None,
+            pushed: None,
+        },
+    );
+    
+    let pull_result = git_pull(&repo, &branch, username.as_deref(), password.as_deref());
+    match pull_result {
+        Ok(has_update) => {
+            pulled = has_update;
+            if has_update {
+                emit_log(
+                    &app,
+                    GitSyncLog {
+                        log_type: "info".to_string(),
+                        timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+                        message: "拉取远程更改成功".to_string(),
+                        data: None,
+                        error: None,
+                        pulled: Some(true),
+                        pushed: None,
+                    },
+                );
+            } else {
+                emit_log(
+                    &app,
+                    GitSyncLog {
+                        log_type: "info".to_string(),
+                        timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+                        message: "远程无新更改".to_string(),
+                        data: None,
+                        error: None,
+                        pulled: Some(false),
+                        pushed: None,
+                    },
+                );
+            }
+        }
+        Err(e) => {
+            emit_log(
+                &app,
+                GitSyncLog {
+                    log_type: "error".to_string(),
+                    timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+                    message: e.clone(),
+                    data: None,
+                    error: Some(e.clone()),
+                    pulled: None,
+                    pushed: None,
+                },
+            );
+            
+            // 如果之前 stash 了，尝试恢复
+            if stashed {
+                let _ = git_stash_pop(&mut repo);
+            }
+            return Err(e);
+        }
+    }
+    
+    // 步骤 3: 恢复暂存的修改
+    if stashed {
+        emit_log(
+            &app,
+            GitSyncLog {
+                log_type: "info".to_string(),
+                timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+                message: "恢复暂存的修改".to_string(),
+                data: None,
+                error: None,
+                pulled: None,
+                pushed: None,
+            },
+        );
+        
+        match git_stash_pop(&mut repo) {
+            Ok((has_conflict, _)) => {
+                if has_conflict {
+                    emit_log(
+                        &app,
+                        GitSyncLog {
+                            log_type: "warning".to_string(),
+                            timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+                            message: "恢复时存在冲突，请手动解决".to_string(),
+                            data: None,
+                            error: None,
+                            pulled: None,
+                            pushed: None,
+                        },
+                    );
+                    // 有冲突时停止同步，让用户手动解决
+                    return Err("恢复暂存时存在冲突，请手动解决后重新同步".to_string());
+                } else {
+                    emit_log(
+                        &app,
+                        GitSyncLog {
+                            log_type: "info".to_string(),
+                            timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+                            message: "暂存的修改已恢复".to_string(),
+                            data: None,
+                            error: None,
+                            pulled: None,
+                            pushed: None,
+                        },
+                    );
+                }
+            }
+            Err(e) => {
+                emit_log(
+                    &app,
+                    GitSyncLog {
+                        log_type: "error".to_string(),
+                        timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+                        message: format!("恢复暂存失败: {}", e),
+                        data: None,
+                        error: Some(e.clone()),
+                        pulled: None,
+                        pushed: None,
+                    },
+                );
+                return Err(e);
+            }
+        }
+    }
+    
+    // 步骤 4: 提交并推送
+    emit_log(
+        &app,
+        GitSyncLog {
+            log_type: "info".to_string(),
+            timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+            message: "检查本地更改".to_string(),
+            data: None,
+            error: None,
+            pulled: None,
+            pushed: None,
+        },
+    );
     
     // Git add
     git_add_all(&repo)?;
@@ -1073,31 +1276,37 @@ pub async fn sync_git_workspace_full(
         );
     }
     
-    // 设置 remote URL 并 push
-    if let (Some(user), Some(pass)) = (&username, &password) {
-        if let Some(url) = &workspace.git_url {
-            let auth_url = build_auth_url(url, user, pass);
-            set_remote_url(&repo, "origin", &auth_url)?;
-        }
-    }
-    
-    let branch = get_current_branch_name(&repo);
-    
-    git_push(&repo, &branch, username.as_deref(), password.as_deref())?;
-    
-    if pushed {
+    // 推送
+    if pushed || pulled {
         emit_log(
             &app,
             GitSyncLog {
                 log_type: "info".to_string(),
                 timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
-                message: "推送成功".to_string(),
+                message: "推送到远程仓库".to_string(),
                 data: None,
                 error: None,
                 pulled: None,
-                pushed: Some(true),
+                pushed: None,
             },
         );
+        
+        git_push(&repo, &branch, username.as_deref(), password.as_deref())?;
+        
+        if pushed {
+            emit_log(
+                &app,
+                GitSyncLog {
+                    log_type: "info".to_string(),
+                    timestamp: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+                    message: "推送成功".to_string(),
+                    data: None,
+                    error: None,
+                    pulled: None,
+                    pushed: Some(true),
+                },
+            );
+        }
     }
     
     // 构建最终同步结果消息
