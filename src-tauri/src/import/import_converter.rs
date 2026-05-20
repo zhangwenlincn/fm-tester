@@ -164,7 +164,11 @@ fn convert_operation_to_api(
             "header" => {
                 let value = param.example.clone()
                     .and_then(|v| v.as_str().map(|s| s.to_string()))
-                    .unwrap_or_default();
+                    .unwrap_or_else(|| {
+                        param.schema.as_ref().and_then(|s| {
+                            s.example.clone().and_then(|v| v.as_str().map(|s| s.to_string()))
+                        }).unwrap_or_default()
+                    });
                 headers.push(Header {
                     key: param.name.clone(),
                     value,
@@ -177,7 +181,16 @@ fn convert_operation_to_api(
         }
     }
     
-    let (body, body_type, form_fields) = extract_request_body(operation, schemas_ctx);
+    let (body, body_type, form_fields, content_type) = extract_request_body(operation, schemas_ctx);
+    
+    if let Some(ct) = content_type {
+        headers.push(Header {
+            key: "Content-Type".to_string(),
+            value: ct,
+            enabled: true,
+            description: None,
+        });
+    }
     
     Collection {
         id: api_id,
@@ -202,36 +215,36 @@ fn convert_operation_to_api(
 fn extract_request_body(
     operation: &crate::import::openapi_types::Operation,
     schemas_ctx: &HashMap<String, Schema>,
-) -> (Option<String>, Option<String>, Option<Vec<FormField>>) {
+) -> (Option<String>, Option<String>, Option<Vec<FormField>>, Option<String>) {
     let request_body = match &operation.request_body {
         Some(rb) => rb,
-        None => return (None, None, None),
+        None => return (None, None, None, None),
     };
     
     for (content_type, media_type) in &request_body.content {
         match content_type.as_str() {
             "application/json" => {
                 let body = extract_json_example(media_type, schemas_ctx);
-                return (body, Some("raw".to_string()), None);
+                return (body, Some("raw".to_string()), None, Some(content_type.clone()));
             }
             "application/x-www-form-urlencoded" => {
                 let form_fields = extract_form_fields(media_type, schemas_ctx);
-                return (None, Some("form-data".to_string()), form_fields);
+                return (None, Some("form-data".to_string()), form_fields, Some(content_type.clone()));
             }
             "multipart/form-data" => {
                 let form_fields = extract_form_fields(media_type, schemas_ctx);
-                return (None, Some("form-data".to_string()), form_fields);
+                return (None, Some("form-data".to_string()), form_fields, Some(content_type.clone()));
             }
             "text/plain" => {
                 let body = media_type.example.clone()
                     .and_then(|v| v.as_str().map(|s| s.to_string()));
-                return (body, Some("raw".to_string()), None);
+                return (body, Some("raw".to_string()), None, Some(content_type.clone()));
             }
             _ => {}
         }
     }
     
-    (None, None, None)
+    (None, None, None, None)
 }
 
 fn extract_json_example(
@@ -390,6 +403,18 @@ mod tests {
               "post": {
                 "tags": ["用户认证"],
                 "summary": "用户登录",
+                "parameters": [
+                  {
+                    "name": "X-Auth-Token",
+                    "in": "header",
+                    "description": "认证Token",
+                    "required": false,
+                    "schema": {
+                      "type": "string"
+                    },
+                    "example": "test-token-123"
+                  }
+                ],
                 "requestBody": {
                   "content": {
                     "application/json": {
@@ -470,6 +495,20 @@ mod tests {
         assert_eq!(obj.get("phone").unwrap().as_str().unwrap(), "13800138000");
         assert_eq!(obj.get("password").unwrap().as_str().unwrap(), "123456");
         assert_eq!(obj.get("loginType").unwrap().as_str().unwrap(), "ACCOUNT_PASSWORD");
+        
+        let collection = convert_to_collection(openapi, None, None).unwrap();
+        let auth_collection = collection.children.iter().find(|c| c.name == "用户认证").unwrap();
+        let login_api = auth_collection.children.iter().find(|c| c.item_type == "api").unwrap();
+        
+        assert!(login_api.headers.is_some());
+        let headers = login_api.headers.as_ref().unwrap();
+        assert_eq!(headers.len(), 2);
+        
+        let auth_token_header = headers.iter().find(|h| h.key == "X-Auth-Token").unwrap();
+        assert_eq!(auth_token_header.value, "test-token-123");
+        
+        let content_type_header = headers.iter().find(|h| h.key == "Content-Type").unwrap();
+        assert_eq!(content_type_header.value, "application/json");
     }
 
     #[test]
