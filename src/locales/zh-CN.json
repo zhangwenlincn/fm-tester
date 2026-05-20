@@ -97,6 +97,7 @@
     "noLogs": "暂无日志",
     "noCollectionHeaders": "暂无通用请求头，点击上方按钮添加",
     "noCollectionVariables": "暂无集合变量，点击上方按钮添加",
+    "noEnvironmentHeaders": "暂无通用请求头，点击上方按钮添加",
     "noCollections": "暂无集合，右键创建",
     "noEnvironments": "暂无环境，右键创建",
     "noHistory": "暂无历史记录",
@@ -233,6 +234,9 @@
   },
   "collectionSettings": {
     "headersHint": "这些请求头会自动添加到该集合下所有接口的请求中"
+  },
+  "environmentSettings": {
+    "headersHint": "这些请求头会自动添加到激活环境下所有接口的请求中"
   },
   "tabsBar": {
     "close": "关闭",

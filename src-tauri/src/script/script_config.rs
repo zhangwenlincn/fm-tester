@@ -9,6 +9,7 @@ pub enum ScriptTargetType {
     Api,
     Collection,
     Workspace,
+    Environment,
 }
 
 /// 脚本种类
@@ -97,6 +98,7 @@ pub fn generate_script_filename(target_type: ScriptTargetType, target_id: Option
     
     match target_type {
         ScriptTargetType::Workspace => format!("workspace_{}.js", kind_str),
+        ScriptTargetType::Environment => format!("environment_{}_{}.js", target_id.unwrap_or("unknown"), kind_str),
         ScriptTargetType::Collection => format!("collection_{}_{}.js", target_id.unwrap_or("unknown"), kind_str),
         ScriptTargetType::Api => format!("api_{}_{}.js", target_id.unwrap_or("unknown"), kind_str),
     }

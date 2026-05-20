@@ -97,6 +97,7 @@
     "noLogs": "No Logs",
     "noCollectionHeaders": "No collection headers, click button above to add",
     "noCollectionVariables": "No collection variables, click button above to add",
+    "noEnvironmentHeaders": "No environment headers, click button above to add",
     "noCollections": "No collections, right-click to create",
     "noEnvironments": "No environments, right-click to create",
     "noHistory": "No history records",
@@ -233,6 +234,9 @@
   },
   "collectionSettings": {
     "headersHint": "These headers will be automatically added to all requests in this collection"
+  },
+  "environmentSettings": {
+    "headersHint": "These headers will be automatically added to all requests in the active environment"
   },
   "tabsBar": {
     "close": "Close",

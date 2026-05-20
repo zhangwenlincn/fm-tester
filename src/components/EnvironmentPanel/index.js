@@ -1,49 +1,89 @@
-import { ref, reactive, watch, onUnmounted } from 'vue'
+import { ref, reactive, watch, onUnmounted, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { invoke } from '@tauri-apps/api/core'
+import { showToast } from '../../composables/useToast.js'
 
 export function useEnvPanelSetup(props, emit) {
-  // 本地变量状态 - 使用 reactive 保持响应式
-  const localVariables = reactive([])
-
-  // 防抖保存定时器
+  const { t } = useI18n()
+  
+  const tabs = [
+    { key: 'variables', name: t('tabs.variables') },
+    { key: 'headers', name: t('tabs.headers') },
+    { key: 'scripts', name: t('tabs.scripts') }
+  ]
+  
+  const activeTab = ref('variables')
+  
+  const localSettings = reactive({
+    name: props.activeEnvironment?.name || '',
+    variables: [],
+    commonHeaders: [],
+    preScript: '',
+    postScript: ''
+  })
+  
   let saveTimer = null
-  
-  // 保存中状态
   const saving = ref(false)
-  
-  // 跳过下一次保存的标记（添加空项后使用）
   let skipNextSave = false
-  
-  // 初始化标记（避免初始化时触发保存）
   let initialized = false
-
-  // 初始化数据 - 从 props 复制到本地状态
-  const initVariables = () => {
+  
+  const initSettings = async () => {
+    localSettings.name = props.activeEnvironment?.name || ''
+    
     if (props.activeEnvironment?.variables && props.activeEnvironment.variables.length > 0) {
-      localVariables.length = 0
-      props.activeEnvironment.variables.forEach(v => {
-        localVariables.push({
-          key: v.key || '',
-          value: v.value || '',
-          enabled: v.enabled ?? true,
-          description: v.description || ''
-        })
-      })
+      localSettings.variables = props.activeEnvironment.variables.map(v => ({
+        key: v.key || '',
+        value: v.value || '',
+        enabled: v.enabled ?? true,
+        description: v.description || ''
+      }))
     } else {
-      localVariables.length = 0
+      localSettings.variables = []
+    }
+    
+    if (props.activeEnvironment?.common_headers && props.activeEnvironment.common_headers.length > 0) {
+      localSettings.commonHeaders = props.activeEnvironment.common_headers.map(h => ({
+        key: h.key || '',
+        value: h.value || '',
+        enabled: h.enabled ?? true,
+        description: h.description || ''
+      }))
+    } else {
+      localSettings.commonHeaders = []
+    }
+    
+    if (props.workspacePath && props.activeEnvironment?.id) {
+      try {
+        const preScript = await invoke('get_script', {
+          workspacePath: props.workspacePath,
+          targetType: 'environment',
+          targetId: props.activeEnvironment.id,
+          scriptKind: 'pre'
+        })
+        const postScript = await invoke('get_script', {
+          workspacePath: props.workspacePath,
+          targetType: 'environment',
+          targetId: props.activeEnvironment.id,
+          scriptKind: 'post'
+        })
+        localSettings.preScript = preScript || ''
+        localSettings.postScript = postScript || ''
+      } catch (e) {
+        console.error('加载环境脚本失败:', e)
+        localSettings.preScript = ''
+        localSettings.postScript = ''
+      }
     }
   }
-
-  // 监听 activeEnvironment 变化，重新初始化
+  
   watch(() => props.activeEnvironment, () => {
     initialized = false
-    initVariables()
-    // 延迟标记为已初始化，避免初始化触发保存
+    initSettings()
     setTimeout(() => {
       initialized = true
     }, 100)
   }, { immediate: true })
-
-  // 防抖保存（500ms 后保存）
+  
   const debouncedSave = () => {
     if (!initialized) return
     if (skipNextSave) {
@@ -54,59 +94,103 @@ export function useEnvPanelSetup(props, emit) {
       clearTimeout(saveTimer)
     }
     saveTimer = setTimeout(() => {
-      saveVariables()
+      saveSettings()
     }, 500)
   }
-
-  // 监听变量变化 - deep: true 深度监听
+  
   watch(
-    () => localVariables,
+    () => localSettings.variables,
     () => {
       debouncedSave()
     },
     { deep: true }
   )
-
-  // 组件卸载时清理定时器并强制保存
+  
+  watch(
+    () => localSettings.commonHeaders,
+    () => {
+      debouncedSave()
+    },
+    { deep: true }
+  )
+  
   onUnmounted(() => {
     if (saveTimer) {
       clearTimeout(saveTimer)
-      saveVariables() // 立即保存未完成的变更
+      saveSettings()
     }
   })
-
-  // 添加变量
+  
   const addVariable = () => {
-    skipNextSave = true // 添加空项后跳过下一次保存触发
-    localVariables.push({
+    skipNextSave = true
+    localSettings.variables.push({
       key: '',
       value: '',
       enabled: true,
       description: ''
     })
   }
-
-  // 移除变量
+  
   const removeVariable = (index) => {
-    localVariables.splice(index, 1)
+    localSettings.variables.splice(index, 1)
   }
-
-  // 保存变量
-  const saveVariables = async () => {
-    if (saving.value) return // 防止重复保存
+  
+  const addHeader = () => {
+    skipNextSave = true
+    localSettings.commonHeaders.push({
+      key: '',
+      value: '',
+      enabled: true,
+      description: ''
+    })
+  }
+  
+  const removeHeader = (index) => {
+    localSettings.commonHeaders.splice(index, 1)
+  }
+  
+  const handleScriptUpdate = (updated) => {
+    localSettings.preScript = updated.preScript || ''
+    localSettings.postScript = updated.postScript || ''
+  }
+  
+  const saveScripts = async () => {
+    if (!props.workspacePath || !props.activeEnvironment?.id) return
+    try {
+      await invoke('save_script', {
+        workspacePath: props.workspacePath,
+        targetType: 'environment',
+        targetId: props.activeEnvironment.id,
+        scriptKind: 'pre',
+        content: localSettings.preScript
+      })
+      await invoke('save_script', {
+        workspacePath: props.workspacePath,
+        targetType: 'environment',
+        targetId: props.activeEnvironment.id,
+        scriptKind: 'post',
+        content: localSettings.postScript
+      })
+      showToast(t('toast.scriptSaved'), 'success')
+    } catch (e) {
+      console.error('保存环境脚本失败:', e)
+      showToast(t('toast.scriptSaveFailed'), 'error')
+    }
+  }
+  
+  const saveSettings = async () => {
+    if (saving.value) return
     
-    // 检查是否有空项（key 为空），如果有则不保存
-    const hasEmptyVariables = localVariables.some(v => !v.key.trim())
+    const hasEmptyVariables = localSettings.variables.some(v => !v.key.trim())
+    const hasEmptyHeaders = localSettings.commonHeaders.some(h => !h.key.trim())
     
-    if (hasEmptyVariables) {
-      // 有空项时不保存，等用户填写后再保存
+    if (hasEmptyVariables || hasEmptyHeaders) {
       return
     }
     
     saving.value = true
     try {
-      // 过滤非空的变量
-      const validVariables = localVariables
+      const validVariables = localSettings.variables
         .filter(v => v.key.trim())
         .map(v => ({
           key: v.key,
@@ -115,25 +199,53 @@ export function useEnvPanelSetup(props, emit) {
           description: v.description?.trim() || null
         }))
       
+      const validHeaders = localSettings.commonHeaders
+        .filter(h => h.key.trim())
+        .map(h => ({
+          key: h.key,
+          value: h.value,
+          enabled: h.enabled,
+          description: h.description?.trim() || null
+        }))
+      
+      const environment = {
+        id: props.activeEnvironment.id,
+        name: props.activeEnvironment.name,
+        variables: validVariables,
+        commonHeaders: validHeaders.length > 0 ? validHeaders : null
+      }
+      
+      await invoke('save_environment', {
+        workspacePath: props.workspacePath,
+        environment
+      })
+      
       emit('saveVariables', validVariables)
     } catch (e) {
-      console.error('保存变量失败:', e)
+      console.error('保存环境设置失败:', e)
     } finally {
       saving.value = false
     }
   }
-
-  // 处理输入变化（兼容旧的接口）
+  
   const handleInputChange = () => {
     debouncedSave()
   }
-
+  
   return {
-    localVariables,
+    t,
+    activeTab,
+    tabs,
+    localSettings,
     saving,
     addVariable,
     removeVariable,
-    saveVariables,
-    handleInputChange
+    addHeader,
+    removeHeader,
+    handleScriptUpdate,
+    saveScripts,
+    saveSettings,
+    handleInputChange,
+    variables: computed(() => props.activeEnvironment?.variables || [])
   }
 }

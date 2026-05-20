@@ -249,6 +249,7 @@ export async function loadScriptsChain(options) {
   const {
     workspacePath,
     apiId,
+    environmentId,  // 当前激活的环境 ID
     ancestorCollections,  // [rootCollection, ..., parentCollection]（按层级顺序）
     scriptKind  // 'pre' 或 'post'
   } = options
@@ -270,7 +271,24 @@ export async function loadScriptsChain(options) {
     // 工作区脚本不存在，忽略
   }
 
-  // 2. 集合脚本（按层级顺序：父集合 → 子集合）
+  // 2. 环境脚本（在工作区后，集合前）
+  if (environmentId) {
+    try {
+      const environmentScript = await invoke('get_script', {
+        workspacePath,
+        targetType: 'environment',
+        targetId: environmentId,
+        scriptKind
+      })
+      if (environmentScript && environmentScript.trim()) {
+        scripts.push({ source: 'environment', content: environmentScript })
+      }
+    } catch (e) {
+      // 环境脚本不存在，忽略
+    }
+  }
+
+  // 3. 集合脚本（按层级顺序：父集合 → 子集合）
   for (const collection of ancestorCollections || []) {
     try {
       const collectionScript = await invoke('get_script', {
@@ -287,7 +305,7 @@ export async function loadScriptsChain(options) {
     }
   }
 
-  // 3. 接口脚本
+  // 4. 接口脚本
   if (apiId) {
     try {
       const apiScript = await invoke('get_script', {
@@ -316,6 +334,7 @@ export async function executePreScripts(options) {
   const {
     workspacePath,
     apiId,
+    environmentId,  // 当前激活的环境 ID
     ancestorCollections,
     environmentVariables,
     collectionVariables,
@@ -327,6 +346,7 @@ export async function executePreScripts(options) {
   const scripts = await loadScriptsChain({
     workspacePath,
     apiId,
+    environmentId,
     ancestorCollections,
     scriptKind: 'pre'
   })
@@ -400,6 +420,7 @@ export async function executePostScripts(options) {
   const {
     workspacePath,
     apiId,
+    environmentId,  // 当前激活的环境 ID
     ancestorCollections,
     environmentVariables,
     collectionVariables,
@@ -412,6 +433,7 @@ export async function executePostScripts(options) {
   const scripts = await loadScriptsChain({
     workspacePath,
     apiId,
+    environmentId,
     ancestorCollections,
     scriptKind: 'post'
   })

@@ -227,10 +227,14 @@ export function useRequest(currentWorkspace, tabs, activeTab, sidebarRef, reques
         const activeEnvVars = await invoke('get_active_variables', { workspacePath })
         const collVarsObj = mergeCollectionVariablesToObject(ancestorCollections)
         
+        // 获取当前激活环境的 ID
+        const environmentId = envConfig.active_environment_id
+        
         // 执行前置脚本链
         const preScriptResult = await executePreScripts({
           workspacePath,
           apiId,
+          environmentId,
           ancestorCollections,
           environmentVariables: activeEnvVars || {},
           collectionVariables: collVarsObj,
@@ -287,14 +291,26 @@ export function useRequest(currentWorkspace, tabs, activeTab, sidebarRef, reques
 
       const headersMap = new Map()
 
-      // 合并集合公共请求头
+      // 合并环境请求头（优先级最低）
+      if (envConfig && envConfig.active_environment_id) {
+        const activeEnv = envConfig.environments.find(e => e.id === envConfig.active_environment_id)
+        if (activeEnv && activeEnv.common_headers) {
+          for (const h of activeEnv.common_headers) {
+            if (h.enabled && h.key.trim()) {
+              headersMap.set(h.key.toLowerCase(), h)
+            }
+          }
+        }
+      }
+
+      // 合并集合公共请求头（覆盖环境请求头）
       for (const h of commonHeaders) {
         if (h.enabled && h.key.trim()) {
           headersMap.set(h.key.toLowerCase(), h)
         }
       }
 
-      // 合并接口请求头（脚本可能修改过）
+      // 合并接口请求头（覆盖集合和环境请求头）
       for (const h of (modifiedRequest.headers || [])) {
         if (h.enabled && h.key.trim()) {
           headersMap.set(h.key.toLowerCase(), h)
@@ -367,6 +383,7 @@ export function useRequest(currentWorkspace, tabs, activeTab, sidebarRef, reques
         const postScriptResult = await executePostScripts({
           workspacePath,
           apiId,
+          environmentId: envConfig?.active_environment_id,
           ancestorCollections,
           environmentVariables: modifiedEnvVars,
           collectionVariables: modifiedCollVars,

@@ -73,14 +73,14 @@ src-tauri/src/
 |------|------|------|
 | workspace | `get_workspaces`, `get_last_workspace`, `create_workspace`, `switch_workspace`, `delete_workspace`, `update_workspace`, `set_last_workspace`, `set_last_api`, `get_last_api`, `reorder_workspaces` | 工作区 CRUD |
 | collection | `get_collections`, `create_collection`, `create_api`, `update_api`, `update_collection`, `update_collection_settings`, `delete_collection_item`, `move_api`, `move_collection`, `reorder_collection_items` | 集合/接口 CRUD |
-| environment | `get_environments`, `save_environment`, `delete_environment`, `switch_environment`, `get_active_variables`, `reorder_environments` | 环境变量 |
+| environment | `get_environments`, `save_environment`, `delete_environment`, `switch_environment`, `get_active_variables`, `reorder_environments` | 环境变量（支持 variables + common_headers + 前置/后置脚本） |
 | memory | `get_expanded_collections`, `save_expanded_collections`, `get_open_tabs`, `save_open_tabs` | 集合展开状态、打开的标签页 |
 | http | `send_http_request` | 发送 HTTP 请求（支持变量替换、form-data、binary、自动记录历史） |
 | cookie | `get_cookies`, `clear_cookies`, `delete_cookie`, `add_cookie` | Cookie 管理 |
 | saved_response | `save_response`, `get_saved_responses`, `get_saved_response`, `delete_saved_response`, `get_api_saved_responses` | 保存的响应快照 |
 | history | `get_history_dates`, `get_history_by_date`, `get_history_entry`, `delete_history_entry`, `clear_history_by_date`, `clear_all_history` | 请求历史记录 |
 | settings | `get_settings`, `update_settings` | 全局设置（超时、语言、Git检查间隔、AI配置） |
-| script | `save_script`, `get_script`, `delete_script`, `delete_target_scripts`, `get_all_scripts` | 前置/后置脚本管理 |
+| script | `save_script`, `get_script`, `delete_script`, `delete_target_scripts`, `get_all_scripts` | 前置/后置脚本管理（支持 api/collection/workspace/environment） |
 | ai | `get_ai_models`, `optimize_script_ai` | 获取 AI 模型列表、AI 优化脚本（OpenAI 协议） |
 | chat | `chat_ai`, `save_chat_history`, `get_chat_history`, `clear_chat_history`, `get_chat_sessions`, `delete_chat_session`, `rename_chat_session` | AI 聊天 |
 | md | `get_api_doc`, `save_api_doc`, `generate_api_doc_with_ai`, `get_doc_generation_status`, `cancel_doc_generation`, `get_api_doc_metadata` | API 文档管理 |
@@ -139,7 +139,7 @@ export function useComponentSetup(props, emit) {
 - **删除同步** - 删除接口时关闭对应标签页，删除集合时关闭所有子接口标签页
 - **环境变量** - URL/Headers/Body 支持 `{{变量名}}`，发送时自动替换
 - **JSON5** - 编辑支持注释/尾逗号，发送时转换为标准 JSON
-- **脚本执行顺序**：前置脚本（工作区 → 父集合 → 子集合 → 接口 → 请求），后置脚本（响应 → 接口 → 子集合 → 父集合 → 工作区）
+- **脚本执行顺序**：前置脚本（工作区 → 环境 → 父集合 → 子集合 → 接口 → 请求），后置脚本（响应 → 接口 → 子集合 → 父集合 → 环境 → 工作区）
 
 ## HTTP 方法颜色
 

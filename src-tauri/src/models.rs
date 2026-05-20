@@ -224,6 +224,8 @@ pub struct Environment {
     pub id: String,
     pub name: String,
     pub variables: Vec<Variable>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub common_headers: Option<Vec<Header>>,
 }
 
 /// 环境配置文件结构（工作区级别）

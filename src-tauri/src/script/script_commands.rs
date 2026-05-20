@@ -17,6 +17,7 @@ pub async fn save_script(
         "api" => ScriptTargetType::Api,
         "collection" => ScriptTargetType::Collection,
         "workspace" => ScriptTargetType::Workspace,
+        "environment" => ScriptTargetType::Environment,
         _ => return Err(format!("无效的脚本目标类型: {}", target_type)),
     };
     
@@ -79,6 +80,7 @@ pub async fn get_script(
         "api" => ScriptTargetType::Api,
         "collection" => ScriptTargetType::Collection,
         "workspace" => ScriptTargetType::Workspace,
+        "environment" => ScriptTargetType::Environment,
         _ => return Err(format!("无效的脚本目标类型: {}", target_type)),
     };
     
@@ -120,6 +122,7 @@ pub async fn delete_script(
         "api" => ScriptTargetType::Api,
         "collection" => ScriptTargetType::Collection,
         "workspace" => ScriptTargetType::Workspace,
+        "environment" => ScriptTargetType::Environment,
         _ => return Err(format!("无效的脚本目标类型: {}", target_type)),
     };
     
@@ -168,6 +171,7 @@ pub async fn delete_target_scripts(
         "api" => ScriptTargetType::Api,
         "collection" => ScriptTargetType::Collection,
         "workspace" => ScriptTargetType::Workspace,
+        "environment" => ScriptTargetType::Environment,
         _ => return Err(format!("无效的脚本目标类型: {}", target_type)),
     };
     
