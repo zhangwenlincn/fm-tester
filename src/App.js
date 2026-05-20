@@ -98,7 +98,8 @@ export function useAppSetup() {
   requestModule.setupActiveTabWatcher()
 
   // 监听当前标签页变化，加载可用变量
-  watch([tabs, activeTab], () => {
+  // 使用 getter 函数监听 tabs 数组内容变化（push 不改变引用）
+  watch([() => [...tabs.value], activeTab], () => {
     const currentTab = tabs.value[activeTab.value]
     if (currentTab && currentNavKey.value === 'collection' && workspace.currentWorkspace.value?.path) {
       environment.loadAvailableVariables(currentTab.id, currentTab.tabType)
