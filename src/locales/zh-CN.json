@@ -371,10 +371,7 @@
     "daysAgo": "{n}天前"
   },
   "import": {
-    "pasteContent": "粘贴内容",
     "selectFile": "选择文件",
-    "pasteJsonPlaceholder": "粘贴 OpenAPI JSON 或 YAML 内容...",
-    "format": "格式",
     "rootName": "根集合名称",
     "rootNamePlaceholder": "留空则使用 OpenAPI info.title",
     "targetCollection": "导入位置",

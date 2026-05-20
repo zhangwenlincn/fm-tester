@@ -16,35 +16,32 @@ const props = defineProps({
 const emit = defineEmits(['close', 'imported'])
 
 const {
-  content,
-  format,
   rootName,
   targetCollectionId,
   error,
   loading,
-  inputMode,
   selectedFile,
-  formatOptions,
   selectFile,
   importOpenapi,
   close
 } = useImportDialogSetup(props, emit)
 
-const findCollectionOption = (collections, options = [], path = []) => {
-  if (!collections) return options
+const findCollectionOption = (collections, options = [], depth = 0) => {
+  if (!collections || depth > 1) return options
   for (const col of collections) {
     if (col.type === 'collection') {
-      const label = path.length > 0 ? [...path, col.name].join(' / ') : col.name
-      options.push({ id: col.id, label, depth: path.length })
-      findCollectionOption(col.children, options, [...path, col.name])
+      options.push({ id: col.id, label: col.name, depth })
+      if (depth < 1) {
+        findCollectionOption(col.children, options, depth + 1)
+      }
     }
   }
   return options
 }
 
 const collectionOptions = computed(() => {
-  const options = [{ id: null, label: t('import.rootLevel') }]
-  return findCollectionOption(props.collections, options)
+  const options = [{ id: null, label: t('import.rootLevel'), depth: -1 }]
+  return findCollectionOption(props.collections, options, 0)
 })
 </script>
 
@@ -57,58 +54,22 @@ const collectionOptions = computed(() => {
       </div>
 
       <div class="dialog-body">
-        <div class="tabs">
-          <button 
-            :class="['tab-btn', { active: inputMode === 'paste' }]" 
-            @click="inputMode = 'paste'"
-          >
-            {{ t('import.pasteContent') }}
-          </button>
-          <button 
-            :class="['tab-btn', { active: inputMode === 'file' }]" 
-            @click="inputMode = 'file'"
-          >
-            {{ t('import.selectFile') }}
-          </button>
-        </div>
-
-        <div v-if="inputMode === 'paste'" class="form-group">
-          <textarea
-            v-model="content"
-            class="content-input"
-            :placeholder="t('import.pasteJsonPlaceholder')"
-          ></textarea>
-        </div>
-
-        <div v-if="inputMode === 'file'" class="form-group file-group">
+        <div class="form-group file-group">
           <button class="btn-select-file" @click="selectFile">
             <Icon name="folder" :size="16" />
-            {{ t('buttons.selectFile') }}
+            <span v-if="selectedFile" class="file-name">{{ selectedFile }}</span>
+            <span v-else>{{ t('buttons.selectFile') }}</span>
           </button>
-          <div v-if="selectedFile" class="selected-file">
-            {{ selectedFile }}
-          </div>
         </div>
 
-        <div class="form-row">
-          <div class="form-group half">
-            <label>{{ t('import.format') }}</label>
-            <select v-model="format" class="form-select">
-              <option v-for="opt in formatOptions" :key="opt.value" :value="opt.value">
-                {{ opt.label }}
-              </option>
-            </select>
-          </div>
-
-          <div class="form-group half">
-            <label>{{ t('import.rootName') }}</label>
-            <input
-              v-model="rootName"
-              type="text"
-              :placeholder="t('import.rootNamePlaceholder')"
-              class="form-input"
-            />
-          </div>
+        <div class="form-group">
+          <label>{{ t('import.rootName') }}</label>
+          <input
+            v-model="rootName"
+            type="text"
+            :placeholder="t('import.rootNamePlaceholder')"
+            class="form-input"
+          />
         </div>
 
         <div class="form-group">
@@ -126,7 +87,7 @@ const collectionOptions = computed(() => {
       <div class="dialog-footer">
         <button
           class="btn-primary"
-          :disabled="loading"
+          :disabled="loading || !selectedFile"
           @click="importOpenapi"
         >
           {{ loading ? t('common.loading') : t('buttons.import') }}

@@ -371,10 +371,7 @@
     "daysAgo": "{n} days ago"
   },
   "import": {
-    "pasteContent": "Paste Content",
     "selectFile": "Select File",
-    "pasteJsonPlaceholder": "Paste OpenAPI JSON or YAML content...",
-    "format": "Format",
     "rootName": "Root Collection Name",
     "rootNamePlaceholder": "Leave empty to use OpenAPI info.title",
     "targetCollection": "Import Location",

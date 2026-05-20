@@ -9,14 +9,7 @@ export function useImportDialogSetup(props, emit) {
   const targetCollectionId = ref(null)
   const error = ref('')
   const loading = ref(false)
-  const inputMode = ref('paste')
   const selectedFile = ref(null)
-
-  const formatOptions = [
-    { value: 'auto', label: '自动检测' },
-    { value: 'json', label: 'JSON' },
-    { value: 'yaml', label: 'YAML' }
-  ]
 
   const selectFile = async () => {
     try {
@@ -36,8 +29,10 @@ export function useImportDialogSetup(props, emit) {
         
         if (selected.endsWith('.yaml') || selected.endsWith('.yml')) {
           format.value = 'yaml'
-        } else {
+        } else if (selected.endsWith('.json')) {
           format.value = 'json'
+        } else {
+          format.value = 'auto'
         }
       }
     } catch (e) {
@@ -48,7 +43,7 @@ export function useImportDialogSetup(props, emit) {
 
   const importOpenapi = async () => {
     if (!content.value.trim()) {
-      error.value = '请输入或选择 OpenAPI 内容'
+      error.value = '请选择文件'
       return
     }
 
@@ -79,7 +74,6 @@ export function useImportDialogSetup(props, emit) {
     rootName.value = ''
     targetCollectionId.value = null
     error.value = ''
-    inputMode.value = 'paste'
     selectedFile.value = null
   }
 
@@ -95,15 +89,11 @@ export function useImportDialogSetup(props, emit) {
   })
 
   return {
-    content,
-    format,
     rootName,
     targetCollectionId,
     error,
     loading,
-    inputMode,
     selectedFile,
-    formatOptions,
     selectFile,
     importOpenapi,
     close
