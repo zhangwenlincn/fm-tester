@@ -27,13 +27,10 @@ const {
 } = useImportDialogSetup(props, emit)
 
 const findCollectionOption = (collections, options = [], depth = 0) => {
-  if (!collections || depth > 1) return options
+  if (!collections || depth > 0) return options
   for (const col of collections) {
     if (col.type === 'collection') {
       options.push({ id: col.id, label: col.name, depth })
-      if (depth < 1) {
-        findCollectionOption(col.children, options, depth + 1)
-      }
     }
   }
   return options
