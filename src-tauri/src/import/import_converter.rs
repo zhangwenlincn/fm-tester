@@ -247,12 +247,21 @@ fn extract_json_example(
             if let Some(ref value) = first_example.value {
                 return Some(serde_json::to_string_pretty(value).unwrap_or_default());
             }
+            if let Some(ref external_value) = first_example.external_value {
+                return Some(format!("[External Example: {}]", external_value));
+            }
         }
     }
     
     if let Some(ref schema) = media_type.schema {
+        if let Some(ref example) = schema.example {
+            return Some(serde_json::to_string_pretty(example).unwrap_or_default());
+        }
+        
         let generated = generate_example_from_schema(schema, schemas_ctx);
-        return Some(serde_json::to_string_pretty(&generated).unwrap_or_default());
+        if !generated.is_null() {
+            return Some(serde_json::to_string_pretty(&generated).unwrap_or_default());
+        }
     }
     
     None
@@ -262,21 +271,17 @@ fn generate_example_from_schema(
     schema: &Schema,
     schemas_ctx: &HashMap<String, Schema>,
 ) -> serde_json::Value {
-    // 处理 $ref 引用
+    if let Some(ref example) = schema.example {
+        return example.clone();
+    }
+    
     if let Some(ref ref_path) = schema.ref_path {
-        // 解析引用路径: "#/components/schemas/SomeSchema"
         if ref_path.starts_with("#/components/schemas/") {
             let schema_name = ref_path.strip_prefix("#/components/schemas/").unwrap();
             if let Some(ref_schema) = schemas_ctx.get(schema_name) {
-                // 递归解析引用的 schema
                 return generate_example_from_schema(ref_schema, schemas_ctx);
             }
         }
-        return serde_json::Value::String(format!("[未解析引用: {}]", ref_path));
-    }
-    
-    if let Some(ref example) = schema.example {
-        return example.clone();
     }
     
     match schema.schema_type.as_deref() {
@@ -363,4 +368,247 @@ fn resolve_schema_ref(schema: &Schema, schemas_ctx: &HashMap<String, Schema>) ->
         }
     }
     schema.clone()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::import::openapi_types::MediaType;
+    use std::collections::HashMap;
+
+    #[test]
+    fn test_real_openapi_login_request() {
+        let openapi_json = r##"
+        {
+          "openapi": "3.0.1",
+          "info": {
+            "title": "Test API",
+            "version": "v0"
+          },
+          "paths": {
+            "/auth/login": {
+              "post": {
+                "tags": ["用户认证"],
+                "summary": "用户登录",
+                "requestBody": {
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "$ref": "#/components/schemas/LoginRequest"
+                      }
+                    }
+                  },
+                  "required": true
+                },
+                "responses": {
+                  "200": {
+                    "description": "OK"
+                  }
+                }
+              }
+            }
+          },
+          "components": {
+            "schemas": {
+              "LoginRequest": {
+                "type": "object",
+                "properties": {
+                  "account": {
+                    "type": "string",
+                    "description": "账号",
+                    "example": "admin"
+                  },
+                  "phone": {
+                    "type": "string",
+                    "description": "手机号",
+                    "example": "13800138000"
+                  },
+                  "password": {
+                    "type": "string",
+                    "description": "密码",
+                    "example": "123456"
+                  },
+                  "loginType": {
+                    "type": "string",
+                    "description": "登录方式",
+                    "enum": ["ACCOUNT_PASSWORD", "PHONE_PASSWORD"]
+                  }
+                },
+                "description": "用户登录请求"
+              }
+            }
+          }
+        }
+        "##;
+        
+        use crate::import::openapi_parser::parse_openapi;
+        let openapi = parse_openapi(openapi_json.trim(), "json").unwrap();
+        
+        let empty_schemas = HashMap::new();
+        let schemas_ctx: &HashMap<String, Schema> = match &openapi.components {
+            Some(c) => &c.schemas,
+            None => &empty_schemas,
+        };
+        
+        let login_path = openapi.paths.get("/auth/login").unwrap();
+        let login_op = login_path.post.as_ref().unwrap();
+        
+        let request_body = login_op.request_body.as_ref().unwrap();
+        let media_type = request_body.content.get("application/json").unwrap();
+        
+        let result = extract_json_example(media_type, schemas_ctx);
+        
+        assert!(result.is_some());
+        let body_str = result.unwrap();
+        println!("Generated body: {}", body_str);
+        
+        let body: serde_json::Value = serde_json::from_str(&body_str).unwrap();
+        assert!(body.is_object());
+        
+        let obj = body.as_object().unwrap();
+        assert_eq!(obj.get("account").unwrap().as_str().unwrap(), "admin");
+        assert_eq!(obj.get("phone").unwrap().as_str().unwrap(), "13800138000");
+        assert_eq!(obj.get("password").unwrap().as_str().unwrap(), "123456");
+        assert_eq!(obj.get("loginType").unwrap().as_str().unwrap(), "ACCOUNT_PASSWORD");
+    }
+
+    #[test]
+    fn test_generate_example_from_schema_with_property_example() {
+        let mut schemas_ctx = HashMap::new();
+        
+        let login_request_schema = Schema {
+            schema_type: Some("object".to_string()),
+            format: None,
+            description: Some("用户登录请求".to_string()),
+            properties: {
+                let mut props = HashMap::new();
+                props.insert("account".to_string(), Schema {
+                    schema_type: Some("string".to_string()),
+                    example: Some(serde_json::Value::String("admin".to_string())),
+                    format: None,
+                    description: Some("账号".to_string()),
+                    properties: HashMap::new(),
+                    items: None,
+                    required: vec![],
+                    enum_values: vec![],
+                    default: None,
+                    ref_path: None,
+                });
+                props.insert("password".to_string(), Schema {
+                    schema_type: Some("string".to_string()),
+                    example: Some(serde_json::Value::String("123456".to_string())),
+                    format: None,
+                    description: Some("密码".to_string()),
+                    properties: HashMap::new(),
+                    items: None,
+                    required: vec![],
+                    enum_values: vec![],
+                    default: None,
+                    ref_path: None,
+                });
+                props.insert("loginType".to_string(), Schema {
+                    schema_type: Some("string".to_string()),
+                    example: None,
+                    format: None,
+                    description: Some("登录方式".to_string()),
+                    properties: HashMap::new(),
+                    items: None,
+                    required: vec![],
+                    enum_values: vec!["ACCOUNT_PASSWORD".to_string(), "PHONE_PASSWORD".to_string()],
+                    default: None,
+                    ref_path: None,
+                });
+                props
+            },
+            items: None,
+            required: vec!["account".to_string(), "password".to_string()],
+            enum_values: vec![],
+            default: None,
+            example: None,
+            ref_path: None,
+        };
+        
+        schemas_ctx.insert("LoginRequest".to_string(), login_request_schema.clone());
+        
+        let ref_schema = Schema {
+            schema_type: None,
+            ref_path: Some("#/components/schemas/LoginRequest".to_string()),
+            format: None,
+            description: None,
+            properties: HashMap::new(),
+            items: None,
+            required: vec![],
+            enum_values: vec![],
+            default: None,
+            example: None,
+        };
+        
+        let result = generate_example_from_schema(&ref_schema, &schemas_ctx);
+        
+        assert!(result.is_object());
+        let obj = result.as_object().unwrap();
+        assert_eq!(obj.get("account").unwrap().as_str().unwrap(), "admin");
+        assert_eq!(obj.get("password").unwrap().as_str().unwrap(), "123456");
+        assert_eq!(obj.get("loginType").unwrap().as_str().unwrap(), "ACCOUNT_PASSWORD");
+    }
+
+    #[test]
+    fn test_extract_json_example_with_ref_schema() {
+        let mut schemas_ctx = HashMap::new();
+        
+        let login_request_schema = Schema {
+            schema_type: Some("object".to_string()),
+            format: None,
+            description: Some("用户登录请求".to_string()),
+            properties: {
+                let mut props = HashMap::new();
+                props.insert("account".to_string(), Schema {
+                    schema_type: Some("string".to_string()),
+                    example: Some(serde_json::Value::String("admin".to_string())),
+                    format: None,
+                    description: Some("账号".to_string()),
+                    properties: HashMap::new(),
+                    items: None,
+                    required: vec![],
+                    enum_values: vec![],
+                    default: None,
+                    ref_path: None,
+                });
+                props
+            },
+            items: None,
+            required: vec![],
+            enum_values: vec![],
+            default: None,
+            example: None,
+            ref_path: None,
+        };
+        
+        schemas_ctx.insert("LoginRequest".to_string(), login_request_schema);
+        
+        let media_type = MediaType {
+            schema: Some(Schema {
+                ref_path: Some("#/components/schemas/LoginRequest".to_string()),
+                schema_type: None,
+                format: None,
+                description: None,
+                properties: HashMap::new(),
+                items: None,
+                required: vec![],
+                enum_values: vec![],
+                default: None,
+                example: None,
+            }),
+            example: None,
+            examples: None,
+        };
+        
+        let result = extract_json_example(&media_type, &schemas_ctx);
+        
+        assert!(result.is_some());
+        let body_str = result.unwrap();
+        let body: serde_json::Value = serde_json::from_str(&body_str).unwrap();
+        assert!(body.is_object());
+        assert_eq!(body.get("account").unwrap().as_str().unwrap(), "admin");
+    }
 }

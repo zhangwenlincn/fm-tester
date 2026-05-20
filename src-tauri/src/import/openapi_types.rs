@@ -99,13 +99,13 @@ pub struct Operation {
     pub summary: Option<String>,
     #[serde(default)]
     pub description: Option<String>,
-    #[serde(default)]
+    #[serde(rename = "operationId", default)]
     pub operation_id: Option<String>,
     #[serde(default)]
     pub tags: Vec<String>,
     #[serde(default)]
     pub parameters: Vec<Parameter>,
-    #[serde(default)]
+    #[serde(rename = "requestBody", default)]
     pub request_body: Option<RequestBody>,
     #[serde(default)]
     pub responses: HashMap<String, Response>,
@@ -200,7 +200,7 @@ pub struct Example {
     pub description: Option<String>,
     #[serde(default)]
     pub value: Option<serde_json::Value>,
-    #[serde(default)]
+    #[serde(rename = "externalValue", default)]
     pub external_value: Option<String>,
 }
 
@@ -214,7 +214,7 @@ pub struct Components {
     pub parameters: HashMap<String, Parameter>,
     #[serde(default)]
     pub examples: HashMap<String, Example>,
-    #[serde(default)]
+    #[serde(rename = "requestBodies", default)]
     pub request_bodies: HashMap<String, RequestBody>,
     #[serde(default)]
     pub headers: HashMap<String, Header>,
