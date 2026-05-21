@@ -324,6 +324,8 @@ export function useCollectionPanelSetup(props, emit) {
       deleteItem(item)
     } else if (action === 'delete-saved-response') {
       deleteSavedResponse(item)
+    } else if (action === 'duplicate') {
+      duplicateItem(item)
     } else if (action === 'export-curl') {
       await exportAsCurl(item)
     } else if (action === 'export-postman') {
@@ -777,6 +779,28 @@ export function useCollectionPanelSetup(props, emit) {
       await loadCollections()
     } catch (e) {
       console.error('删除保存响应失败:', e)
+    }
+  }
+
+  const duplicateItem = async (item) => {
+    if (!props.workspace?.path) return
+    try {
+      if (item.type === 'collection') {
+        await invoke('duplicate_collection', {
+          workspacePath: props.workspace.path,
+          collectionId: item.id
+        })
+      } else {
+        await invoke('duplicate_api', {
+          workspacePath: props.workspace.path,
+          apiId: item.id
+        })
+      }
+      await loadCollections()
+      showToast(t('toast.saved'), 'success')
+    } catch (e) {
+      console.error('复制失败:', e)
+      showToast(t('toast.saveFailed'), 'error')
     }
   }
 
@@ -1416,6 +1440,7 @@ return {
     openSavedResponseContextMenu,
     handleContextAction,
     deleteItem,
+    duplicateItem,
     getMethodClass,
     toggleResponses,
     selectSavedResponse,

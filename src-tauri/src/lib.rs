@@ -63,6 +63,8 @@ pub fn run() {
             move_api,
             move_collection,
             reorder_collection_items,
+            duplicate_api,
+            duplicate_collection,
             // 环境
             get_environments,
             save_environment,

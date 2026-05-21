@@ -57,6 +57,7 @@ const {
   openSavedResponseContextMenu,
   handleContextAction,
   deleteItem,
+  duplicateItem,
   getMethodClass,
   toggleResponses,
   selectSavedResponse,
@@ -126,6 +127,9 @@ const handleMenuAction = (action) => {
   } else if (action === 'export-postman') {
     closeContextMenu()
     handleContextAction(action)
+  } else if (action === 'duplicate') {
+    closeContextMenu()
+    duplicateItem(contextMenu.value.item)
   } else {
     handleContextAction(action)
   }
@@ -204,6 +208,7 @@ defineExpose({
           class="tree-folder"
           :class="{
             selected: selectedCollectionId === row.item.id,
+            'context-target': contextMenu.visible && contextMenu.item?.id === row.item.id,
             'dragging': dragState.draggingId === row.item.id,
             'drag-over-before': dragState.dragOverId === row.item.id && dragState.dragPosition === 'before',
             'drag-over-after': dragState.dragOverId === row.item.id && dragState.dragPosition === 'after',
@@ -247,6 +252,7 @@ defineExpose({
           class="tree-item"
           :class="{
             selected: selectedApi === row.item.id,
+            'context-target': contextMenu.visible && contextMenu.item?.id === row.item.id,
             'dragging': dragState.draggingId === row.item.id,
             'drag-over-before': dragState.dragOverId === row.item.id && dragState.dragPosition === 'before',
             'drag-over-after': dragState.dragOverId === row.item.id && dragState.dragPosition === 'after',
@@ -366,6 +372,10 @@ defineExpose({
           <span>{{ t('buttons.newApi') }}</span>
         </div>
         <div class="menu-divider"></div>
+        <div class="menu-item" @click="handleMenuAction('duplicate')">
+          <span class="menu-icon"><Icon name="copy" :size="14" /></span>
+          <span>{{ t('contextMenu.duplicate') }}</span>
+        </div>
         <div class="menu-item" @click="handleMenuAction('export-postman')">
           <span class="menu-icon"><Icon name="export" :size="14" /></span>
           <span>{{ t('contextMenu.exportPostman') }}</span>
@@ -383,6 +393,10 @@ defineExpose({
 
       <!-- API 菜单 -->
       <template v-if="contextMenu.type === 'api'">
+        <div class="menu-item" @click="handleMenuAction('duplicate')">
+          <span class="menu-icon"><Icon name="copy" :size="14" /></span>
+          <span>{{ t('contextMenu.duplicate') }}</span>
+        </div>
         <div class="menu-item" @click="handleMenuAction('rename')">
           <span class="menu-icon"><Icon name="edit" :size="14" /></span>
           <span>{{ t('common.rename') }}</span>

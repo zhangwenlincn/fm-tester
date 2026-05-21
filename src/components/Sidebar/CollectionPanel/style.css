@@ -194,6 +194,12 @@
   background: #bae7ff;
 }
 
+/* 右键菜单目标高亮 */
+.tree-item.context-target,
+.tree-folder.context-target {
+  background: #e6f7ff;
+}
+
 /* 拖拽排序样式 */
 .tree-folder.dragging,
 .tree-item.dragging {

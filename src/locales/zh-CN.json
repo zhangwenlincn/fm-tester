@@ -323,7 +323,8 @@
     "importCollection": "导入集合",
     "importCurl": "导入 cURL",
     "exportCurl": "导出为 cURL",
-    "exportPostman": "导出为 Postman"
+    "exportPostman": "导出为 Postman",
+    "duplicate": "复制"
   },
   "workspaceType": {
     "local": "本地工作区",

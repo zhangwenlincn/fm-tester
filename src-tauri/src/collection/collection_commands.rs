@@ -2,9 +2,14 @@ use crate::collection::collection_config::{read_collections, write_collections};
 use crate::collection::collection_utils::{
     find_api_in_collections, find_collection_item, find_parent_children, get_all_descendant_ids,
     get_collection_depth, get_collection_max_child_depth, remove_collection_item,
+    find_item_in_collections,
 };
 use crate::models::{Collection, FormField, Header, Variable};
 use crate::saved_response::saved_response_config::get_api_saved_responses_index;
+use crate::script::script_config::{
+    load_scripts_config, save_scripts_config, read_script_file, save_script_file,
+    generate_script_filename, ScriptTargetType, ScriptIndexEntry,
+};
 
 /// 递归加载 API 的保存响应索引
 fn load_saved_responses_for_apis(collections: &mut [Collection], workspace_path: &str) {
@@ -406,4 +411,233 @@ pub fn move_collection(
 
     write_collections(&workspace_path, &config)?;
     Ok(())
+}
+
+fn add_copy_suffix(name: &str) -> String {
+    let has_chinese = name.chars().any(|c| ('\u{4e00}'..='\u{9fff}').contains(&c));
+    if has_chinese {
+        format!("{} 副本", name)
+    } else {
+        format!("{} Copy", name)
+    }
+}
+
+fn generate_new_id(item_type: &str, counter: u32) -> String {
+    let prefix = if item_type == "collection" { "col" } else { "api" };
+    let timestamp = chrono::Local::now().timestamp_millis();
+    format!("{}_{}{}", prefix, timestamp, counter)
+}
+
+fn duplicate_scripts_for_item(
+    workspace_path: &str,
+    old_id: &str,
+    new_id: &str,
+    item_type: &str,
+) -> Result<(), String> {
+    let config = load_scripts_config(workspace_path);
+    
+    let target_type = if item_type == "collection" {
+        ScriptTargetType::Collection
+    } else {
+        ScriptTargetType::Api
+    };
+    
+    let old_scripts: Vec<_> = config.scripts.iter()
+        .filter(|s| s.target_type == target_type && s.target_id.as_deref() == Some(old_id))
+        .cloned()
+        .collect();
+    
+    if old_scripts.is_empty() {
+        return Ok(());
+    }
+    
+    let mut new_config = load_scripts_config(workspace_path);
+    
+    for old_script in &old_scripts {
+        let old_filename = old_script.file.replace("scripts/", "");
+        let content = read_script_file(workspace_path, &old_filename)?;
+        
+        let new_filename = generate_script_filename(
+            target_type.clone(),
+            Some(new_id),
+            old_script.script_kind.clone(),
+        );
+        
+        save_script_file(workspace_path, &new_filename, &content)?;
+        
+        let new_entry = ScriptIndexEntry {
+            target_type: target_type.clone(),
+            target_id: Some(new_id.to_string()),
+            script_kind: old_script.script_kind.clone(),
+            file: format!("scripts/{}", new_filename),
+        };
+        
+        new_config.scripts.push(new_entry);
+    }
+    
+    save_scripts_config(workspace_path, &new_config)?;
+    
+    Ok(())
+}
+
+fn duplicate_scripts_recursive(
+    workspace_path: &str,
+    original_item: &crate::models::Collection,
+    duplicated_item: &crate::models::Collection,
+) -> Result<(), String> {
+    duplicate_scripts_for_item(
+        workspace_path,
+        &original_item.id,
+        &duplicated_item.id,
+        &original_item.item_type,
+    )?;
+    
+    for (orig_child, dup_child) in original_item.children.iter().zip(duplicated_item.children.iter()) {
+        duplicate_scripts_recursive(workspace_path, orig_child, dup_child)?;
+    }
+    
+    Ok(())
+}
+
+fn duplicate_item_recursive(item: &crate::models::Collection, counter: &mut u32, is_root: bool) -> crate::models::Collection {
+    let new_id = generate_new_id(&item.item_type, *counter);
+    *counter += 1;
+    let new_name = if is_root {
+        add_copy_suffix(&item.name)
+    } else {
+        item.name.clone()
+    };
+
+    let new_children: Vec<crate::models::Collection> = item.children.iter().map(|child| {
+        duplicate_item_recursive(child, counter, false)
+    }).collect();
+
+    crate::models::Collection {
+        id: new_id,
+        name: new_name,
+        description: item.description.clone(),
+        item_type: item.item_type.clone(),
+        children: new_children,
+        method: item.method.clone(),
+        url: item.url.clone(),
+        params: item.params.clone(),
+        headers: item.headers.clone(),
+        body: item.body.clone(),
+        body_type: item.body_type.clone(),
+        form_fields: item.form_fields.clone(),
+        binary_file_path: item.binary_file_path.clone(),
+        saved_responses: None,
+        common_headers: item.common_headers.clone(),
+        collection_variables: item.collection_variables.clone(),
+    }
+}
+
+#[tauri::command]
+pub fn duplicate_api(
+    workspace_path: String,
+    api_id: String,
+) -> Result<crate::models::Collection, String> {
+    let mut config = read_collections(&workspace_path);
+
+    let original_api = find_api_in_collections(&config.collections, &api_id)
+        .ok_or("API 不存在".to_string())?;
+
+    if original_api.item_type != "api" {
+        return Err("该项不是 API".to_string());
+    }
+
+    let mut counter = 0u32;
+    let duplicated = duplicate_item_recursive(original_api, &mut counter, true);
+
+    let (parent_id, current_index) = find_parent_and_index(&config.collections, &api_id)?;
+
+    if let Some(pid) = parent_id {
+        if let Some(parent) = find_collection_item(&mut config.collections, &pid) {
+            parent.children.insert(current_index + 1, duplicated.clone());
+        } else {
+            return Err("父集合不存在".to_string());
+        }
+    } else {
+        config.collections.insert(current_index + 1, duplicated.clone());
+    }
+
+    write_collections(&workspace_path, &config)?;
+    
+    duplicate_scripts_for_item(&workspace_path, &api_id, &duplicated.id, "api")?;
+    
+    Ok(duplicated)
+}
+
+#[tauri::command]
+pub fn duplicate_collection(
+    workspace_path: String,
+    collection_id: String,
+) -> Result<crate::models::Collection, String> {
+    let mut config = read_collections(&workspace_path);
+
+    let original = find_item_in_collections(&config.collections, &collection_id)
+        .ok_or("集合不存在".to_string())?;
+
+    if original.item_type != "collection" {
+        return Err("该项不是集合".to_string());
+    }
+
+    let original_clone = original.clone();
+    let mut counter = 0u32;
+    let duplicated = duplicate_item_recursive(original, &mut counter, true);
+
+    let (parent_id, current_index) = find_parent_and_index(&config.collections, &collection_id)?;
+
+    if let Some(pid) = parent_id {
+        if let Some(parent) = find_collection_item(&mut config.collections, &pid) {
+            parent.children.insert(current_index + 1, duplicated.clone());
+        } else {
+            return Err("父集合不存在".to_string());
+        }
+    } else {
+        config.collections.insert(current_index + 1, duplicated.clone());
+    }
+
+    write_collections(&workspace_path, &config)?;
+    
+    duplicate_scripts_recursive(&workspace_path, &original_clone, &duplicated)?;
+    
+    Ok(duplicated)
+}
+
+fn find_parent_and_index(
+    collections: &[crate::models::Collection],
+    item_id: &str,
+) -> Result<(Option<String>, usize), String> {
+    for (index, item) in collections.iter().enumerate() {
+        if item.id == item_id {
+            return Ok((None, index));
+        }
+        if item.item_type == "collection" {
+            let result = find_parent_and_index_in_children(&item.children, item_id, &item.id);
+            if let Some((pid, idx)) = result {
+                return Ok((Some(pid), idx));
+            }
+        }
+    }
+    Err("找不到项".to_string())
+}
+
+fn find_parent_and_index_in_children(
+    children: &[crate::models::Collection],
+    item_id: &str,
+    parent_id: &str,
+) -> Option<(String, usize)> {
+    for (index, child) in children.iter().enumerate() {
+        if child.id == item_id {
+            return Some((parent_id.to_string(), index));
+        }
+        if child.item_type == "collection" {
+            let result = find_parent_and_index_in_children(&child.children, item_id, &child.id);
+            if let Some((pid, idx)) = result {
+                return Some((pid, idx));
+            }
+        }
+    }
+    None
 }

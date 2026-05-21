@@ -323,7 +323,8 @@
     "importCollection": "Import Collection",
     "importCurl": "Import cURL",
     "exportCurl": "Export as cURL",
-    "exportPostman": "Export as Postman"
+    "exportPostman": "Export as Postman",
+    "duplicate": "Duplicate"
   },
   "workspaceType": {
     "local": "Local Workspace",
