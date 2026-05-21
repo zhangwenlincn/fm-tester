@@ -46,6 +46,7 @@ export function useCollectionPanelSetup(props, emit) {
   let dragStartY = 0
   let dragStartId = null
   let dragStartRow = null
+  let dragStartOnName = false // 记录是否点击在集合名字上
   const DRAG_THRESHOLD = 4 // 移动超过4px才触发拖拽
 
   const treeListRef = ref(null)
@@ -776,6 +777,7 @@ export function useCollectionPanelSetup(props, emit) {
     dragStartY = e.clientY
     dragStartId = row.item.id
     dragStartRow = row
+    dragStartOnName = e.target.closest('.folder-name-text') !== null
     isDragging = false
     document.addEventListener('mousemove', onMouseMove)
     document.addEventListener('mouseup', onMouseUp)
@@ -849,8 +851,8 @@ export function useCollectionPanelSetup(props, emit) {
       }
     }
 
-    // 如果没有拖拽，则是点击 - 集合项切换展开/收起
-    if (!wasDragging && dragStartRow?.isCollection && !dragStartRow.isEditing) {
+    // 如果没有拖拽，则是点击 - 集合项切换展开/收起（点击名字区域除外，名字区域由 click 事件处理选择）
+    if (!wasDragging && dragStartRow?.isCollection && !dragStartRow.isEditing && !dragStartOnName) {
       await toggleExpand(dragStartRow.item.id)
     }
 
@@ -954,6 +956,7 @@ export function useCollectionPanelSetup(props, emit) {
     isDragging = false
     dragStartId = null
     dragStartRow = null
+    dragStartOnName = false
     dragState.value = {
       draggingId: null,
       dragOverId: null,
