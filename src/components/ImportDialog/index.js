@@ -11,13 +11,29 @@ export function useImportDialogSetup(props, emit) {
   const loading = ref(false)
   const selectedFile = ref(null)
 
+  const detectFormat = (fileContent, filename) => {
+    try {
+      const json = JSON.parse(fileContent)
+      if (json.info && (json.info._postman_id || json.info.schema?.includes('postman'))) {
+        return 'postman'
+      }
+      if (json.openapi || json.swagger) {
+        return 'openapi'
+      }
+    } catch {}
+    if (filename.endsWith('.yaml') || filename.endsWith('.yml')) {
+      return 'openapi'
+    }
+    return 'auto'
+  }
+
   const selectFile = async () => {
     try {
       const { open } = await import('@tauri-apps/plugin-dialog')
       const selected = await open({
         multiple: false,
         filters: [
-          { name: 'OpenAPI', extensions: ['json', 'yaml', 'yml'] }
+          { name: 'API Collection', extensions: ['json', 'yaml', 'yml'] }
         ]
       })
       if (selected) {
@@ -25,15 +41,10 @@ export function useImportDialogSetup(props, emit) {
         const { readFile } = await import('@tauri-apps/plugin-fs')
         const fileData = await readFile(selected)
         const decoder = new TextDecoder()
-        content.value = decoder.decode(fileData)
+        const fileContent = decoder.decode(fileData)
+        content.value = fileContent
         
-        if (selected.endsWith('.yaml') || selected.endsWith('.yml')) {
-          format.value = 'yaml'
-        } else if (selected.endsWith('.json')) {
-          format.value = 'json'
-        } else {
-          format.value = 'auto'
-        }
+        format.value = detectFormat(fileContent, selected)
       }
     } catch (e) {
       console.error('选择文件失败:', e)
@@ -41,7 +52,7 @@ export function useImportDialogSetup(props, emit) {
     }
   }
 
-  const importOpenapi = async () => {
+  const importCollection = async () => {
     if (!content.value.trim()) {
       error.value = '请选择文件'
       return
@@ -51,13 +62,22 @@ export function useImportDialogSetup(props, emit) {
     error.value = ''
 
     try {
-      const result = await invoke('import_openapi', {
+      const params = {
         workspacePath: props.workspacePath,
         content: content.value,
-        format: format.value,
         targetCollectionId: targetCollectionId.value || null,
         rootName: rootName.value.trim() || null
-      })
+      }
+      
+      let result
+      if (format.value === 'postman') {
+        result = await invoke('import_postman', params)
+      } else {
+        result = await invoke('import_openapi', {
+          ...params,
+          format: format.value
+        })
+      }
       showToast('导入成功', 'success')
       emit('imported', result)
       close()
@@ -95,7 +115,7 @@ export function useImportDialogSetup(props, emit) {
     loading,
     selectedFile,
     selectFile,
-    importOpenapi,
+    importOpenapi: importCollection,
     close
   }
 }

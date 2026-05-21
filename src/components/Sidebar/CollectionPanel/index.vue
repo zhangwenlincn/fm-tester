@@ -154,7 +154,7 @@ defineExpose({
           <div v-if="showImportMenu" class="import-dropdown">
             <div class="dropdown-item" @click="openOpenapiImport">
               <Icon name="import" :size="14" />
-              <span>{{ t('contextMenu.importOpenapi') }}</span>
+              <span>{{ t('contextMenu.importCollection') }}</span>
             </div>
             <div class="dropdown-item" @click="openCurlImportDialog">
               <Icon name="import" :size="14" />
@@ -338,7 +338,7 @@ defineExpose({
         <div class="menu-divider"></div>
         <div class="menu-item" @click="handleMenuAction('import-openapi')">
           <span class="menu-icon"><Icon name="import" :size="14" /></span>
-          <span>{{ t('contextMenu.importOpenapi') }}</span>
+          <span>{{ t('contextMenu.importCollection') }}</span>
         </div>
         <div class="menu-item" @click="handleMenuAction('import-curl')">
           <span class="menu-icon"><Icon name="import" :size="14" /></span>

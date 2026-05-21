@@ -46,7 +46,7 @@ const collectionOptions = computed(() => {
   <div v-if="visible" class="dialog-overlay" @click.self="close">
     <div class="dialog import-dialog">
       <div class="dialog-header">
-        <span class="dialog-title">{{ t('dialogs.importOpenapi') }}</span>
+        <span class="dialog-title">{{ t('dialogs.importCollection') }}</span>
         <span class="dialog-close" @click="close">×</span>
       </div>
 

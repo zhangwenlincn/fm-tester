@@ -142,7 +142,9 @@ pub fn run() {
             // Import
             preview_openapi,
             import_openapi,
-            parse_curl
+            parse_curl,
+            preview_postman,
+            import_postman
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

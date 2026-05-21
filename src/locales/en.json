@@ -163,7 +163,7 @@
     "workspacePath": "Path",
     "responseName": "Response Name",
     "parent": "Parent",
-    "importOpenapi": "Import OpenAPI",
+    "importCollection": "Import Collection",
     "importCurl": "Import cURL"
   },
   "toast": {
@@ -320,7 +320,7 @@
     "deleteCollection": "Delete Collection",
     "syncWorkspace": "Sync API",
     "switchBranch": "Switch Branch",
-    "importOpenapi": "Import OpenAPI",
+    "importCollection": "Import Collection",
     "importCurl": "Import cURL",
     "exportCurl": "Export as cURL"
   },
@@ -379,7 +379,7 @@
   "import": {
     "selectFile": "Select File",
     "rootName": "Root Collection Name",
-    "rootNamePlaceholder": "Leave empty to use OpenAPI info.title",
+    "rootNamePlaceholder": "Leave empty to use collection name from file",
     "targetCollection": "Import Location",
     "rootLevel": "Root Level",
     "collections": "collections",

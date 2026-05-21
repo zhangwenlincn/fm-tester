@@ -1,6 +1,8 @@
 use crate::import::openapi_parser::parse_openapi;
 use crate::import::import_converter::convert_to_collection;
 use crate::import::curl_parser::{parse_curl_command, ParsedCurl};
+use crate::import::postman_parser::parse_postman;
+use crate::import::postman_converter::convert_postman_to_collection;
 use crate::models::Collection;
 use crate::collection::collection_config::{read_collections, write_collections};
 use crate::collection::collection_utils::find_collection_item;
@@ -63,4 +65,48 @@ pub fn import_openapi(
 #[tauri::command]
 pub fn parse_curl(curl_command: String) -> Result<ParsedCurl, String> {
     parse_curl_command(&curl_command)
+}
+
+#[tauri::command]
+pub fn preview_postman(
+    content: String,
+    root_name: Option<String>,
+) -> Result<Collection, String> {
+    let postman = parse_postman(&content)?;
+    let collection = convert_postman_to_collection(postman, root_name)?;
+    Ok(collection)
+}
+
+#[tauri::command]
+pub fn import_postman(
+    workspace_path: String,
+    content: String,
+    target_collection_id: Option<String>,
+    root_name: Option<String>,
+) -> Result<Collection, String> {
+    let postman = parse_postman(&content)?;
+    let mut root_collection = convert_postman_to_collection(postman, root_name)?;
+    
+    let mut config = read_collections(&workspace_path);
+    
+    if let Some(parent_id) = target_collection_id.clone() {
+        let parent = find_collection_item(&mut config.collections, &parent_id)
+            .ok_or_else(|| format!("目标集合不存在: {}", parent_id))?;
+        
+        if parent.item_type != "collection" {
+            return Err("目标必须是集合".to_string());
+        }
+        
+        assign_new_ids(&mut root_collection);
+        for child in &root_collection.children {
+            parent.children.push(child.clone());
+        }
+        write_collections(&workspace_path, &config)?;
+        Ok(root_collection)
+    } else {
+        assign_new_ids(&mut root_collection);
+        config.collections.push(root_collection.clone());
+        write_collections(&workspace_path, &config)?;
+        Ok(root_collection)
+    }
 }
