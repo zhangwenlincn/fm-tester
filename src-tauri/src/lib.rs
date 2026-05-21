@@ -78,6 +78,7 @@ pub fn run() {
             save_open_tabs,
             // HTTP
             send_http_request,
+            export_as_curl,
             // Cookie
             get_cookies,
             clear_cookies,

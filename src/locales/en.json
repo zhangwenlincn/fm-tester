@@ -185,7 +185,8 @@
     "branchListFailed": "Failed to get branch list",
     "branchSwitchSuccess": "Branch switched",
     "branchSwitchFailed": "Failed to switch branch",
-    "gitUpdateDetected": "Remote repository has updates, please sync workspace"
+    "gitUpdateDetected": "Remote repository has updates, please sync workspace",
+    "curlCopied": "curl command copied to clipboard"
   },
   "response": {
     "status": "Status",
@@ -316,7 +317,8 @@
     "deleteCollection": "Delete Collection",
     "syncWorkspace": "Sync API",
     "switchBranch": "Switch Branch",
-    "importOpenapi": "Import OpenAPI"
+    "importOpenapi": "Import OpenAPI",
+    "exportCurl": "Export as curl"
   },
   "workspaceType": {
     "local": "Local Workspace",

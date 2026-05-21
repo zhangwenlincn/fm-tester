@@ -320,6 +320,10 @@ defineExpose({
           <span class="menu-icon"><Icon name="edit" :size="14" /></span>
           <span>{{ t('common.rename') }}</span>
         </div>
+        <div class="menu-item" @click="handleMenuAction('export-curl')">
+          <span class="menu-icon"><Icon name="export" :size="14" /></span>
+          <span>{{ t('contextMenu.exportCurl') }}</span>
+        </div>
         <div class="menu-divider"></div>
         <div class="menu-item delete" @click="handleMenuAction('delete')">
           <span class="menu-icon"><Icon name="delete" :size="14" /></span>

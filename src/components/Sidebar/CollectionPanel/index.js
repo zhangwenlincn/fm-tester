@@ -2,6 +2,8 @@ import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { useI18n } from 'vue-i18n'
 import { showToast } from '../../../composables/useToast'
+import { executePreScripts, mergeCollectionVariablesToObject } from '../../../utils/scriptEngine.js'
+import JSON5 from 'json5'
 
 // 最大层级深度（集合最多三层）
 const MAX_DEPTH = 2 // depth 0, 1, 2 共三层
@@ -321,9 +323,174 @@ export function useCollectionPanelSetup(props, emit) {
       deleteItem(item)
     } else if (action === 'delete-saved-response') {
       deleteSavedResponse(item)
+    } else if (action === 'export-curl') {
+      await exportAsCurl(item)
     }
 
     closeContextMenu()
+  }
+
+  // 导出 API 为 curl 命令（执行前置脚本、变量替换，复制到剪贴板）
+  const exportAsCurl = async (api) => {
+    if (!props.workspace?.path) {
+      showToast(t('toast.saveFailed'), 'error')
+      return
+    }
+
+    const workspacePath = props.workspace.path
+    const apiId = api.id
+
+    try {
+      // 获取集合数据
+      const collectionsData = await invoke('get_collections', { workspacePath })
+      
+      // 查找祖先集合链（从根到父）
+      const findAncestorCollectionsForApi = (collections, targetApiId) => {
+        const search = (items, path = []) => {
+          for (const item of items) {
+            if (item.type === 'api' && item.id === targetApiId) {
+              return path
+            }
+            if (item.type === 'collection' && item.children) {
+              const newPath = [...path, item]
+              const found = search(item.children, newPath)
+              if (found) return found
+            }
+          }
+          return null
+        }
+        return search(collections) || []
+      }
+      
+      const ancestorCollections = findAncestorCollectionsForApi(collectionsData, apiId)
+      
+      // 获取环境变量和环境配置
+      const envConfig = await invoke('get_environments', { workspacePath })
+      const activeEnvVars = await invoke('get_active_variables', { workspacePath })
+      const collVarsObj = mergeCollectionVariablesToObject(ancestorCollections)
+      
+      // 获取当前激活环境的 ID
+      const environmentId = envConfig.active_environment_id
+      
+      // 构建请求对象（使用 API 的原始数据）
+      const request = {
+        url: api.url || '',
+        method: api.method || 'GET',
+        headers: api.headers || [],
+        body: api.body || ''
+      }
+      
+      // 脚本日志函数（静默模式，不输出日志）
+      const scriptLogger = () => {}
+      
+      // 执行前置脚本链
+      const preScriptResult = await executePreScripts({
+        workspacePath,
+        apiId,
+        environmentId,
+        ancestorCollections,
+        environmentVariables: activeEnvVars || {},
+        collectionVariables: collVarsObj,
+        request,
+        logger: scriptLogger
+      })
+      
+      let modifiedRequest = request
+      let modifiedCollVars = collVarsObj
+      
+      if (preScriptResult.success) {
+        modifiedRequest = preScriptResult.data.request
+        modifiedCollVars = preScriptResult.data.collectionVariables
+      }
+      
+      // 合并请求头（环境 → 集合 → 接口）
+      const headersMap = new Map()
+      
+      // 合并环境请求头（优先级最低）
+      if (envConfig && envConfig.active_environment_id) {
+        const activeEnv = envConfig.environments.find(e => e.id === envConfig.active_environment_id)
+        if (activeEnv && activeEnv.common_headers) {
+          for (const h of activeEnv.common_headers) {
+            if (h.enabled && h.key.trim()) {
+              headersMap.set(h.key.toLowerCase(), h)
+            }
+          }
+        }
+      }
+      
+      // 合并集合公共请求头（覆盖环境请求头）
+      for (const collection of ancestorCollections) {
+        if (collection.common_headers) {
+          for (const h of collection.common_headers) {
+            if (h.enabled && h.key.trim()) {
+              headersMap.set(h.key.toLowerCase(), h)
+            }
+          }
+        }
+      }
+      
+      // 合并接口请求头（覆盖集合和环境请求头）
+      for (const h of (modifiedRequest.headers || [])) {
+        if (h.enabled && h.key.trim()) {
+          headersMap.set(h.key.toLowerCase(), h)
+        }
+      }
+      
+      const headersToSend = Array.from(headersMap.values())
+      
+      // 处理 JSON5 转 JSON（如果 Content-Type 是 json）
+      let bodyToSend = modifiedRequest.body
+      const contentTypeHeader = headersToSend.find(
+        h => h.key.toLowerCase() === 'content-type'
+      )
+      
+      if (contentTypeHeader?.value?.includes('json') && modifiedRequest.body) {
+        try {
+          const parsed = JSON5.parse(modifiedRequest.body)
+          bodyToSend = JSON.stringify(parsed)
+        } catch {
+          try {
+            const parsed = JSON.parse(modifiedRequest.body)
+            bodyToSend = JSON.stringify(parsed)
+          } catch {}
+        }
+      }
+      
+      // 构建集合变量数组
+      const collectionVariablesArray = Object.entries(modifiedCollVars).map(([key, value]) => ({
+        key,
+        value,
+        enabled: true
+      }))
+      
+      // 构建 form_fields 数组
+      const formFields = api.form_fields?.map(field => ({
+        key: field.key,
+        value: field.value,
+        type: field.type || field.field_type || 'text',
+        enabled: field.enabled,
+        files: field.files
+      })) || null
+      
+      // 调用后端生成 curl 命令
+      const curlCommand = await invoke('export_as_curl', {
+        method: modifiedRequest.method,
+        url: modifiedRequest.url,
+        headers: headersToSend,
+        body: bodyToSend || null,
+        bodyType: api.body_type || null,
+        formFields: formFields,
+        workspacePath: workspacePath,
+        collectionVariables: collectionVariablesArray.length > 0 ? collectionVariablesArray : null
+      })
+      
+      // 复制到剪贴板
+      await navigator.clipboard.writeText(curlCommand)
+      showToast(t('toast.curlCopied'), 'success')
+    } catch (e) {
+      console.error('导出 curl 失败:', e)
+      showToast(t('toast.saveFailed'), 'error')
+    }
   }
 
   // 删除保存的响应

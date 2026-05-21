@@ -426,3 +426,158 @@ fn parse_set_cookie(cookie_str: &str, default_domain: &str) -> Result<Cookie, St
         created_at: Utc::now().to_rfc3339(),
     })
 }
+
+/// 导出请求为 curl 命令（不发送请求，只生成 curl 命令字符串）
+/// 前置脚本执行和变量替换由前端完成，此函数只处理最终参数的 curl 生成
+#[tauri::command]
+pub async fn export_as_curl(
+    method: String,
+    url: String,
+    headers: Vec<Header>,
+    body: Option<String>,
+    body_type: Option<String>,
+    form_fields: Option<Vec<FormField>>,
+    workspace_path: String,
+    collection_variables: Option<Vec<Variable>>,
+) -> Result<String, String> {
+    // 获取当前激活环境的变量
+    let mut variables = get_active_variables(workspace_path.clone());
+    
+    // 合并集合变量（集合变量优先级更高，覆盖同名环境变量）
+    if let Some(ref coll_vars) = collection_variables {
+        for v in coll_vars {
+            if v.enabled && !v.key.is_empty() {
+                variables.insert(v.key.clone(), v.value.clone());
+            }
+        }
+    }
+    
+    // 替换 URL 中的变量
+    let url_result = replace_variables(&url, &variables);
+    let replaced_url = url_result.text;
+    
+    // 替换 Headers 中的变量
+    let replaced_headers: Vec<Header> = headers
+        .iter()
+        .map(|h| {
+            let value_result = replace_variables(&h.value, &variables);
+            Header {
+                key: h.key.clone(),
+                value: value_result.text,
+                enabled: h.enabled,
+                description: h.description.clone(),
+            }
+        })
+        .collect();
+    
+    // 替换 Body 中的变量（仅用于 raw 类型）
+    let replaced_body = body.as_ref().map(|b| {
+        let body_result = replace_variables(b, &variables);
+        body_result.text
+    });
+    
+    // 构建 curl 命令
+    let mut curl_parts: Vec<String> = vec!["curl".to_string()];
+    
+    // 添加 method
+    let method_upper = method.to_uppercase();
+    if method_upper != "GET" {
+        curl_parts.push(format!("-X {}", method_upper));
+    }
+    
+    // 添加 URL（需要转义）
+    curl_parts.push(shell_escape(&replaced_url));
+    
+    // 添加 Headers
+    for header in &replaced_headers {
+        if header.enabled && !header.key.trim().is_empty() {
+            curl_parts.push(format!("-H {}", shell_escape(&format!("{}: {}", header.key, header.value))));
+        }
+    }
+    
+    // 处理请求体
+    let actual_body_type = body_type.clone().unwrap_or_else(|| "raw".to_string());
+    
+    if method_upper != "GET" && method_upper != "HEAD" {
+        match actual_body_type.as_str() {
+            "form-data" => {
+                // multipart/form-data - 注意：curl 的 form-data 格式
+                if let Some(ref fields) = form_fields {
+                    for field in fields {
+                        if !field.enabled || field.key.is_empty() {
+                            continue;
+                        }
+                        match field.field_type.as_str() {
+                            "text" => {
+                                let replaced_value = replace_variables(&field.value, &variables);
+                                curl_parts.push(format!("-F {}", shell_escape(&format!("{}={}", field.key, replaced_value.text))));
+                            }
+                            "file" => {
+                                // 文件字段 - 使用 @path 格式
+                                if let Some(ref files) = field.files {
+                                    for file_info in files {
+                                        let path = Path::new(&file_info.path);
+                                        if path.exists() {
+                                            curl_parts.push(format!("-F {}", shell_escape(&format!("{}=@{}", field.key, file_info.path))));
+                                        } else {
+                                            curl_parts.push(format!("-F {}", shell_escape(&format!("{}=@{}", field.key, file_info.path))));
+                                            // 文件路径会保留在 curl 命令中，用户执行时需要确保文件存在
+                                        }
+                                    }
+                                }
+                            }
+                            _ => {}
+                        }
+                    }
+                }
+            }
+            "binary" => {
+                // binary 文件上传 - 使用 --data-binary
+                // 注意：不添加这个，因为文件路径在执行时需要存在
+                // curl_parts.push("--data-binary".to_string());
+            }
+            _ => {
+                // raw 或其他类型
+                if let Some(ref b) = replaced_body {
+                    if !b.is_empty() {
+                        curl_parts.push(format!("-d {}", shell_escape(b)));
+                    }
+                }
+            }
+        }
+    }
+    
+    Ok(curl_parts.join(" "))
+}
+
+/// Shell 转义函数（适用于 Windows 和 Unix）
+fn shell_escape(s: &str) -> String {
+    // 在 Windows PowerShell 中，使用双引号并转义内部双引号
+    // 在 Unix shell 中，使用单引号（更安全）
+    
+    // 检测是否在 Windows 环境
+    #[cfg(target_os = "windows")]
+    {
+        // Windows PowerShell/cmd 转义
+        if s.contains('"') {
+            format!("\"{}\"", s.replace('"', "\\\""))
+        } else if s.contains(' ') || s.contains('&') || s.contains('|') || s.contains('<') || s.contains('>') {
+            format!("\"{}\"", s)
+        } else {
+            s.to_string()
+        }
+    }
+    
+    #[cfg(not(target_os = "windows"))]
+    {
+        // Unix shell 转义（使用单引号）
+        if s.contains('\'') {
+            // 包含单引号的情况，需要特殊处理
+            format!("'{}'", s.replace("'", "'\"'\"'"))
+        } else if s.contains(' ') || s.contains('&') || s.contains('|') || s.contains('<') || s.contains('>') || s.contains('$') {
+            format!("'{}'", s)
+        } else {
+            s.to_string()
+        }
+    }
+}

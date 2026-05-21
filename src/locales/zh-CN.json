@@ -185,7 +185,8 @@
     "branchListFailed": "获取分支列表失败",
     "branchSwitchSuccess": "切换分支成功",
     "branchSwitchFailed": "切换分支失败",
-    "gitUpdateDetected": "检测到远程仓库有更新，请同步工作区"
+    "gitUpdateDetected": "检测到远程仓库有更新，请同步工作区",
+    "curlCopied": "curl 命令已复制到剪贴板"
   },
   "response": {
     "status": "状态",
@@ -316,7 +317,8 @@
     "deleteCollection": "删除集合",
     "syncWorkspace": "同步接口",
     "switchBranch": "切换分支",
-    "importOpenapi": "导入 OpenAPI"
+    "importOpenapi": "导入 OpenAPI",
+    "exportCurl": "导出为 curl"
   },
   "workspaceType": {
     "local": "本地工作区",
