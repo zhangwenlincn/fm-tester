@@ -42,15 +42,31 @@
 }
 
 .request-area {
-  flex: 1;
-  min-height: 200px;
+  flex-shrink: 0;
+  min-height: 150px;
   overflow: hidden;
 }
 
 .response-area {
-  flex: 1;
-  min-height: 200px;
+  flex-shrink: 0;
+  min-height: 150px;
   overflow: hidden;
+}
+
+.panel-resizer {
+  height: 4px;
+  background: #e8e8e8;
+  cursor: row-resize;
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+
+.panel-resizer:hover {
+  background: #1890ff;
+}
+
+.panel-resizer.resizing {
+  background: #1890ff;
 }
 
 .empty-content {

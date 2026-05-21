@@ -151,18 +151,59 @@ const endDrag = () => {
   localStorage.setItem('sidebarWidth', sidebarWidth.value)
 }
 
+// 请求/响应区域高度拖拽
+const requestPanelHeight = ref(50)
+const isResizing = ref(false)
+const resizeStartY = ref(0)
+const resizeStartHeight = ref(0)
+
+const startResize = (e) => {
+  isResizing.value = true
+  resizeStartY.value = e.clientY
+  resizeStartHeight.value = requestPanelHeight.value
+  document.body.style.cursor = 'row-resize'
+  document.body.style.userSelect = 'none'
+}
+
+const handleResize = (e) => {
+  if (!isResizing.value) return
+  const container = e.target.closest('.content-area')
+  if (!container) return
+  const containerHeight = container.clientHeight
+  const diff = e.clientY - resizeStartY.value
+  const diffPercent = (diff / containerHeight) * 100
+  const newHeight = Math.max(20, Math.min(80, resizeStartHeight.value + diffPercent))
+  requestPanelHeight.value = newHeight
+}
+
+const endResize = () => {
+  if (!isResizing.value) return
+  isResizing.value = false
+  document.body.style.cursor = ''
+  document.body.style.userSelect = ''
+  localStorage.setItem('requestPanelHeight', requestPanelHeight.value)
+}
+
 onMounted(() => {
   const savedWidth = localStorage.getItem('sidebarWidth')
   if (savedWidth) {
     sidebarWidth.value = parseInt(savedWidth, 10)
   }
+  const savedHeight = localStorage.getItem('requestPanelHeight')
+  if (savedHeight) {
+    requestPanelHeight.value = parseFloat(savedHeight)
+  }
   document.addEventListener('mousemove', handleDrag)
   document.addEventListener('mouseup', endDrag)
+  document.addEventListener('mousemove', handleResize)
+  document.addEventListener('mouseup', endResize)
 })
 
 onUnmounted(() => {
   document.removeEventListener('mousemove', handleDrag)
   document.removeEventListener('mouseup', endDrag)
+  document.removeEventListener('mousemove', handleResize)
+  document.removeEventListener('mouseup', endResize)
 })
 </script>
 
@@ -232,7 +273,7 @@ onUnmounted(() => {
       <!-- 中间内容区 -->
       <div class="content-area" v-if="showRequestResponse">
         <!-- 请求区 -->
-        <div class="request-area">
+        <div class="request-area" :style="{ height: requestPanelHeight + '%' }">
 <RequestPanel 
             :request="currentRequest"
             :has-active-tab="tabs.length > 0"
@@ -247,8 +288,16 @@ onUnmounted(() => {
           />
         </div>
         
+        <!-- 请求/响应分割线 -->
+        <div 
+          class="panel-resizer"
+          :class="{ resizing: isResizing }"
+          @mousedown="startResize"
+          v-if="currentRequestTab !== 'scripts' && currentRequestTab !== 'docs'"
+        ></div>
+        
         <!-- 响应区 - 脚本/文档tab时不显示 -->
-        <div class="response-area" v-if="currentRequestTab !== 'scripts' && currentRequestTab !== 'docs'">
+        <div class="response-area" v-if="currentRequestTab !== 'scripts' && currentRequestTab !== 'docs'" :style="{ height: (100 - requestPanelHeight) + '%' }">
           <ResponsePanel 
             :response="response"
             :loading="loading"
