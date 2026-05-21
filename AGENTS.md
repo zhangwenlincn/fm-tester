@@ -15,7 +15,7 @@
 - ❌ **禁止主动 git push** - 只有用户明确要求时才推送
 - ❌ **禁止 AI 启动程序** - 不运行 `cargo tauri dev` 等，仅进行代码编辑
 - ✅ **使用 cargo 命令** - 开发用 `cargo tauri dev`，不用 `npm run dev`
-- ✅ **集合最多三层** - `MAX_DEPTH = 2` (CollectionPanel/index.js)
+- ✅ **集合最多三层** - `MAX_DEPTH = 2` (src/components/Sidebar/CollectionPanel/index.js)
 - ✅ **组件三文件结构** - `index.vue + index.js + style.css`
 
 ## 开发命令
@@ -37,9 +37,11 @@ src-tauri/src/
 ├── collection/     # 集合/接口 CRUD
 ├── cookie/         # Cookie 管理
 ├── environment/    # 环境变量 CRUD + 变量替换
+├── file_dialog/    # 文件对话框（安全选择目录）
 ├── git/            # Git 同步、凭据加密、分支管理
 ├── history/        # 请求历史记录（按日期分目录存储）
 ├── http/           # send_http_request（自动记录历史、处理 Cookie）
+├── import/         # OpenAPI 导入
 ├── md/             # API 文档管理（生成/保存文档、AI 辅助生成）
 ├── memory/         # 记忆配置（集合展开状态等）
 ├── saved_response/ # 保存的响应快照
@@ -73,7 +75,7 @@ src-tauri/src/
 |------|------|------|
 | workspace | `get_workspaces`, `get_last_workspace`, `create_workspace`, `switch_workspace`, `delete_workspace`, `update_workspace`, `set_last_workspace`, `set_last_api`, `get_last_api`, `reorder_workspaces` | 工作区 CRUD |
 | collection | `get_collections`, `create_collection`, `create_api`, `update_api`, `update_collection`, `update_collection_settings`, `delete_collection_item`, `move_api`, `move_collection`, `reorder_collection_items` | 集合/接口 CRUD |
-| environment | `get_environments`, `save_environment`, `delete_environment`, `switch_environment`, `get_active_variables`, `reorder_environments` | 环境变量（支持 variables + common_headers + 前置/后置脚本） |
+| environment | `get_environments`, `save_environment`, `delete_environment`, `switch_environment`, `get_active_variables`, `get_available_variables`, `reorder_environments` | 环境变量（支持 variables + common_headers + 前置/后置脚本） |
 | memory | `get_expanded_collections`, `save_expanded_collections`, `get_open_tabs`, `save_open_tabs` | 集合展开状态、打开的标签页 |
 | http | `send_http_request` | 发送 HTTP 请求（支持变量替换、form-data、binary、自动记录历史） |
 | cookie | `get_cookies`, `clear_cookies`, `delete_cookie`, `add_cookie` | Cookie 管理 |
@@ -85,6 +87,8 @@ src-tauri/src/
 | chat | `chat_ai`, `save_chat_history`, `get_chat_history`, `clear_chat_history`, `get_chat_sessions`, `delete_chat_session`, `rename_chat_session` | AI 聊天 |
 | md | `get_api_doc`, `save_api_doc`, `generate_api_doc_with_ai`, `get_doc_generation_status`, `cancel_doc_generation`, `get_api_doc_metadata` | API 文档管理 |
 | git | `save_git_credentials`, `get_git_credentials`, `get_git_credential_by_id`, `delete_git_credentials`, `sync_git_workspace`, `update_git_workspace`, `sync_git_workspace_full`, `check_git_updates`, `get_git_branches`, `get_current_branch`, `switch_git_branch` | Git 同步、凭据、分支管理 |
+| file_dialog | `safe_pick_directory` | 文件对话框（安全选择目录） |
+| import | `preview_openapi`, `import_openapi` | OpenAPI 导入 |
 
 ## 添加新 Tauri Command
 
@@ -139,7 +143,7 @@ export function useComponentSetup(props, emit) {
 - **删除同步** - 删除接口时关闭对应标签页，删除集合时关闭所有子接口标签页
 - **环境变量** - URL/Headers/Body 支持 `{{变量名}}`，发送时自动替换
 - **JSON5** - 编辑支持注释/尾逗号，发送时转换为标准 JSON
-- **脚本执行顺序**：前置脚本（工作区 → 环境 → 父集合 → 子集合 → 接口 → 请求），后置脚本（响应 → 接口 → 子集合 → 父集合 → 环境 → 工作区）
+- **脚本执行顺序**：前置脚本（工作区 → 环境 → 父集合 → 子集合 → 接口），后置脚本反向（接口 → 子集合 → 父集合 → 环境 → 工作区）
 
 ## HTTP 方法颜色
 
@@ -167,24 +171,28 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 optimizeDeps: { exclude: ['monaco-editor'] }
 ```
 
-## HTTP 请求日志事件
+## Tauri 事件（前端监听）
 
-`send_http_request` 通过 `app.emit('http-log', log)` 发送日志到前端，前端监听：
+| 事件名 | 触发时机 | payload |
+|--------|----------|---------|
+| `http-log` | HTTP 请求过程 | `{ logType, timestamp, message, data?, error? }` |
+| `settings-updated` | 设置更新后 | `AppSettings` |
+| `git-sync-log` | Git 同步过程 | 日志对象 |
+| `chat-session-saved` | 聊天会话保存 | `sessionId` |
+| `ai-chat-stream` | AI 聊天流式响应 | 内容片段 |
+| `ai-chat-reasoning` | AI 推理过程 | 推理内容 |
+| `doc-generation-start` | 文档生成开始 | `apiId` |
+| `doc-generation-complete` | 文档生成完成 | 生成内容 |
+| `doc-generation-error` | 文档生成失败 | 错误信息 |
+| `doc-generation-progress` | 文档生成进度 | 进度消息 |
+
+HTTP 日志类型：`request`, `response`, `error`, `warning`（未定义变量警告）
+
+前端监听示例：
 ```js
 import { listen } from '@tauri-apps/api/event'
 const unlisten = await listen('http-log', (event) => {
-  // event.payload: { logType, timestamp, message, data, error }
-})
-```
-
-日志类型：`request`, `response`, `error`, `warning`（未定义变量警告）
-
-## 设置更新事件
-
-`update_settings` 通过 `app.emit('settings-updated', settings)` 通知前端：
-```js
-const unlisten = await listen('settings-updated', (event) => {
-  // event.payload: AppSettings
+  console.log(event.payload)
 })
 ```
 

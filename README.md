@@ -30,12 +30,18 @@
 - **多环境支持**：支持多环境配置（开发、测试、生产等）
 - **环境变量**：URL/Headers/Body 支持 `{{变量名}}` 替换
 - **环境切换**：快速切换不同环境，变量自动替换
+- **环境脚本**：环境级别的前置/后置脚本
 
 ### 🤖 AI 助手
 - **智能对话**：集成 AI 聊天功能，支持 OpenAI 协议 API
 - **模型选择**：自动获取可用模型列表，或手动输入模型名称
 - **对话历史**：保存聊天会话，支持历史查看和管理
 - **多 API 支持**：兼容 OpenAI、Azure、本地部署等多种 API 端点
+- **AI 辅助**：AI 生成 API 文档、优化脚本代码
+
+### 📥 OpenAPI 导入
+- **预览导入**：导入前预览 OpenAPI/Swagger 文档结构
+- **批量创建**：一键导入所有接口到集合
 
 ### 🔀 Git 同步
 - **云端同步**：工作区支持 Git 仓库同步，数据云端备份
@@ -53,7 +59,7 @@
   - `fm.request.*` - 请求参数修改（URL、Headers、Body）
   - `fm.response.*` - 响应数据访问
   - `fm.log/assert/sleep` - 工具方法
-- **执行顺序**：继承链执行（工作区 → 父集合 → 子集合 → 接口 → 请求），后置脚本反向执行
+- **执行顺序**：前置脚本（工作区 → 环境 → 父集合 → 子集合 → 接口），后置脚本反向执行
 
 ### 🍪 Cookie 管理
 - **自动管理**：自动保存响应中的 Cookie
@@ -143,6 +149,7 @@ cargo tauri build
 ```
 fm-tester/
 ├── src/                          # Vue 前端代码
+│   ├── assets/                   # 静态资源
 │   ├── components/               # Vue 组件
 │   │   ├── AISettingsPanel/     # AI 设置面板
 │   │   ├── ChatPanel/           # AI 聊天面板
@@ -151,8 +158,10 @@ fm-tester/
 │   │   ├── CookiePanel/         # Cookie 管理面板
 │   │   ├── DocPanel/            # 文档面板
 │   │   ├── EnvironmentPanel/    # 环境变量面板
+│   │   ├── HeaderAutocomplete/  # 请求头自动补全
 │   │   ├── HistoryDetailPanel/  # 历史详情面板
 │   │   ├── Icon/                # 图标组件
+│   │   ├── ImportDialog/        # OpenAPI 导入对话框
 │   │   ├── MenuBar/             # 菜单栏
 │   │   ├── RequestPanel/        # 请求配置面板
 │   │   ├── ResponsePanel/       # 响应查看面板
@@ -160,12 +169,12 @@ fm-tester/
 │   │   ├── SaveResponseDialog/  # 保存响应对话框
 │   │   ├── ScriptPanel/         # 脚本编辑面板
 │   │   ├── SettingsPanel/       # 全局设置面板
-│   │   ├── Sidebar/             # 侧边栏（集合列表）
+│   │   ├── Sidebar/             # 侧边栏（集合列表、环境、历史等）
 │   │   ├── StatusBar/           # 状态栏
 │   │   ├── TabsBar/             # 标签页栏
 │   │   ├── Toast/               # Toast 提示组件
-│   │   ├── VariableHighlight/    # 变量高亮组件
-│   │   ├── WorkspaceDialog/      # 工作区对话框
+│   │   ├── VariableHighlight/   # 变量高亮组件
+│   │   ├── WorkspaceDialog/     # 工作区对话框
 │   │   └── WorkspaceSettingsPanel/  # 工作区设置面板
 │   ├── composables/             # Vue Composition API hooks
 │   ├── i18n/                    # 国际化配置
@@ -178,10 +187,12 @@ fm-tester/
 │   │   ├── collection/          # 集合/接口 CRUD
 │   │   ├── cookie/              # Cookie 管理
 │   │   ├── environment/         # 环境变量 CRUD + 变量替换
+│   │   ├── file_dialog/         # 文件对话框
 │   │   ├── git/                 # Git 同步、凭据加密、分支管理
 │   │   ├── history/             # 请求历史记录（按日期分目录）
 │   │   ├── http/                # HTTP 请求发送（自动记录历史）
-│   │   ├── md/                  # Markdown 渲染
+│   │   ├── import/              # OpenAPI 导入
+│   │   ├── md/                  # API 文档管理
 │   │   ├── memory/              # 记忆配置（集合展开状态等）
 │   │   ├── models.rs            # 数据结构定义
 │   │   ├── saved_response/      # 保存的响应快照
