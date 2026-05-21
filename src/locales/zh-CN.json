@@ -163,7 +163,8 @@
     "workspacePath": "路径",
     "responseName": "响应名称",
     "parent": "父级",
-    "importOpenapi": "导入 OpenAPI"
+    "importOpenapi": "导入 OpenAPI",
+    "importCurl": "导入 cURL"
   },
   "toast": {
     "scriptSaved": "脚本保存成功",
@@ -186,7 +187,9 @@
     "branchSwitchSuccess": "切换分支成功",
     "branchSwitchFailed": "切换分支失败",
     "gitUpdateDetected": "检测到远程仓库有更新，请同步工作区",
-    "curlCopied": "curl 命令已复制到剪贴板"
+    "curlCopied": "curl 命令已复制到剪贴板",
+    "curlImportSuccess": "cURL 导入成功",
+    "curlImportFailed": "cURL 导入失败"
   },
   "response": {
     "status": "状态",
@@ -318,7 +321,8 @@
     "syncWorkspace": "同步接口",
     "switchBranch": "切换分支",
     "importOpenapi": "导入 OpenAPI",
-    "exportCurl": "导出为 curl"
+    "importCurl": "导入 cURL",
+    "exportCurl": "导出为 cURL"
   },
   "workspaceType": {
     "local": "本地工作区",
@@ -383,5 +387,20 @@
     "importSuccess": "导入成功",
     "importFailed": "导入失败",
     "parseError": "解析失败"
+  },
+  "curlImport": {
+    "title": "导入 cURL",
+    "curlCommand": "cURL 命令",
+    "pasteHint": "粘贴 cURL 命令...",
+    "parseSuccess": "解析成功",
+    "parseFailed": "解析失败，请检查格式",
+    "apiName": "接口名称",
+    "preview": "解析预览",
+    "noClipboard": "剪切板无内容，请手动粘贴",
+    "clipboardRead": "正在读取剪切板...",
+    "importing": "正在导入..."
+  },
+  "requestInfo": {
+    "method": "方法"
   }
 }

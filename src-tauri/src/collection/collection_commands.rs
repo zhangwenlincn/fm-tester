@@ -88,11 +88,15 @@ pub fn create_api(
     method: String,
     url: String,
     parent_id: Option<String>,
+    headers: Option<Vec<Header>>,
+    body: Option<String>,
+    body_type: Option<String>,
+    form_fields: Option<Vec<FormField>>,
 ) -> Result<Collection, String> {
     let mut config = read_collections(&workspace_path);
-
+    
     let id = format!("api_{}", chrono::Local::now().timestamp_millis());
-
+    
     let api = Collection {
         id: id.clone(),
         name,
@@ -102,15 +106,15 @@ pub fn create_api(
         method: Some(method),
         url: Some(url),
         params: None,
-        headers: Some(vec![Header {
+        headers: headers.or_else(|| Some(vec![Header {
             key: "Content-Type".to_string(),
             value: "application/json".to_string(),
             enabled: true,
             description: None,
-        }]),
-        body: Some(String::new()),
-        body_type: Some("raw".to_string()),
-        form_fields: None,
+        }])),
+        body: body.or_else(|| Some(String::new())),
+        body_type: body_type.or_else(|| Some("raw".to_string())),
+        form_fields,
         binary_file_path: None,
         saved_responses: None,
         common_headers: None,

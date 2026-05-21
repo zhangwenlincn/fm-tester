@@ -7,7 +7,7 @@ mod file_dialog;
 mod git;
 mod history;
 mod http;
-mod import;
+pub mod import;
 mod md;
 mod memory;
 mod models;
@@ -141,7 +141,8 @@ pub fn run() {
             safe_pick_directory,
             // Import
             preview_openapi,
-            import_openapi
+            import_openapi,
+            parse_curl
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

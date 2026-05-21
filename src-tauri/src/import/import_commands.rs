@@ -1,5 +1,6 @@
 use crate::import::openapi_parser::parse_openapi;
 use crate::import::import_converter::convert_to_collection;
+use crate::import::curl_parser::{parse_curl_command, ParsedCurl};
 use crate::models::Collection;
 use crate::collection::collection_config::{read_collections, write_collections};
 use crate::collection::collection_utils::find_collection_item;
@@ -57,4 +58,9 @@ pub fn import_openapi(
         write_collections(&workspace_path, &config)?;
         Ok(root_collection)
     }
+}
+
+#[tauri::command]
+pub fn parse_curl(curl_command: String) -> Result<ParsedCurl, String> {
+    parse_curl_command(&curl_command)
 }

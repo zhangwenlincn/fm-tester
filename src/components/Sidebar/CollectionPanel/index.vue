@@ -4,6 +4,7 @@ import { nextTick, ref, watch } from 'vue'
 import { useCollectionPanelSetup } from './index.js'
 import Icon from '../../Icon/index.vue'
 import ImportDialog from '../../ImportDialog/index.vue'
+import CurlImportDialog from '../../CurlImportDialog/index.vue'
 
 const { t } = useI18n()
 
@@ -19,6 +20,14 @@ const inlineEditInput = ref(null)
 // 导入对话框状态
 const showImportDialog = ref(false)
 const importTargetCollectionId = ref(null)
+
+// cURL 导入对话框状态
+const showCurlImportDialog = ref(false)
+const curlImportTargetCollectionId = ref(null)
+
+// 导入下拉菜单状态
+const showImportMenu = ref(false)
+const importMenuRef = ref(null)
 
 // 使用 composable
 const {
@@ -81,11 +90,37 @@ const openImportDialogLocal = (targetId = null) => {
   showImportDialog.value = true
 }
 
+// 打开 cURL 导入对话框
+const openCurlImportDialog = (targetId = null) => {
+  curlImportTargetCollectionId.value = targetId
+  showCurlImportDialog.value = true
+  showImportMenu.value = false
+}
+
+// 切换导入下拉菜单
+const toggleImportMenu = () => {
+  showImportMenu.value = !showImportMenu.value
+}
+
+// 关闭导入下拉菜单
+const closeImportMenu = () => {
+  showImportMenu.value = false
+}
+
+// 打开 OpenAPI 导入
+const openOpenapiImport = () => {
+  openImportDialogLocal(null)
+  showImportMenu.value = false
+}
+
 // 右键菜单操作包装
 const handleMenuAction = (action) => {
   if (action === 'import-openapi') {
     closeContextMenu()
     openImportDialogLocal(contextMenu.value.item?.id || null)
+  } else if (action === 'import-curl') {
+    closeContextMenu()
+    openCurlImportDialog(contextMenu.value.item?.id || null)
   } else {
     handleContextAction(action)
   }
@@ -110,6 +145,24 @@ defineExpose({
     <!-- 面板头部 -->
     <div class="panel-header">
       <span class="panel-title">{{ t('panels.collections') }}</span>
+      <div class="panel-actions">
+        <div class="import-btn-wrapper" ref="importMenuRef">
+          <button class="import-btn" @click="toggleImportMenu" :class="{ active: showImportMenu }">
+            <Icon name="import" :size="14" />
+          </button>
+          <!-- 导入下拉菜单 -->
+          <div v-if="showImportMenu" class="import-dropdown">
+            <div class="dropdown-item" @click="openOpenapiImport">
+              <Icon name="import" :size="14" />
+              <span>{{ t('contextMenu.importOpenapi') }}</span>
+            </div>
+            <div class="dropdown-item" @click="openCurlImportDialog">
+              <Icon name="import" :size="14" />
+              <span>{{ t('contextMenu.importCurl') }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- 搜索框 -->
@@ -287,6 +340,10 @@ defineExpose({
           <span class="menu-icon"><Icon name="import" :size="14" /></span>
           <span>{{ t('contextMenu.importOpenapi') }}</span>
         </div>
+        <div class="menu-item" @click="handleMenuAction('import-curl')">
+          <span class="menu-icon"><Icon name="import" :size="14" /></span>
+          <span>{{ t('contextMenu.importCurl') }}</span>
+        </div>
       </template>
 
       <!-- 集合菜单 -->
@@ -347,6 +404,16 @@ defineExpose({
       :target-collection-id="importTargetCollectionId"
       :collections="collections"
       @close="showImportDialog = false"
+      @imported="onImported"
+    />
+
+    <!-- cURL 导入对话框 -->
+    <CurlImportDialog
+      :visible="showCurlImportDialog"
+      :workspace-path="props.workspace?.path || ''"
+      :initial-collection-id="curlImportTargetCollectionId"
+      :collections="collections"
+      @close="showCurlImportDialog = false"
       @imported="onImported"
     />
   </div>

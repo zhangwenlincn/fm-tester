@@ -163,7 +163,8 @@
     "workspacePath": "Path",
     "responseName": "Response Name",
     "parent": "Parent",
-    "importOpenapi": "Import OpenAPI"
+    "importOpenapi": "Import OpenAPI",
+    "importCurl": "Import cURL"
   },
   "toast": {
     "scriptSaved": "Script saved",
@@ -186,7 +187,9 @@
     "branchSwitchSuccess": "Branch switched",
     "branchSwitchFailed": "Failed to switch branch",
     "gitUpdateDetected": "Remote repository has updates, please sync workspace",
-    "curlCopied": "curl command copied to clipboard"
+    "curlCopied": "curl command copied to clipboard",
+    "curlImportSuccess": "cURL import successful",
+    "curlImportFailed": "cURL import failed"
   },
   "response": {
     "status": "Status",
@@ -318,7 +321,8 @@
     "syncWorkspace": "Sync API",
     "switchBranch": "Switch Branch",
     "importOpenapi": "Import OpenAPI",
-    "exportCurl": "Export as curl"
+    "importCurl": "Import cURL",
+    "exportCurl": "Export as cURL"
   },
   "workspaceType": {
     "local": "Local Workspace",
@@ -383,5 +387,20 @@
     "importSuccess": "Import successful",
     "importFailed": "Import failed",
     "parseError": "Parse failed"
+  },
+  "curlImport": {
+    "title": "Import cURL",
+    "curlCommand": "cURL Command",
+    "pasteHint": "Paste cURL command...",
+    "parseSuccess": "Parse successful",
+    "parseFailed": "Parse failed, please check format",
+    "apiName": "API Name",
+    "preview": "Parse Preview",
+    "noClipboard": "Clipboard is empty, please paste manually",
+    "clipboardRead": "Reading clipboard...",
+    "importing": "Importing..."
+  },
+  "requestInfo": {
+    "method": "Method"
   }
 }
