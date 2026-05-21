@@ -593,20 +593,25 @@ export function useCollectionPanelSetup(props, emit) {
   }
 
   // 完成编辑（保存）
+  const isSavingEdit = ref(false)
   const finishInlineEdit = async () => {
     if (!editingItem.value) return
+    if (isSavingEdit.value) return
+    isSavingEdit.value = true
     
-    const { parentId, type, isNew, tempId } = editingItem.value
+    const { parentId, type, isNew } = editingItem.value
     const name = editingName.value.trim()
     
     // 名字为空时取消
     if (!name) {
       cancelInlineEdit()
+      isSavingEdit.value = false
       return
     }
     
     if (!props.workspace?.path) {
       cancelInlineEdit()
+      isSavingEdit.value = false
       return
     }
     
@@ -693,6 +698,9 @@ export function useCollectionPanelSetup(props, emit) {
     } catch (e) {
       console.error('保存失败:', e)
       showToast(t('toast.saveFailed'), 'error')
+      cancelInlineEdit()
+    } finally {
+      isSavingEdit.value = false
     }
   }
 
@@ -1156,6 +1164,7 @@ return {
     finishInlineEdit,
     cancelInlineEdit,
     handleEditKeydown,
+    isSavingEdit,
     contextMenu,
     expandedResponses,
     loadCollections,

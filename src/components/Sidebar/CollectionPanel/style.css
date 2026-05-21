@@ -191,8 +191,7 @@
 
 .tree-item.selected,
 .tree-folder.selected {
-  background: #e6f7ff;
-  border-left: 3px solid #1890ff;
+  background: #bae7ff;
 }
 
 /* 拖拽排序样式 */

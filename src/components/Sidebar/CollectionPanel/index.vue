@@ -41,6 +41,7 @@ const {
   finishInlineEdit,
   cancelInlineEdit,
   handleEditKeydown,
+  isSavingEdit,
   contextMenu,
   expandedResponses,
   loadCollections,
@@ -81,6 +82,7 @@ watch(editingItem, (val) => {
 
 // 点击编辑输入框外部时保存编辑
 const handleEditBlur = () => {
+  if (isSavingEdit.value) return
   finishInlineEdit()
 }
 
