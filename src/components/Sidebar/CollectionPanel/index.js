@@ -496,12 +496,14 @@ export function useCollectionPanelSetup(props, emit) {
     }
   }
 
-  // 导出集合为 Postman 2.1 格式
+  // 导出集合为 Postman 2.1 格式（执行前置脚本、变量替换）
   const exportAsPostman = async (collection) => {
     if (!props.workspace?.path) {
       showToast(t('toast.saveFailed'), 'error')
       return
     }
+
+    const workspacePath = props.workspace.path
 
     try {
       // 打开保存文件对话框
@@ -513,10 +515,244 @@ export function useCollectionPanelSetup(props, emit) {
         return
       }
 
-      // 导出集合为 Postman 格式 JSON
-      const postmanJson = await invoke('export_collection_postman', {
-        workspacePath: props.workspace.path,
-        collectionId: collection.id
+      // 获取集合数据
+      const collectionsData = await invoke('get_collections', { workspacePath })
+      
+      // 获取环境变量和环境配置
+      const envConfig = await invoke('get_environments', { workspacePath })
+      const activeEnvVars = await invoke('get_active_variables', { workspacePath })
+      const environmentId = envConfig?.active_environment_id || null
+      
+      // 递归处理集合中的所有 API（执行前置脚本、变量替换）
+      const processCollection = async (col, ancestorCollections = []) => {
+        const processedCol = {
+          id: col.id,
+          name: col.name,
+          description: col.description,
+          type: 'collection',
+          children: [],
+          common_headers: col.common_headers,
+          collection_variables: col.collection_variables
+        }
+        
+        // 处理子项
+        if (col.children && col.children.length > 0) {
+          for (const child of col.children) {
+            if (child.type === 'api') {
+              // 处理 API：执行前置脚本、变量替换
+              const processedApi = await processApi(child, [...ancestorCollections, col])
+              processedCol.children.push(processedApi)
+            } else {
+              // 递归处理子集合
+              const processedChild = await processCollection(child, [...ancestorCollections, col])
+              processedCol.children.push(processedChild)
+            }
+          }
+        }
+        
+        return processedCol
+      }
+      
+      // 处理单个 API（执行前置脚本、变量替换）
+      const processApi = async (api, ancestorCollections) => {
+        // 合并集合变量
+        const collVarsObj = mergeCollectionVariablesToObject(ancestorCollections)
+        
+        // 构建请求对象
+        const request = {
+          url: api.url || '',
+          method: api.method || 'GET',
+          headers: api.headers || [],
+          body: api.body || ''
+        }
+        
+        // 脚本日志函数（静默模式）
+        const scriptLogger = () => {}
+        
+        // 执行前置脚本链
+        const preScriptResult = await executePreScripts({
+          workspacePath,
+          apiId: api.id,
+          environmentId,
+          ancestorCollections,
+          environmentVariables: activeEnvVars || {},
+          collectionVariables: collVarsObj,
+          request,
+          logger: scriptLogger
+        })
+        
+        let modifiedRequest = request
+        let modifiedCollVars = collVarsObj
+        
+        if (preScriptResult.success) {
+          modifiedRequest = preScriptResult.data.request
+          modifiedCollVars = preScriptResult.data.collectionVariables
+        }
+        
+        // 合并所有变量（环境变量 + 集合变量 + 脚本修改后的变量）
+        const allVars = { ...(activeEnvVars || {}), ...modifiedCollVars }
+        
+        // 替换 URL 中的变量
+        let urlToSend = modifiedRequest.url
+        if (urlToSend && urlToSend.includes('{{')) {
+          urlToSend = await invoke('replace_variables_text', {
+            text: urlToSend,
+            variables: Object.entries(allVars).map(([key, value]) => ({
+              key,
+              value,
+              enabled: true
+            }))
+          })
+        }
+        
+        // 合并请求头（环境 → 集合 → 接口）
+        const headersMap = new Map()
+        
+        // 合并环境请求头
+        if (envConfig && envConfig.active_environment_id) {
+          const activeEnv = envConfig.environments.find(e => e.id === envConfig.active_environment_id)
+          if (activeEnv && activeEnv.common_headers) {
+            for (const h of activeEnv.common_headers) {
+              if (h.enabled && h.key.trim()) {
+                headersMap.set(h.key.toLowerCase(), h)
+              }
+            }
+          }
+        }
+        
+        // 合并集合公共请求头
+        for (const collection of ancestorCollections) {
+          if (collection.common_headers) {
+            for (const h of collection.common_headers) {
+              if (h.enabled && h.key.trim()) {
+                headersMap.set(h.key.toLowerCase(), h)
+              }
+            }
+          }
+        }
+        
+        // 合并接口请求头
+        for (const h of (modifiedRequest.headers || [])) {
+          if (h.enabled && h.key.trim()) {
+            headersMap.set(h.key.toLowerCase(), h)
+          }
+        }
+        
+        const headersToSend = Array.from(headersMap.values())
+        
+        // 替换 Headers 中的变量
+        const replacedHeaders = await Promise.all(headersToSend.map(async (h) => {
+          if (h.value && h.value.includes('{{')) {
+            const replaced = await invoke('replace_variables_text', {
+              text: h.value,
+              variables: Object.entries(allVars).map(([key, value]) => ({
+                key,
+                value,
+                enabled: true
+              }))
+            })
+            return { ...h, value: replaced }
+          }
+          return h
+        }))
+        
+        // 处理 JSON5 转 JSON
+        let bodyToSend = modifiedRequest.body
+        const contentTypeHeader = replacedHeaders.find(
+          h => h.key.toLowerCase() === 'content-type'
+        )
+        
+        if (contentTypeHeader?.value?.includes('json') && modifiedRequest.body) {
+          try {
+            const parsed = JSON5.parse(modifiedRequest.body)
+            bodyToSend = JSON.stringify(parsed)
+          } catch {
+            try {
+              const parsed = JSON.parse(modifiedRequest.body)
+              bodyToSend = JSON.stringify(parsed)
+            } catch {}
+          }
+        }
+        
+        // 替换 Body 中的变量
+        if (bodyToSend && bodyToSend.includes('{{')) {
+          bodyToSend = await invoke('replace_variables_text', {
+            text: bodyToSend,
+            variables: Object.entries(allVars).map(([key, value]) => ({
+              key,
+              value,
+              enabled: true
+            }))
+          })
+        }
+        
+        // 处理 form_fields 中的变量替换
+        let formFieldsToSend = null
+        if (api.form_fields) {
+          formFieldsToSend = await Promise.all(api.form_fields.map(async (field) => {
+            if (!field.enabled) return { ...field }
+            
+            const processedField = { ...field }
+            
+            if (field.value && field.value.includes('{{')) {
+              const replaced = await invoke('replace_variables_text', {
+                text: field.value,
+                variables: Object.entries(allVars).map(([key, value]) => ({
+                  key,
+                  value,
+                  enabled: true
+                }))
+              })
+              processedField.value = replaced
+            }
+            
+            return processedField
+          }))
+        }
+        
+        return {
+          id: api.id,
+          name: api.name,
+          description: api.description,
+          type: 'api',
+          children: [],
+          method: modifiedRequest.method,
+          url: urlToSend,
+          headers: replacedHeaders,
+          body: bodyToSend || null,
+          body_type: api.body_type,
+          form_fields: formFieldsToSend,
+          params: api.params,
+          collection_variables: api.collection_variables
+        }
+      }
+      
+      // 查找要导出的集合
+      const findCollection = (items, targetId) => {
+        for (const item of items) {
+          if (item.id === targetId && item.type === 'collection') {
+            return item
+          }
+          if (item.type === 'collection' && item.children) {
+            const found = findCollection(item.children, targetId)
+            if (found) return found
+          }
+        }
+        return null
+      }
+      
+      const targetCollection = findCollection(collectionsData, collection.id)
+      if (!targetCollection) {
+        showToast(t('toast.saveFailed'), 'error')
+        return
+      }
+      
+      // 处理集合（递归处理所有 API）
+      const processedCollection = await processCollection(targetCollection)
+      
+      // 调用后端生成 Postman JSON
+      const postmanJson = await invoke('export_collection_postman_with_data', {
+        collection: processedCollection
       })
 
       // 使用 fs plugin 写入文件

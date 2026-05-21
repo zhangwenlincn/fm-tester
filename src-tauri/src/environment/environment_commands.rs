@@ -1,6 +1,7 @@
 use crate::collection::{find_ancestor_chain, read_collections};
 use crate::environment::environment_config::{read_environments_config, write_environments_config};
-use crate::models::{Environment, EnvironmentsConfig, VariableInfo};
+use crate::environment::replace_variables;
+use crate::models::{Environment, EnvironmentsConfig, Variable, VariableInfo};
 use std::collections::HashMap;
 
 /// 获取所有环境
@@ -186,4 +187,16 @@ pub fn get_available_variables(
 
     // 转换为 Vec 返回
     variables_map.values().cloned().collect()
+}
+
+/// 替换文本中的变量
+#[tauri::command]
+pub fn replace_variables_text(text: String, variables: Vec<Variable>) -> String {
+    let vars_map: HashMap<String, String> = variables
+        .iter()
+        .filter(|v| v.enabled && !v.key.is_empty())
+        .map(|v| (v.key.clone(), v.value.clone()))
+        .collect();
+    
+    replace_variables(&text, &vars_map).text
 }

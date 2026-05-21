@@ -63,7 +63,7 @@ assign_new_ids(&mut root_collection);
     }
 }
 
-/// 导出集合为 Postman 2.1 格式 JSON
+/// 导出集合为 Postman 2.1 格式 JSON（从文件读取）
 #[tauri::command]
 pub fn export_collection_postman(
     workspace_path: String,
@@ -80,7 +80,22 @@ pub fn export_collection_postman(
     
     let postman_collection = convert_collection_to_postman(collection);
     
-serde_json::to_string_pretty(&postman_collection)
+    serde_json::to_string_pretty(&postman_collection)
+        .map_err(|e| format!("序列化失败: {}", e))
+}
+
+/// 导出集合为 Postman 2.1 格式 JSON（使用前端处理过的数据）
+#[tauri::command]
+pub fn export_collection_postman_with_data(
+    collection: Collection,
+) -> Result<String, String> {
+    if collection.item_type != "collection" {
+        return Err("只能导出集合".to_string());
+    }
+    
+    let postman_collection = convert_collection_to_postman(&collection);
+    
+    serde_json::to_string_pretty(&postman_collection)
         .map_err(|e| format!("序列化失败: {}", e))
 }
 

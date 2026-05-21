@@ -71,6 +71,7 @@ pub fn run() {
             get_active_variables,
             reorder_environments,
             get_available_variables,
+            replace_variables_text,
             // 记忆
             get_expanded_collections,
             save_expanded_collections,
@@ -146,7 +147,8 @@ pub fn run() {
             parse_curl,
             preview_postman,
             import_postman,
-            export_collection_postman
+            export_collection_postman,
+            export_collection_postman_with_data
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
