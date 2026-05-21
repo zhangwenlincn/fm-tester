@@ -39,9 +39,12 @@
 - **多 API 支持**：兼容 OpenAI、Azure、本地部署等多种 API 端点
 - **AI 辅助**：AI 生成 API 文档、优化脚本代码
 
-### 📥 OpenAPI 导入
-- **预览导入**：导入前预览 OpenAPI/Swagger 文档结构
-- **批量创建**：一键导入所有接口到集合
+### 📥 导入导出
+- **OpenAPI 导入**：导入前预览 OpenAPI/Swagger 文档结构，一键导入所有接口
+- **Postman 导入**：支持 Postman Collection 2.1 格式导入
+- **Postman 导出**：导出集合为 Postman Collection 2.1 格式
+- **curl 导入**：解析 curl 命令并创建接口
+- **curl 导出**：将接口导出为 curl 命令，复制到剪贴板
 
 ### 🔀 Git 同步
 - **云端同步**：工作区支持 Git 仓库同步，数据云端备份
@@ -156,12 +159,13 @@ fm-tester/
 │   │   ├── CollectionSettingsPanel/  # 集合设置面板
 │   │   ├── ConsolePanel/        # 控制台面板（脚本日志）
 │   │   ├── CookiePanel/         # Cookie 管理面板
+│   │   ├── CurlImportDialog/    # curl 导入对话框
 │   │   ├── DocPanel/            # 文档面板
 │   │   ├── EnvironmentPanel/    # 环境变量面板
 │   │   ├── HeaderAutocomplete/  # 请求头自动补全
 │   │   ├── HistoryDetailPanel/  # 历史详情面板
 │   │   ├── Icon/                # 图标组件
-│   │   ├── ImportDialog/        # OpenAPI 导入对话框
+│   │   ├── ImportDialog/        # OpenAPI/Postman 导入对话框
 │   │   ├── MenuBar/             # 菜单栏
 │   │   ├── RequestPanel/        # 请求配置面板
 │   │   ├── ResponsePanel/       # 响应查看面板
@@ -177,9 +181,20 @@ fm-tester/
 │   │   ├── WorkspaceDialog/     # 工作区对话框
 │   │   └── WorkspaceSettingsPanel/  # 工作区设置面板
 │   ├── composables/             # Vue Composition API hooks
+│   │   ├── useEnvironment.js    # 环境变量管理
+│   │   ├── useGitUpdateChecker.js  # Git 更新检查
+│   │   ├── useI18n.js           # 国际化
+│   │   ├── useRequest.js        # 请求管理
+│   │   ├── useResponse.js       # 响应处理
+│   │   ├── useSettings.js       # 全局设置
+│   │   ├── useTabs.js           # 标签页管理
+│   │   ├── useToast.js          # Toast 提示
+│   │   └── useWorkspace.js      # 工作区管理
 │   ├── i18n/                    # 国际化配置
-│   ├── locales/                 # 语言包
+│   ├── locales/                 # 语言包（zh-CN.json, en.json）
 │   └── utils/                   # 工具函数
+│       ├── scriptEngine.js      # 脚本执行引擎
+│       └── syntax-highlight.js  # 语法高亮
 ├── src-tauri/                    # Rust 后端代码
 │   ├── src/
 │   │   ├── ai/                  # AI API 调用（获取模型列表）
