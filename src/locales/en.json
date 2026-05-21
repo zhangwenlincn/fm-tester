@@ -322,7 +322,8 @@
     "switchBranch": "Switch Branch",
     "importCollection": "Import Collection",
     "importCurl": "Import cURL",
-    "exportCurl": "Export as cURL"
+    "exportCurl": "Export as cURL",
+    "exportPostman": "Export as Postman"
   },
   "workspaceType": {
     "local": "Local Workspace",

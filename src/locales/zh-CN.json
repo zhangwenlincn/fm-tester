@@ -322,7 +322,8 @@
     "switchBranch": "切换分支",
     "importCollection": "导入集合",
     "importCurl": "导入 cURL",
-    "exportCurl": "导出为 cURL"
+    "exportCurl": "导出为 cURL",
+    "exportPostman": "导出为 Postman"
   },
   "workspaceType": {
     "local": "本地工作区",

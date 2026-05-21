@@ -326,6 +326,8 @@ export function useCollectionPanelSetup(props, emit) {
       deleteSavedResponse(item)
     } else if (action === 'export-curl') {
       await exportAsCurl(item)
+    } else if (action === 'export-postman') {
+      await exportAsPostman(item)
     }
 
     closeContextMenu()
@@ -490,6 +492,40 @@ export function useCollectionPanelSetup(props, emit) {
       showToast(t('toast.curlCopied'), 'success')
     } catch (e) {
       console.error('导出 curl 失败:', e)
+      showToast(t('toast.saveFailed'), 'error')
+    }
+  }
+
+  // 导出集合为 Postman 2.1 格式
+  const exportAsPostman = async (collection) => {
+    if (!props.workspace?.path) {
+      showToast(t('toast.saveFailed'), 'error')
+      return
+    }
+
+    try {
+      // 打开保存文件对话框
+      const filePath = await invoke('safe_save_file', {
+        defaultName: `${collection.name}.postman_collection.json`
+      })
+
+      if (!filePath) {
+        return
+      }
+
+      // 导出集合为 Postman 格式 JSON
+      const postmanJson = await invoke('export_collection_postman', {
+        workspacePath: props.workspace.path,
+        collectionId: collection.id
+      })
+
+      // 使用 fs plugin 写入文件
+      const { writeTextFile } = await import('@tauri-apps/plugin-fs')
+      await writeTextFile(filePath, postmanJson)
+
+      showToast(t('toast.saved'), 'success')
+    } catch (e) {
+      console.error('导出 Postman 失败:', e)
       showToast(t('toast.saveFailed'), 'error')
     }
   }

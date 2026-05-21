@@ -121,6 +121,9 @@ const handleMenuAction = (action) => {
   } else if (action === 'import-curl') {
     closeContextMenu()
     openCurlImportDialog(contextMenu.value.item?.id || null)
+  } else if (action === 'export-postman') {
+    closeContextMenu()
+    handleContextAction(action)
   } else {
     handleContextAction(action)
   }
@@ -359,6 +362,11 @@ defineExpose({
         <div class="menu-item" @click="handleMenuAction('new-api')">
           <span class="menu-icon"><Icon name="api" :size="14" /></span>
           <span>{{ t('buttons.newApi') }}</span>
+        </div>
+        <div class="menu-divider"></div>
+        <div class="menu-item" @click="handleMenuAction('export-postman')">
+          <span class="menu-icon"><Icon name="export" :size="14" /></span>
+          <span>{{ t('contextMenu.exportPostman') }}</span>
         </div>
         <div class="menu-divider"></div>
         <div class="menu-item" @click="handleMenuAction('rename')">

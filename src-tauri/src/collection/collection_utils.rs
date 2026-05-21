@@ -64,6 +64,19 @@ pub fn find_api_in_collections<'a>(items: &'a [Collection], id: &str) -> Option<
     None
 }
 
+/// 递归查找集合或 API（不可变版本）
+pub fn find_item_in_collections<'a>(items: &'a [Collection], id: &str) -> Option<&'a Collection> {
+    for item in items {
+        if item.id == id {
+            return Some(item);
+        }
+        if let Some(found) = find_item_in_collections(&item.children, id) {
+            return Some(found);
+        }
+    }
+    None
+}
+
 /// 获取父集合的 children 数组可变引用
 /// parent_id 为 None 时返回根级别 collections
 pub fn find_parent_children<'a>(

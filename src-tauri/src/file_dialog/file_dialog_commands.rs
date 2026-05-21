@@ -31,3 +31,35 @@ pub async fn safe_pick_directory() -> Result<Option<String>, String> {
         Err(e) => Err(format!("任务执行失败: {}", e)),
     }
 }
+
+/// 安全保存文件对话框（捕获可能的 panic）
+/// 使用 rfd crate，支持设置默认文件名
+#[tauri::command]
+pub async fn safe_save_file(default_name: Option<String>) -> Result<Option<String>, String> {
+    let result = tokio::task::spawn_blocking(|| {
+        catch_unwind(|| {
+            let mut dialog = rfd::FileDialog::new();
+            if let Some(name) = default_name {
+                dialog = dialog.set_file_name(&name);
+            }
+            dialog.save_file()
+        })
+    }).await;
+    
+    match result {
+        Ok(inner_result) => {
+            match inner_result {
+                Ok(path_option) => {
+                    match path_option {
+                        Some(path) => Ok(Some(path.to_string_lossy().to_string())),
+                        None => Ok(None),
+                    }
+                }
+                Err(_) => {
+                    Err("保存文件时发生错误".to_string())
+                }
+            }
+        }
+        Err(e) => Err(format!("任务执行失败: {}", e)),
+    }
+}

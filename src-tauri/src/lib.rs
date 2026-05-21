@@ -139,12 +139,14 @@ pub fn run() {
             switch_git_branch,
             // File Dialog
             safe_pick_directory,
+            safe_save_file,
             // Import
             preview_openapi,
             import_openapi,
             parse_curl,
             preview_postman,
-            import_postman
+            import_postman,
+            export_collection_postman
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
